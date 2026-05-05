@@ -1,0 +1,2549 @@
+<script setup lang="ts">
+import type { RequestPayload } from '@inertiajs/core';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { getCoreRowModel, useVueTable } from '@tanstack/vue-table';
+import type { ColumnDef } from '@tanstack/vue-table';
+import {
+    Calendar as CalendarIcon,
+    ChevronDown,
+    FileSpreadsheet,
+    Info,
+    Plus,
+    Search,
+} from 'lucide-vue-next';
+import { computed, h, onMounted, ref, watch } from 'vue';
+import HrisColumnFilterPopover from '@/components/hris/HrisColumnFilterPopover.vue';
+import HrisServerTablePagination from '@/components/hris/HrisServerTablePagination.vue';
+import HrisTanStackTable from '@/components/hris/HrisTanStackTable.vue';
+import HrisUnitSelectTriggerLabel from '@/components/hris/HrisUnitSelectTriggerLabel.vue';
+import TeamFormIsoDatePicker from '@/components/hris/TeamFormIsoDatePicker.vue';
+import TeamHrEmployeeCombobox from '@/components/hris/TeamHrEmployeeCombobox.vue';
+import TeamHrUnitCombobox from '@/components/hris/TeamHrUnitCombobox.vue';
+import TeamIndexDateRangePickers from '@/components/hris/TeamIndexDateRangePickers.vue';
+import TeamTableSortHeader from '@/components/hris/TeamTableSortHeader.vue';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from '@/components/ui/input-group';
+import { Label } from '@/components/ui/label';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useDebouncedSearchInput } from '@/composables/useDebouncedSearchInput';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { appToast } from '@/lib/app-toast-client';
+import {
+    isoFirstDayOfMonth,
+    isoLastDayOfMonth,
+    isoTodayLocal,
+} from '@/lib/calendarMonthRange';
+import { fetchTeamHrFormUnits } from '@/lib/teamHrFormApi';
+import type {
+    TeamHrFormEmployeeHit,
+    TeamHrFormUnit,
+} from '@/lib/teamHrFormApi';
+import AttendanceEntryViewContent from '@/pages/Attendance/AttendanceEntryViewContent.vue';
+import AttendanceGrossNetColumnHeader from '@/pages/Attendance/AttendanceGrossNetColumnHeader.vue';
+import { defaultThirdSessionSegment } from '@/pages/Attendance/attendanceRulesTypes';
+import AttendanceTeamRowActionsMenu from '@/pages/Attendance/AttendanceTeamRowActionsMenu.vue';
+import { segmentsFromWorkScheduleTemplatePayload } from '@/pages/Attendance/teamAttendanceFromTemplate';
+import type {
+    TeamAttendanceDraft,
+    TeamAttendancePunctualityFilter,
+    TeamAttendanceRecordingStyleFilter,
+    TeamAttendanceRow,
+    TeamAttendanceSegment,
+    TeamAttendanceStatusFilter,
+} from '@/pages/Attendance/teamAttendanceTypes';
+import {
+    attendanceNetWithinScheduledOverlapDisplay,
+    attendanceStatusBadgeClass,
+    attendanceStatusLabel,
+    clockInOutDisplay,
+    clockPatternBadgeLabel,
+    deriveTeamAttendanceRecordStatus,
+    punctualityBadgeClass,
+    punctualityLabel,
+    TEAM_ATTENDANCE_FORM_CLOCK_TIMES_SCHEDULE_LOCKED_TOOLTIP,
+    TEAM_ATTENDANCE_FORM_CLOCK_TIMES_SCHEDULE_UNLOCKED_TOOLTIP,
+    TEAM_ATTENDANCE_FORM_HEADER_TOOLTIP,
+    TEAM_ATTENDANCE_FORM_PROFILE_ATTENDANCE_ID_TOOLTIP,
+    TEAM_ATTENDANCE_FORM_RECORDING_STYLE_TOOLTIP,
+    TEAM_ATTENDANCE_FORM_STATUS_TOOLTIP,
+    TEAM_ATTENDANCE_FORM_WORK_SCHEDULE_TOOLTIP,
+} from '@/pages/Attendance/teamAttendanceUi';
+import { employeeSchedules, team as attendanceTeam } from '@/routes/attendance';
+import { dtrMockSample } from '@/routes/attendance/reports';
+import teamAttendanceDayRoutes from '@/routes/attendance/team/attendance-days';
+import type { BreadcrumbItem } from '@/types';
+
+type AttendanceTeamFiltersProp = {
+    page: number;
+    per_page: number;
+    q: string;
+    unit_id?: number | null;
+    date_from: string;
+    date_to: string;
+    status: TeamAttendanceStatusFilter;
+    punctuality: TeamAttendancePunctualityFilter;
+    recording_style: TeamAttendanceRecordingStyleFilter;
+    sort: 'work_date';
+    direction: 'asc' | 'desc';
+};
+
+type TeamAttendancePaginator = {
+    data: TeamAttendanceRow[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+};
+
+const page = usePage<{
+    branchContext: { id: number; code: string; name: string } | null;
+    can?: { canAddEmployeeTeamLeaveOvertimeEntry?: boolean };
+}>();
+
+const canAddTeamAttendanceRecords = computed(() =>
+    Boolean(page.props.can?.canAddEmployeeTeamLeaveOvertimeEntry),
+);
+
+const props = withDefaults(
+    defineProps<{
+        teamAttendanceDays: TeamAttendancePaginator;
+        attendanceTeamFilters: AttendanceTeamFiltersProp;
+    }>(),
+    {
+        teamAttendanceDays: () => ({
+            data: [],
+            current_page: 1,
+            last_page: 1,
+            per_page: 10,
+            total: 0,
+            from: null,
+            to: null,
+        }),
+        attendanceTeamFilters: () => ({
+            page: 1,
+            per_page: 10,
+            q: '',
+            date_from: isoFirstDayOfMonth(new Date()),
+            date_to: isoLastDayOfMonth(new Date()),
+            status: 'all',
+            punctuality: 'all',
+            recording_style: 'all',
+            sort: 'work_date',
+            direction: 'desc',
+        }),
+    },
+);
+
+const chartBranchId = computed(() => page.props.branchContext?.id ?? null);
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Team Attendance', href: attendanceTeam() },
+];
+
+const tablePlainHeadClass = 'font-medium text-muted-foreground';
+const dialogScrollAreaClass =
+    'max-h-[70vh] pr-3 **:data-[slot=scroll-area-viewport]:focus-visible:outline-none **:data-[slot=scroll-area-viewport]:focus-visible:ring-0';
+const dialogViewScrollAreaClass =
+    'max-h-[min(70vh,520px)] pr-3 **:data-[slot=scroll-area-viewport]:focus-visible:outline-none **:data-[slot=scroll-area-viewport]:focus-visible:ring-0';
+
+function normalizedAttendanceFilters(): AttendanceTeamFiltersProp {
+    const f = props.attendanceTeamFilters;
+
+    return {
+        page: f.page ?? 1,
+        per_page: f.per_page ?? 10,
+        q: f.q ?? '',
+        unit_id: f.unit_id ?? null,
+        date_from: f.date_from ?? isoFirstDayOfMonth(new Date()),
+        date_to: f.date_to ?? isoLastDayOfMonth(new Date()),
+        status: (f.status ?? 'all') as TeamAttendanceStatusFilter,
+        punctuality: (f.punctuality ?? 'all') as TeamAttendancePunctualityFilter,
+        recording_style: (f.recording_style ?? 'all') as TeamAttendanceRecordingStyleFilter,
+        sort: 'work_date',
+        direction: (f.direction ?? 'desc') === 'asc' ? 'asc' : 'desc',
+    };
+}
+
+function buildQuery(
+    overrides: Partial<{
+        page: number;
+        per_page: number;
+        q: string;
+        unit_id: number | null;
+        date_from: string;
+        date_to: string;
+        status: TeamAttendanceStatusFilter;
+        punctuality: TeamAttendancePunctualityFilter;
+        recording_style: TeamAttendanceRecordingStyleFilter;
+        sort: 'work_date';
+        direction: 'asc' | 'desc';
+    }> = {},
+): Record<string, string | number> {
+    const merged = { ...normalizedAttendanceFilters(), ...overrides };
+    const pageNum =
+        overrides.page !== undefined
+            ? overrides.page
+            : props.teamAttendanceDays.current_page;
+
+    const q: Record<string, string | number> = {
+        page: pageNum,
+        per_page: merged.per_page,
+        date_from: merged.date_from,
+        date_to: merged.date_to,
+        status: merged.status,
+        punctuality: merged.punctuality,
+        recording_style: merged.recording_style,
+        sort: merged.sort,
+        direction: merged.direction,
+    };
+
+    const trimmed = merged.q.trim();
+    if (trimmed !== '') {
+        q.q = trimmed;
+    }
+
+    if (merged.unit_id !== null && merged.unit_id !== undefined) {
+        q.unit_id = merged.unit_id;
+    }
+
+    return q;
+}
+
+function applyQuery(
+    overrides: Partial<{
+        page: number;
+        per_page: number;
+        q: string;
+        unit_id: number | null;
+        date_from: string;
+        date_to: string;
+        status: TeamAttendanceStatusFilter;
+        punctuality: TeamAttendancePunctualityFilter;
+        recording_style: TeamAttendanceRecordingStyleFilter;
+        sort: 'work_date';
+        direction: 'asc' | 'desc';
+    }> = {},
+): void {
+    router.get(
+        attendanceTeam.url({ query: buildQuery(overrides) }),
+        {},
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
+}
+
+function toggleSort(column: AttendanceTeamFiltersProp['sort']): void {
+    const same = props.attendanceTeamFilters.sort === column;
+    const nextDir =
+        same && props.attendanceTeamFilters.direction === 'asc'
+            ? 'desc'
+            : 'asc';
+    applyQuery({ sort: column, direction: nextDir, page: 1 });
+}
+
+function sortDirectionFor(
+    column: AttendanceTeamFiltersProp['sort'],
+): 'asc' | 'desc' | null {
+    if (props.attendanceTeamFilters.sort !== column) {
+        return null;
+    }
+
+    return props.attendanceTeamFilters.direction;
+}
+
+const {
+    localSearch,
+    syncFromServerSearch,
+    onSearchUpdate,
+    onSearchKeyup,
+    onSearchCommit,
+} = useDebouncedSearchInput({
+    initialValue: props.attendanceTeamFilters.q ?? '',
+    debounceMs: 300,
+    onDebouncedSearch: (value) => applyQuery({ q: value, page: 1 }),
+});
+
+watch(
+    () => props.attendanceTeamFilters.q,
+    (s) => syncFromServerSearch(s ?? ''),
+);
+
+const branchUnits = ref<TeamHrFormUnit[]>([]);
+const branchUnitsLoadError = ref<string | null>(null);
+const branchUnitsLoading = ref(false);
+
+const branchUnitFilterOptions = computed(() => {
+    const base: Array<{
+        value: string;
+        label: string;
+        code?: string | null;
+    }> = [{ value: 'all', label: 'All units' }];
+
+    if (branchUnits.value.length > 0) {
+        return [
+            ...base,
+            ...branchUnits.value.map((u) => ({
+                value: String(u.id),
+                label: u.name,
+                code: u.code,
+            })),
+        ];
+    }
+
+    return base;
+});
+
+const recordingStyleChipOptions: Array<{
+    value: TeamAttendanceRecordingStyleFilter;
+    label: string;
+}> = [
+    { value: 'all', label: 'All styles' },
+    { value: 'simple', label: 'Simple session' },
+    { value: 'split', label: 'Split sessions' },
+    { value: 'overnight', label: 'Overnight' },
+];
+
+function onPerPageChange(value: number): void {
+    applyQuery({ per_page: value, page: 1 });
+}
+
+const UNIT_FILTER_ALL = 'all' as const;
+
+const unitSelectModelValue = computed(() =>
+    props.attendanceTeamFilters.unit_id != null
+        ? String(props.attendanceTeamFilters.unit_id)
+        : UNIT_FILTER_ALL,
+);
+
+function onUnitFilterChange(value: unknown): void {
+    if (value === undefined || value === null || value === '') {
+        applyQuery({ unit_id: null, page: 1 });
+
+        return;
+    }
+
+    if (typeof value !== 'string') {
+        applyQuery({ unit_id: null, page: 1 });
+
+        return;
+    }
+
+    const next = value === UNIT_FILTER_ALL ? null : Number.parseInt(value, 10);
+    if (next === null || Number.isNaN(next)) {
+        applyQuery({ unit_id: null, page: 1 });
+
+        return;
+    }
+
+    applyQuery({ unit_id: next, page: 1 });
+}
+
+const toolbarDateFromModel = computed({
+    get(): string {
+        return (
+            props.attendanceTeamFilters.date_from ??
+            isoFirstDayOfMonth(new Date())
+        );
+    },
+    set(iso: string): void {
+        applyQuery({ date_from: iso, page: 1 });
+    },
+});
+
+const toolbarDateToModel = computed({
+    get(): string {
+        return (
+            props.attendanceTeamFilters.date_to ?? isoLastDayOfMonth(new Date())
+        );
+    },
+    set(iso: string): void {
+        applyQuery({ date_to: iso, page: 1 });
+    },
+});
+
+const viewDialogOpen = ref(false);
+const viewTarget = ref<TeamAttendanceRow | null>(null);
+
+const mutateDialogOpen = ref(false);
+const isEditing = ref(false);
+const editId = ref<number | null>(null);
+const mutatePrevRow = ref<TeamAttendanceRow | null>(null);
+const activeDraft = ref<TeamAttendanceDraft | null>(null);
+const formError = ref<string | null>(null);
+
+function syncActiveDraftRecordStatus(): void {
+    const d = activeDraft.value;
+    if (!d) {
+        return;
+    }
+
+    d.status = deriveTeamAttendanceRecordStatus(normalizeDraftSegments(d.segments));
+}
+
+watch(
+    () => activeDraft.value?.segments,
+    () => {
+        syncActiveDraftRecordStatus();
+    },
+    { deep: true },
+);
+
+function clearEmployeeAttendanceProfile(): void {
+    if (!activeDraft.value) {
+        return;
+    }
+
+    const d = activeDraft.value;
+    d.attendance_id = '';
+    d.work_schedule_template_id = null;
+    d.work_schedule_name = '';
+    d.segments = [];
+    d.clock_pattern = 'single_pair';
+    d.is_overnight_schedule = false;
+}
+
+function applyEmployeeAttendanceProfileFromHit(
+    hit: TeamHrFormEmployeeHit,
+): void {
+    if (!activeDraft.value) {
+        return;
+    }
+
+    const d = activeDraft.value;
+    d.attendance_id = (hit.attendance_id ?? '').trim();
+
+    const templateId = hit.work_schedule_template_id ?? null;
+    const template = hit.work_schedule_template ?? null;
+
+    if (template != null && templateId != null) {
+        d.work_schedule_template_id = templateId;
+        d.work_schedule_name = template.name;
+        d.clock_pattern = template.clock_pattern;
+        d.is_overnight_schedule = template.is_overnight;
+        d.segments = segmentsFromWorkScheduleTemplatePayload(template);
+
+        return;
+    }
+
+    d.work_schedule_template_id = null;
+    d.work_schedule_name = '';
+    d.segments = [];
+    d.clock_pattern = 'single_pair';
+    d.is_overnight_schedule = false;
+}
+
+const selectedEmployeeHitModel = computed({
+    get(): TeamHrFormEmployeeHit | null {
+        const d = activeDraft.value;
+        if (!d?.employee_id) {
+            return null;
+        }
+
+        return {
+            id: d.employee_id,
+            employee_id: d.employee_id,
+            employee_number: d.employee_id_number || null,
+            full_name: d.employee_name,
+            active_position_title: null,
+            avatar_url: null,
+        };
+    },
+    set(value: TeamHrFormEmployeeHit | null) {
+        if (!activeDraft.value) {
+            return;
+        }
+
+        if (value === null) {
+            activeDraft.value.employee_id = null;
+            activeDraft.value.employee_name = '';
+            activeDraft.value.employee_id_number = '';
+            clearEmployeeAttendanceProfile();
+
+            return;
+        }
+
+        activeDraft.value.employee_id = value.id;
+        activeDraft.value.employee_name = value.full_name;
+        activeDraft.value.employee_id_number = value.employee_number ?? '';
+        applyEmployeeAttendanceProfileFromHit(value);
+    },
+});
+
+const scheduleFieldsLocked = computed(
+    () => activeDraft.value?.work_schedule_template_id != null,
+);
+
+const clockTimesMutateFormTooltip = computed((): string =>
+    scheduleFieldsLocked.value
+        ? TEAM_ATTENDANCE_FORM_CLOCK_TIMES_SCHEDULE_LOCKED_TOOLTIP
+        : TEAM_ATTENDANCE_FORM_CLOCK_TIMES_SCHEDULE_UNLOCKED_TOOLTIP,
+);
+
+/** Shown after an employee is chosen but directory prerequisites are missing. */
+const employeeAttendanceSetupHint = computed((): string | null => {
+    const d = activeDraft.value;
+    if (!d || d.employee_id === null) {
+        return null;
+    }
+
+    if ((d.attendance_id ?? '').trim() === '') {
+        return 'This employee has no attendance ID. Set it on Employee Schedules, then try again.';
+    }
+
+    if (d.segments.length === 0) {
+        return 'This employee has no assigned work schedule template. Assign one on Employee Schedules, then try again.';
+    }
+
+    return null;
+});
+
+const deleteDialogOpen = ref(false);
+const deleteTarget = ref<TeamAttendanceRow | null>(null);
+
+type DtrGenerationMode = 'individual' | 'team';
+
+type DtrMonthPart = 'whole' | 'first_half' | 'second_half';
+
+const dtrDialogOpen = ref(false);
+const dtrFormError = ref<string | null>(null);
+const dtrMode = ref<DtrGenerationMode>('individual');
+const dtrIndividualUnitId = ref<number | null>(null);
+const dtrSelectedEmployee = ref<TeamHrFormEmployeeHit | null>(null);
+const dtrYearMonth = ref('');
+const dtrMonthPart = ref<DtrMonthPart>('whole');
+const dtrTeamUnitId = ref<number | null>(null);
+const dtrMonthPopoverOpen = ref(false);
+
+const DTR_YEAR_LOOKBACK = 5;
+
+const DTR_YEAR_LOOKAHEAD = 3;
+
+const dtrPickerParts = computed((): { year: number; month: number } => {
+    const ym = dtrYearMonth.value.trim();
+    if (/^\d{4}-\d{2}$/.test(ym)) {
+        const [ys, ms] = ym.split('-');
+        const y = Number.parseInt(ys ?? '', 10);
+        const m = Number.parseInt(ms ?? '', 10);
+        if (!Number.isNaN(y) && !Number.isNaN(m) && m >= 1 && m <= 12) {
+            return { year: y, month: m };
+        }
+    }
+
+    const now = new Date();
+
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+});
+
+function patchDtrYearMonth(year: number, month: number): void {
+    dtrYearMonth.value = `${year}-${String(month).padStart(2, '0')}`;
+    dtrFormError.value = null;
+}
+
+function onDtrPickerMonthPick(v: unknown): void {
+    const m = Number.parseInt(String(v ?? ''), 10);
+    if (Number.isNaN(m) || m < 1 || m > 12) {
+        return;
+    }
+
+    patchDtrYearMonth(dtrPickerParts.value.year, m);
+}
+
+function onDtrPickerYearPick(v: unknown): void {
+    const y = Number.parseInt(String(v ?? ''), 10);
+    if (Number.isNaN(y)) {
+        return;
+    }
+
+    patchDtrYearMonth(y, dtrPickerParts.value.month);
+}
+
+const dtrYearChoices = computed((): number[] => {
+    const anchor = new Date().getFullYear();
+    const out: number[] = [];
+    for (
+        let y = anchor - DTR_YEAR_LOOKBACK;
+        y <= anchor + DTR_YEAR_LOOKAHEAD;
+        y++
+    ) {
+        out.push(y);
+    }
+
+    return out;
+});
+
+const dtrMonthChoices = computed(
+    (): Array<{ value: number; label: string }> => {
+        return Array.from({ length: 12 }, (_, i) => {
+            const month = i + 1;
+            const label = new Date(2000, i, 1).toLocaleDateString(undefined, {
+                month: 'long',
+            });
+
+            return { value: month, label };
+        });
+    },
+);
+
+function dtrYearMonthPickerLabel(isoYm: string): string {
+    const ym = isoYm.trim();
+    if (!/^\d{4}-\d{2}$/.test(ym)) {
+        return 'Pick month…';
+    }
+
+    return new Date(`${ym}-01T12:00:00`).toLocaleDateString(undefined, {
+        month: 'long',
+        year: 'numeric',
+    });
+}
+
+function resetDtrForm(): void {
+    dtrMode.value = 'individual';
+    dtrIndividualUnitId.value = null;
+    dtrSelectedEmployee.value = null;
+    const now = new Date();
+    dtrYearMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    dtrMonthPart.value = 'whole';
+    dtrTeamUnitId.value = null;
+    dtrFormError.value = null;
+    dtrMonthPopoverOpen.value = false;
+}
+
+function openDtrDialog(): void {
+    void ensureBranchUnitsLoaded();
+    resetDtrForm();
+    dtrDialogOpen.value = true;
+}
+
+function dtrResolvedDateRange(): { from: string; to: string } | null {
+    const ym = dtrYearMonth.value.trim();
+    if (!/^\d{4}-\d{2}$/.test(ym)) {
+        return null;
+    }
+
+    const parts = ym.split('-').map((s) => Number.parseInt(s, 10));
+    const y = parts[0];
+    const mo = parts[1];
+    if (
+        Number.isNaN(y) ||
+        Number.isNaN(mo) ||
+        mo === undefined ||
+        mo < 1 ||
+        mo > 12
+    ) {
+        return null;
+    }
+
+    const lastDay = new Date(y, mo, 0).getDate();
+    let fromDay = 1;
+    let toDay = lastDay;
+    switch (dtrMonthPart.value) {
+        case 'first_half':
+            fromDay = 1;
+            toDay = Math.min(15, lastDay);
+
+            break;
+        case 'second_half':
+            fromDay = Math.min(16, lastDay);
+            toDay = lastDay;
+
+            break;
+        default:
+            fromDay = 1;
+            toDay = lastDay;
+
+            break;
+    }
+
+    if (fromDay > toDay) {
+        return null;
+    }
+
+    const pad = (n: number): string => String(n).padStart(2, '0');
+
+    return {
+        from: `${ym}-${pad(fromDay)}`,
+        to: `${ym}-${pad(toDay)}`,
+    };
+}
+
+function validateDtrForm(): string | null {
+    if (chartBranchId.value === null) {
+        return 'Select a workspace branch (header) before generating a DTR.';
+    }
+
+    if (branchUnitsLoading.value) {
+        return 'Units are still loading — try again in a moment.';
+    }
+
+    if (branchUnits.value.length === 0) {
+        return 'No units are available for this workspace branch.';
+    }
+
+    if (dtrMode.value === 'individual') {
+        if (dtrIndividualUnitId.value === null) {
+            return 'Choose a unit to search employees.';
+        }
+
+        if (dtrSelectedEmployee.value === null) {
+            return 'Choose an employee.';
+        }
+    } else if (dtrTeamUnitId.value === null) {
+        return 'Choose a unit.';
+    }
+
+    if (dtrResolvedDateRange() === null) {
+        return 'Pick a valid calendar month and segment.';
+    }
+
+    return null;
+}
+
+function generateDtrExcel(): void {
+    const err = validateDtrForm();
+    if (err) {
+        dtrFormError.value = err;
+
+        return;
+    }
+
+    if (dtrResolvedDateRange() === null) {
+        dtrFormError.value = 'Could not derive a date range.';
+
+        return;
+    }
+
+    const range = dtrResolvedDateRange();
+    if (range === null) {
+        dtrFormError.value = 'Could not derive a date range.';
+
+        return;
+    }
+
+    const query: Record<string, string | number> = {
+        mode: dtrMode.value,
+        date_from: range.from,
+        date_to: range.to,
+    };
+
+    if (dtrMode.value === 'individual' && dtrSelectedEmployee.value !== null) {
+        query.employee_id = dtrSelectedEmployee.value.id;
+    }
+
+    if (dtrMode.value === 'team' && dtrTeamUnitId.value !== null) {
+        query.unit_id = dtrTeamUnitId.value;
+    }
+
+    dtrFormError.value = null;
+    dtrDialogOpen.value = false;
+    appToast.info('Generating DTR export...');
+    window.location.assign(dtrMockSample.url({ query }));
+}
+
+function onDtrModeTabChange(v: string | number): void {
+    const s = String(v);
+    if (s === 'individual' || s === 'team') {
+        dtrMode.value = s;
+        dtrFormError.value = null;
+    }
+}
+
+watch(dtrIndividualUnitId, () => {
+    dtrSelectedEmployee.value = null;
+});
+
+
+async function ensureBranchUnitsLoaded(): Promise<void> {
+    if (branchUnitsLoading.value) {
+        return;
+    }
+
+    branchUnitsLoadError.value = null;
+    branchUnitsLoading.value = true;
+
+    try {
+        const { units } = await fetchTeamHrFormUnits();
+        branchUnits.value = units;
+    } catch {
+        branchUnitsLoadError.value =
+            'Could not load units for this branch. Using demo unit list in the form.';
+    } finally {
+        branchUnitsLoading.value = false;
+    }
+}
+
+watch(chartBranchId, () => {
+    branchUnits.value = [];
+    void ensureBranchUnitsLoaded();
+});
+
+onMounted(() => {
+    void ensureBranchUnitsLoaded();
+});
+
+watch(mutateDialogOpen, (open) => {
+    if (open) {
+        void ensureBranchUnitsLoaded();
+    }
+});
+
+function employeeInitials(name: string): string {
+    const parts = name
+        .trim()
+        .split(/\s+/)
+        .filter((part) => part.length > 0);
+    if (parts.length === 0) {
+        return 'E';
+    }
+    if (parts.length === 1) {
+        return parts[0].slice(0, 1).toUpperCase();
+    }
+
+    return `${parts[0].slice(0, 1)}${parts[parts.length - 1].slice(0, 1)}`.toUpperCase();
+}
+
+function trimToNull(raw: string): string | null {
+    const v = raw.trim();
+
+    return v === '' ? null : v;
+}
+
+function normalizeDraftSegments(
+    segments: TeamAttendanceSegment[],
+): TeamAttendanceSegment[] {
+    return segments.map((s) => ({
+        label: s.label.trim(),
+        scheduled_in: s.scheduled_in.trim(),
+        scheduled_out: s.scheduled_out.trim(),
+        actual_in: trimToNull(s.actual_in ?? ''),
+        actual_out: trimToNull(s.actual_out ?? ''),
+    }));
+}
+
+function syncDraftUnitLabels(draft: TeamAttendanceDraft): void {
+    if (draft.organizational_unit_id === null) {
+        draft.unit_filter_value = '';
+        draft.unit_name = '';
+        draft.unit_code = null;
+
+        return;
+    }
+
+    const match = branchUnits.value.find(
+        (u) => u.id === draft.organizational_unit_id,
+    );
+
+    if (match) {
+        draft.unit_name = match.name;
+        draft.unit_code = match.code;
+        draft.unit_filter_value = `unit-${match.id}`;
+
+        return;
+    }
+
+    draft.unit_filter_value = `unit-${draft.organizational_unit_id}`;
+}
+
+function blankSegmentFromTemplate(
+    label: string,
+    timeIn: string,
+    timeOut: string,
+): TeamAttendanceSegment {
+    return {
+        label,
+        scheduled_in: timeIn,
+        scheduled_out: timeOut,
+        actual_in: null,
+        actual_out: null,
+    };
+}
+
+function defaultDraft(): TeamAttendanceDraft {
+    return {
+        employee_name: '',
+        employee_id_number: '',
+        employee_id: null,
+        organizational_unit_id: null,
+        unit_filter_value: '',
+        unit_name: '',
+        unit_code: null,
+        work_date: isoTodayLocal(),
+        attendance_id: '',
+        work_schedule_template_id: null,
+        clock_pattern: 'single_pair',
+        is_overnight_schedule: false,
+        work_schedule_name: '',
+        segments: [],
+        status: deriveTeamAttendanceRecordStatus([]),
+    };
+}
+
+function cloneToDraft(row: TeamAttendanceRow): TeamAttendanceDraft {
+    return {
+        employee_name: row.employee.display_name,
+        employee_id_number: row.employee.id_number,
+        employee_id: row.employee_record_id ?? null,
+        organizational_unit_id: row.organizational_unit_id ?? null,
+        unit_filter_value: row.unit_filter_value,
+        unit_name: row.unit_name,
+        unit_code: row.unit_code,
+        work_date: row.work_date,
+        attendance_id: row.attendance_id ?? '',
+        work_schedule_template_id: row.work_schedule_template_id,
+        clock_pattern: row.clock_pattern,
+        is_overnight_schedule: row.is_overnight_schedule,
+        work_schedule_name: row.work_schedule_name,
+        segments: row.segments.map((s) => ({
+            ...s,
+            actual_in: s.actual_in,
+            actual_out: s.actual_out,
+        })),
+        status: row.status,
+    };
+}
+
+function onFormUnitChange(unitId: number | null): void {
+    if (!activeDraft.value) {
+        return;
+    }
+
+    activeDraft.value.organizational_unit_id = unitId;
+    activeDraft.value.employee_id = null;
+    activeDraft.value.employee_name = '';
+    activeDraft.value.employee_id_number = '';
+    clearEmployeeAttendanceProfile();
+    syncDraftUnitLabels(activeDraft.value);
+}
+
+function openView(row: TeamAttendanceRow): void {
+    viewTarget.value = row;
+    viewDialogOpen.value = true;
+}
+
+function openAdd(): void {
+    if (!canAddTeamAttendanceRecords.value) {
+        appToast.error(
+            'You do not have permission to add team attendance entries.',
+        );
+
+        return;
+    }
+    isEditing.value = false;
+    editId.value = null;
+    mutatePrevRow.value = null;
+    activeDraft.value = defaultDraft();
+    formError.value = null;
+    mutateDialogOpen.value = true;
+}
+
+function openEdit(row: TeamAttendanceRow): void {
+    if (!canAddTeamAttendanceRecords.value) {
+        appToast.error(
+            'You do not have permission to edit team attendance entries.',
+        );
+
+        return;
+    }
+    isEditing.value = true;
+    editId.value = row.id;
+    mutatePrevRow.value = row;
+    activeDraft.value = cloneToDraft(row);
+    formError.value = null;
+    mutateDialogOpen.value = true;
+}
+
+function validateDraft(d: TeamAttendanceDraft): string | null {
+    if (chartBranchId.value === null) {
+        return 'Select a workspace branch (header) before saving.';
+    }
+
+    if (d.organizational_unit_id === null) {
+        return 'Select a unit.';
+    }
+
+    if (d.employee_id === null) {
+        return 'Select an employee.';
+    }
+
+    if (d.work_date.trim() === '') {
+        return 'Work date is required.';
+    }
+
+    if ((d.attendance_id ?? '').trim() === '') {
+        return 'This employee has no attendance ID. Set it on Employee Schedules before recording attendance.';
+    }
+
+    if (d.segments.length === 0) {
+        return 'This employee has no assigned work schedule template. Assign one on Employee Schedules before recording attendance.';
+    }
+
+    const segs = normalizeDraftSegments(d.segments);
+    if (segs.length === 0) {
+        return 'Add at least one schedule segment.';
+    }
+
+    const pattern = d.clock_pattern;
+    if (pattern === 'single_pair' && segs.length !== 1) {
+        return 'Simple attendance uses exactly one segment.';
+    }
+
+    if (pattern === 'split_sessions' && (segs.length < 2 || segs.length > 8)) {
+        return 'Split-session attendance uses at least two segments (and at most eight).';
+    }
+
+    if (!isEditing.value && d.work_schedule_template_id === null) {
+        return 'This employee needs an assigned work schedule template before recording a day.';
+    }
+
+    for (const s of segs) {
+        if (s.label.trim() === '') {
+            return 'Each segment needs a label.';
+        }
+
+        if (s.scheduled_in === '' || s.scheduled_out === '') {
+            return 'Scheduled in/out are required for every segment.';
+        }
+    }
+
+    return null;
+}
+
+function buildTeamAttendancePayload(
+    d: TeamAttendanceDraft,
+    mode: 'create' | 'update',
+): Record<string, unknown> {
+    const segs = normalizeDraftSegments(d.segments);
+
+    const payload: Record<string, unknown> = {
+        employee_id: d.employee_id,
+        organizational_unit_id: d.organizational_unit_id,
+        work_date: d.work_date.trim().slice(0, 10),
+        segments: segs.map((s) => ({
+            label: s.label,
+            scheduled_in: s.scheduled_in,
+            scheduled_out: s.scheduled_out,
+            actual_in: s.actual_in,
+            actual_out: s.actual_out,
+        })),
+    };
+
+    if (mode === 'create' && d.work_schedule_template_id != null) {
+        payload.work_schedule_template_id = d.work_schedule_template_id;
+    }
+
+    return payload;
+}
+
+function applyMutate(): void {
+    if (!canAddTeamAttendanceRecords.value) {
+        formError.value =
+            'You do not have permission to add or change team attendance entries.';
+
+        return;
+    }
+
+    if (!activeDraft.value) {
+        return;
+    }
+
+    const d = activeDraft.value;
+    const err = validateDraft(d);
+    if (err) {
+        formError.value = err;
+
+        return;
+    }
+
+    formError.value = null;
+    syncDraftUnitLabels(d);
+
+    const mode = isEditing.value ? 'update' : 'create';
+    const payload = buildTeamAttendancePayload(d, mode) as RequestPayload;
+
+    if (isEditing.value && editId.value != null) {
+        router.patch(
+            teamAttendanceDayRoutes.update({
+                employeeAttendanceDay: editId.value,
+            }).url,
+            payload,
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    mutateDialogOpen.value = false;
+                    activeDraft.value = null;
+                    mutatePrevRow.value = null;
+                    appToast.success('Attendance entry updated.');
+                },
+                onError: () => {
+                    formError.value =
+                        'Could not save changes. Check the form and try again.';
+                },
+            },
+        );
+
+        return;
+    }
+
+    router.post(teamAttendanceDayRoutes.store.url(), payload, {
+        preserveScroll: true,
+        onSuccess: () => {
+            mutateDialogOpen.value = false;
+            activeDraft.value = null;
+            mutatePrevRow.value = null;
+            appToast.success('Attendance entry added.');
+        },
+        onError: () => {
+            formError.value =
+                'Could not save changes. Check the form and try again.';
+        },
+    });
+}
+
+function openDeleteConfirm(row: TeamAttendanceRow): void {
+    if (!canAddTeamAttendanceRecords.value) {
+        appToast.error(
+            'You do not have permission to delete team attendance entries.',
+        );
+
+        return;
+    }
+    deleteTarget.value = row;
+    deleteDialogOpen.value = true;
+}
+
+function confirmDelete(): void {
+    if (!canAddTeamAttendanceRecords.value) {
+        deleteDialogOpen.value = false;
+        deleteTarget.value = null;
+
+        return;
+    }
+    const row = deleteTarget.value;
+    if (!row) {
+        return;
+    }
+
+    const id = row.id;
+    router.delete(
+        teamAttendanceDayRoutes.destroy({ employeeAttendanceDay: id }).url,
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                if (viewTarget.value?.id === id) {
+                    viewDialogOpen.value = false;
+                    viewTarget.value = null;
+                }
+
+                appToast.success('Attendance entry removed.');
+            },
+            onError: () => {
+                appToast.error('Could not delete this entry.');
+            },
+        },
+    );
+    deleteDialogOpen.value = false;
+    deleteTarget.value = null;
+}
+
+const attendanceStatusHeaderFilterOptions = computed(() =>
+    (
+        [
+            'all',
+            'complete',
+            'ongoing',
+            'incomplete',
+        ] as TeamAttendanceStatusFilter[]
+    ).map((value) => ({
+        value,
+        label: value === 'all' ? 'All' : attendanceStatusLabel(value),
+    })),
+);
+
+const punctualityHeaderFilterOptions = computed(() =>
+    (
+        [
+            'all',
+            'on_time',
+            'late',
+            'not_applicable',
+        ] as TeamAttendancePunctualityFilter[]
+    ).map((value) => ({
+        value,
+        label: value === 'all' ? 'All' : punctualityLabel(value),
+    })),
+);
+
+const punctualityColumnFilterAriaLabel = computed(() => {
+    const cur = props.attendanceTeamFilters.punctuality ?? 'all';
+    const summary =
+        cur === 'all' ? 'All' : punctualityLabel(cur);
+
+    return `Punctuality filter for team attendance entries: ${summary}. Open to choose on time, late, N/A, or all.`;
+});
+
+function onPunctualityHeaderFilterUpdate(v: string | number | null): void {
+    const s = String(v ?? 'all');
+
+    if (s === 'all') {
+        applyQuery({ punctuality: 'all', page: 1 });
+
+        return;
+    }
+
+    if (s === 'on_time' || s === 'late' || s === 'not_applicable') {
+        applyQuery({ punctuality: s, page: 1 });
+    }
+}
+
+const statusColumnFilterAriaLabel = computed(() => {
+    const cur = props.attendanceTeamFilters.status ?? 'all';
+    const summary =
+        cur === 'all' ? 'All' : attendanceStatusLabel(cur);
+
+    return `Status filter for team attendance entries: ${summary}. Open to choose complete, ongoing, incomplete, or all.`;
+});
+
+function onAttendanceStatusHeaderFilterUpdate(v: string | number | null): void {
+    const s = String(v ?? 'all');
+
+    if (s === 'all') {
+        applyQuery({ status: 'all', page: 1 });
+
+        return;
+    }
+
+    if (s === 'complete' || s === 'ongoing' || s === 'incomplete') {
+        applyQuery({ status: s, page: 1 });
+    }
+}
+
+const totalRows = computed(() => props.teamAttendanceDays.total);
+
+const emptyMessage = computed(
+    () =>
+        'No attendance rows match your current filters (branch workspace, dates, and toolbar choices).',
+);
+
+const fromRow = computed(() => props.teamAttendanceDays.from);
+
+const toRow = computed(() => props.teamAttendanceDays.to);
+
+const lastPage = computed(() =>
+    Math.max(1, props.teamAttendanceDays.last_page),
+);
+
+function setActualIn(
+    index: number,
+    raw: string | number | null | undefined,
+): void {
+    if (!activeDraft.value) {
+        return;
+    }
+
+    const s = activeDraft.value.segments[index];
+    if (!s) {
+        return;
+    }
+
+    s.actual_in =
+        raw === undefined || raw === null || String(raw).trim() === ''
+            ? null
+            : String(raw).trim();
+}
+
+function setActualOut(
+    index: number,
+    raw: string | number | null | undefined,
+): void {
+    if (!activeDraft.value) {
+        return;
+    }
+
+    const s = activeDraft.value.segments[index];
+    if (!s) {
+        return;
+    }
+
+    s.actual_out =
+        raw === undefined || raw === null || String(raw).trim() === ''
+            ? null
+            : String(raw).trim();
+}
+
+function addSessionSegment(): void {
+    if (
+        !activeDraft.value ||
+        activeDraft.value.work_schedule_template_id != null ||
+        activeDraft.value.clock_pattern !== 'split_sessions'
+    ) {
+        return;
+    }
+
+    if (activeDraft.value.segments.length >= 3) {
+        return;
+    }
+
+    const third = defaultThirdSessionSegment();
+    activeDraft.value.segments.push(
+        blankSegmentFromTemplate(third.label, third.time_in, third.time_out),
+    );
+}
+
+function removeLastSessionSegment(): void {
+    if (
+        !activeDraft.value ||
+        activeDraft.value.work_schedule_template_id != null ||
+        activeDraft.value.clock_pattern !== 'split_sessions'
+    ) {
+        return;
+    }
+
+    if (activeDraft.value.segments.length <= 2) {
+        return;
+    }
+
+    activeDraft.value.segments.pop();
+}
+
+const columns = computed((): ColumnDef<TeamAttendanceRow>[] => {
+    const mut = canAddTeamAttendanceRecords.value;
+
+    return [
+    {
+        id: 'employee',
+        meta: { headClass: 'min-w-[11rem]', cellClass: 'align-middle' },
+        header: () => h('span', { class: tablePlainHeadClass }, 'Employee'),
+        cell: ({ row }) => {
+            const r = row.original;
+
+            return h('div', { class: 'flex items-center gap-3 py-0.5' }, [
+                h(
+                    Avatar,
+                    {
+                        class: 'size-9 shrink-0 border border-border/70 bg-muted/30',
+                    },
+                    {
+                        default: () => [
+                            h(AvatarImage, {
+                                src: r.employee.avatar_url ?? '',
+                                alt: r.employee.display_name,
+                            }),
+                            h(
+                                AvatarFallback,
+                                {
+                                    class: 'text-[11px] font-medium text-muted-foreground',
+                                },
+                                () => employeeInitials(r.employee.display_name),
+                            ),
+                        ],
+                    },
+                ),
+                h('div', { class: 'min-w-0 flex-1 flex flex-col gap-0.5' }, [
+                    h(
+                        'span',
+                        { class: 'truncate font-medium text-foreground' },
+                        r.employee.display_name,
+                    ),
+                    h(
+                        'span',
+                        { class: 'font-mono text-xs text-muted-foreground' },
+                        r.employee.id_number,
+                    ),
+                ]),
+            ]);
+        },
+    },
+    {
+        id: 'attendance_id',
+        meta: {
+            headClass: 'min-w-[7rem]',
+            cellClass:
+                'align-middle font-mono text-sm tabular-nums text-muted-foreground',
+        },
+        header: () =>
+            h('span', { class: tablePlainHeadClass }, 'Attendance ID'),
+        cell: ({ row }) => {
+            const r = row.original;
+            const profile = r.attendance_id?.trim();
+            const ingest = r.ingest_key?.trim();
+
+            return h('span', { class: 'block py-0.5' }, [
+                h(
+                    'span',
+                    {
+                        class: profile
+                            ? 'text-foreground'
+                            : 'text-muted-foreground',
+                    },
+                    profile || '—',
+                ),
+                ingest
+                    ? h(
+                          'span',
+                          {
+                              class:
+                                  'mt-0.5 block text-[11px] leading-tight text-muted-foreground',
+                          },
+                          ingest,
+                      )
+                    : null,
+            ]);
+        },
+    },
+    {
+        id: 'work_date',
+        header: () =>
+            h(TeamTableSortHeader, {
+                columnTitle: 'Work date',
+                sortDirection: sortDirectionFor('work_date'),
+                onToggleSort: () => toggleSort('work_date'),
+            }),
+        cell: ({ row }) =>
+            h(
+                'span',
+                { class: 'text-sm tabular-nums text-foreground' },
+                new Date(
+                    `${row.original.work_date}T12:00:00`,
+                ).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                }),
+            ),
+    },
+    {
+        id: 'time_clock',
+        meta: {
+            headClass: 'min-w-[9rem]',
+            cellClass:
+                'align-middle max-w-[16rem] font-mono text-sm tabular-nums whitespace-pre-line leading-snug text-foreground',
+        },
+        header: () =>
+            h('span', { class: tablePlainHeadClass }, 'Time (clock in / out)'),
+        cell: ({ row }) => {
+            const r = row.original;
+
+            return h(
+                'span',
+                { class: 'block py-0.5' },
+                clockInOutDisplay(r.clock_pattern, r.segments),
+            );
+        },
+    },
+    {
+        id: 'net_time',
+        meta: {
+            headClass: 'min-w-[6.5rem]',
+            cellClass: 'align-middle text-sm tabular-nums text-foreground',
+        },
+        header: () => h(AttendanceGrossNetColumnHeader, { metric: 'net' }),
+        cell: ({ row }) =>
+            h(
+                'span',
+                { class: 'block py-0.5 font-mono' },
+                attendanceNetWithinScheduledOverlapDisplay(
+                    row.original.segments,
+                    row.original.punctuality,
+                    {
+                        clockPattern: row.original.clock_pattern,
+                        unpaidBreakMinutesFromTemplate:
+                            row.original.unpaid_break_minutes ?? 0,
+                    },
+                ),
+            ),
+    },
+    {
+        id: 'punctuality',
+        meta: { headClass: 'min-w-[8rem]', cellClass: 'align-middle' },
+        header: () =>
+            h(HrisColumnFilterPopover, {
+                label: 'Punctuality',
+                triggerAriaLabel: punctualityColumnFilterAriaLabel.value,
+                modelValue: props.attendanceTeamFilters.punctuality,
+                options: punctualityHeaderFilterOptions.value,
+                isActive: props.attendanceTeamFilters.punctuality !== 'all',
+                searchable: false,
+                showAllOption: false,
+                showCheckIcon: false,
+                contentClass: 'w-auto min-w-48 p-2',
+                'onUpdate:modelValue': onPunctualityHeaderFilterUpdate,
+            }),
+        cell: ({ row }) =>
+            h(
+                Badge,
+                {
+                    variant: 'outline',
+                    class: punctualityBadgeClass(row.original.punctuality),
+                },
+                () => punctualityLabel(row.original.punctuality),
+            ),
+    },
+    {
+        id: 'status',
+        meta: { headClass: 'min-w-[8rem]', cellClass: 'align-middle' },
+        header: () =>
+            h(HrisColumnFilterPopover, {
+                label: 'Status',
+                triggerAriaLabel: statusColumnFilterAriaLabel.value,
+                modelValue: props.attendanceTeamFilters.status,
+                options: attendanceStatusHeaderFilterOptions.value,
+                isActive: props.attendanceTeamFilters.status !== 'all',
+                searchable: false,
+                showAllOption: false,
+                showCheckIcon: false,
+                contentClass: 'w-auto min-w-48 p-2',
+                'onUpdate:modelValue': onAttendanceStatusHeaderFilterUpdate,
+            }),
+        cell: ({ row }) =>
+            h(
+                Badge,
+                {
+                    variant: 'outline',
+                    class: attendanceStatusBadgeClass(row.original.status),
+                },
+                () => attendanceStatusLabel(row.original.status),
+            ),
+    },
+    {
+        id: 'actions',
+        meta: { headClass: 'w-[72px] text-center', cellClass: 'text-center' },
+        header: () =>
+            h(
+                'div',
+                { class: `w-full text-center ${tablePlainHeadClass}` },
+                'Actions',
+            ),
+        cell: ({ row }) =>
+            h(AttendanceTeamRowActionsMenu, {
+                row: row.original,
+                canMutate: mut,
+                onView: openView,
+                onEdit: openEdit,
+                onRemove: openDeleteConfirm,
+            }),
+    },
+    ];
+});
+
+const table = useVueTable({
+    get data() {
+        return props.teamAttendanceDays.data;
+    },
+    get columns() {
+        return columns.value;
+    },
+    getCoreRowModel: getCoreRowModel(),
+});
+
+</script>
+
+<template>
+    <Head title="Team Attendance" />
+
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div
+            class="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 lg:px-16"
+        >
+            <div class="space-y-1">
+                <h1 class="text-xl font-semibold text-foreground">
+                    Team Attendance
+                </h1>
+                <p
+                    class="max-w-3xl text-sm leading-relaxed text-muted-foreground"
+                >
+                    Track clock-in and clock-out times for your branch workspace.
+                    Rows load from the server; search and filters update the URL.
+                    An attendance ID (ingest key or employee attendance ID) ties
+                    device or import data to each row. Toolbar dates filter by
+                    <span class="font-medium text-foreground">work date</span>
+                    (inclusive). Authorized HR users can add, edit, or soft-delete
+                    attendance days for employees in this workspace.
+                </p>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <div
+                    class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                >
+                    <div class="min-w-0 flex-1 sm:max-w-md">
+                        <InputGroup>
+                            <InputGroupAddon align="inline-start">
+                                <Search
+                                    class="size-4 shrink-0 text-muted-foreground"
+                                    aria-hidden="true"
+                                />
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                id="team-attendance-search"
+                                :model-value="localSearch"
+                                type="search"
+                                autocomplete="off"
+                                placeholder="Search employee, ID, punch times…"
+                                aria-label="Search attendance rows"
+                                @update:model-value="onSearchUpdate"
+                                @keyup="onSearchKeyup"
+                                @change="onSearchCommit"
+                                @search="onSearchCommit"
+                            />
+                        </InputGroup>
+                    </div>
+                    <div
+                        class="flex w-full shrink-0 flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end"
+                    >
+                        <Select
+                            :model-value="unitSelectModelValue"
+                            @update:model-value="onUnitFilterChange"
+                        >
+                            <SelectTrigger
+                                class="h-9 w-full min-w-56 justify-between text-start font-normal sm:w-56"
+                                aria-label="Filter by unit"
+                            >
+                                <SelectValue placeholder="All units">
+                                    <template #default="{ modelValue }">
+                                        <HrisUnitSelectTriggerLabel
+                                            :select-model-value="modelValue"
+                                            :options="branchUnitFilterOptions"
+                                        />
+                                    </template>
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="opt in branchUnitFilterOptions"
+                                    :key="opt.value"
+                                    :value="opt.value"
+                                >
+                                    <div
+                                        class="flex min-w-0 items-baseline gap-1"
+                                    >
+                                        <span class="truncate text-sm">{{
+                                            opt.label
+                                        }}</span>
+                                        <span
+                                            v-if="opt.code"
+                                            class="shrink-0 font-mono text-xs text-muted-foreground"
+                                            >{{ opt.code }}</span
+                                        >
+                                    </div>
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="h-9 shrink-0 border-primary/60 text-primary hover:bg-primary/10 hover:text-primary dark:border-primary/70 dark:hover:bg-primary/15"
+                            @click="openDtrDialog"
+                        >
+                            <FileSpreadsheet
+                                class="size-4"
+                                aria-hidden="true"
+                            />
+                            <span class="mr-1">Generate DTR</span>
+                        </Button>
+                        <Button
+                            v-if="canAddTeamAttendanceRecords"
+                            type="button"
+                            class="h-9 shrink-0"
+                            @click="openAdd"
+                        >
+                            <Plus class="size-4" />
+                            <span class="mr-1">Add Entry</span>
+                        </Button>
+                    </div>
+                </div>
+                <div
+                    class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                >
+                    <div class="flex min-w-0 flex-wrap gap-2">
+                        <Button
+                            v-for="opt in recordingStyleChipOptions"
+                            :key="opt.value"
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            class="h-8 rounded-full px-3"
+                            :class="
+                                attendanceTeamFilters.recording_style ===
+                                opt.value
+                                    ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
+                                    : ''
+                            "
+                            :aria-pressed="
+                                attendanceTeamFilters.recording_style ===
+                                opt.value
+                            "
+                            @click="
+                                applyQuery({
+                                    recording_style: opt.value,
+                                    page: 1,
+                                })
+                            "
+                        >
+                            {{ opt.label }}
+                        </Button>
+                    </div>
+                    <div
+                        class="flex w-full shrink-0 justify-start sm:w-auto sm:justify-end"
+                    >
+                        <TeamIndexDateRangePickers
+                            v-model:date-from="toolbarDateFromModel"
+                            v-model:date-to="toolbarDateToModel"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full">
+                <HrisTanStackTable
+                    :table="table"
+                    :empty-message="emptyMessage"
+                />
+                <HrisServerTablePagination
+                    :total="totalRows"
+                    :from="fromRow"
+                    :to="toRow"
+                    :current-page="teamAttendanceDays.current_page"
+                    :last-page="lastPage"
+                    :per-page="teamAttendanceDays.per_page"
+                    :can-previous-page="teamAttendanceDays.current_page > 1"
+                    :can-next-page="
+                        teamAttendanceDays.current_page < lastPage
+                    "
+                    @update:per-page="onPerPageChange"
+                    @go-first="applyQuery({ page: 1 })"
+                    @go-prev="
+                        applyQuery({
+                            page: Math.max(1, teamAttendanceDays.current_page - 1),
+                        })
+                    "
+                    @go-next="
+                        applyQuery({
+                            page: Math.min(
+                                lastPage,
+                                teamAttendanceDays.current_page + 1,
+                            ),
+                        })
+                    "
+                    @go-last="applyQuery({ page: lastPage })"
+                />
+            </div>
+        </div>
+    </AppLayout>
+
+    <Dialog v-model:open="viewDialogOpen">
+        <DialogContent class="sm:max-w-xl">
+            <DialogHeader>
+                <DialogTitle>View attendance entry</DialogTitle>
+                <DialogDescription>
+                    Read-only summary from saved data.
+                </DialogDescription>
+            </DialogHeader>
+            <ScrollArea v-if="viewTarget" :class="dialogViewScrollAreaClass">
+                <AttendanceEntryViewContent :row="viewTarget" />
+            </ScrollArea>
+            <DialogFooter>
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="viewDialogOpen = false"
+                >
+                    Close
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="mutateDialogOpen">
+        <DialogContent class="sm:max-w-xl">
+            <TooltipProvider :delay-duration="200">
+                <DialogHeader>
+                    <DialogTitle>{{
+                        isEditing
+                            ? 'Edit attendance entry'
+                            : 'Add attendance entry'
+                    }}</DialogTitle>
+                    <DialogDescription class="text-pretty">
+                        {{ TEAM_ATTENDANCE_FORM_HEADER_TOOLTIP }}
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea
+                    v-if="activeDraft"
+                    :class="dialogScrollAreaClass"
+                >
+                    <div class="grid gap-4 px-1 py-1">
+                    <p
+                        v-if="branchUnitsLoadError"
+                        class="text-xs text-amber-700 dark:text-amber-300"
+                    >
+                        {{ branchUnitsLoadError }}
+                    </p>
+                    <p
+                        v-if="chartBranchId === null"
+                        class="text-xs text-destructive"
+                    >
+                        Select a workspace branch (header) to load units and
+                        search employees.
+                    </p>
+                    <div class="grid gap-2">
+                        <Label for="att-unit">Unit</Label>
+                        <TeamHrUnitCombobox
+                            id="att-unit"
+                            :units="branchUnits"
+                            :model-value="activeDraft.organizational_unit_id"
+                            :loading="branchUnitsLoading"
+                            :disabled="
+                                chartBranchId === null ||
+                                branchUnits.length === 0
+                            "
+                            placeholder="Search or choose unit…"
+                            @update:model-value="onFormUnitChange"
+                        />
+                        <p
+                            v-if="branchUnitsLoading"
+                            class="text-xs text-muted-foreground"
+                        >
+                            Loading units…
+                        </p>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="att-emp">Employee</Label>
+                        <TeamHrEmployeeCombobox
+                            v-if="activeDraft !== null"
+                            id="att-emp"
+                            v-model="selectedEmployeeHitModel"
+                            :chart-branch-id="chartBranchId"
+                            :unit-id="activeDraft.organizational_unit_id"
+                            :disabled="
+                                chartBranchId === null ||
+                                activeDraft.organizational_unit_id === null
+                            "
+                        />
+                    </div>
+                    <div
+                        v-if="employeeAttendanceSetupHint"
+                        class="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:border-amber-400/30 dark:bg-amber-500/12 dark:text-amber-50"
+                        role="status"
+                    >
+                        <span>{{ employeeAttendanceSetupHint }}</span>
+                        <Link
+                            class="ms-1 font-medium underline underline-offset-2"
+                            :href="employeeSchedules()"
+                            >Open Employee Schedules</Link
+                        >
+                        <span class="text-muted-foreground">.</span>
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label for="att-work-date">Work date</Label>
+                            <TeamFormIsoDatePicker
+                                id="att-work-date"
+                                v-model="activeDraft.work_date"
+                                ariaLabel="Work date"
+                            />
+                        </div>
+                        <div class="grid gap-2">
+                            <div class="flex h-6 min-h-6 shrink-0 items-center gap-1.5">
+                                <Label for="att-record-status">Status</Label>
+                                <Tooltip>
+                                    <TooltipTrigger as-child>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                            aria-label="Explain status"
+                                        >
+                                            <Info
+                                                class="size-3.5 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                        side="top"
+                                        class="max-w-xs text-pretty"
+                                    >
+                                        {{ TEAM_ATTENDANCE_FORM_STATUS_TOOLTIP }}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                            <div
+                                id="att-record-status"
+                                class="flex min-h-9 flex-col justify-center gap-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                            >
+                                <Badge
+                                    v-if="activeDraft.employee_id !== null"
+                                    variant="outline"
+                                    class="w-fit font-normal"
+                                    :class="
+                                        attendanceStatusBadgeClass(
+                                            activeDraft.status,
+                                        )
+                                    "
+                                >
+                                    {{
+                                        attendanceStatusLabel(
+                                            activeDraft.status,
+                                        )
+                                    }}
+                                </Badge>
+                                <p
+                                    v-else
+                                    class="text-sm text-muted-foreground"
+                                >
+                                    —
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <div class="flex h-6 min-h-6 shrink-0 items-center gap-1.5">
+                            <Label for="att-sched-name">Work schedule</Label>
+                            <Tooltip>
+                                <TooltipTrigger as-child>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                        aria-label="Explain work schedule field"
+                                    >
+                                        <Info
+                                            class="size-3.5 shrink-0"
+                                            aria-hidden="true"
+                                        />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                    side="top"
+                                    class="max-w-xs text-pretty"
+                                >
+                                    {{ TEAM_ATTENDANCE_FORM_WORK_SCHEDULE_TOOLTIP }}
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <p
+                            id="att-sched-name"
+                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
+                        >
+                            {{
+                                activeDraft.work_schedule_name.trim() !== ''
+                                    ? activeDraft.work_schedule_name
+                                    : '—'
+                            }}
+                        </p>
+                    </div>
+                    <div class="grid gap-2">
+                        <div class="flex h-6 min-h-6 shrink-0 items-center gap-1.5">
+                            <Label for="att-external-id">Attendance ID</Label>
+                            <Tooltip>
+                                <TooltipTrigger as-child>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                        aria-label="Explain attendance ID field"
+                                    >
+                                        <Info
+                                            class="size-3.5 shrink-0"
+                                            aria-hidden="true"
+                                        />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                    side="top"
+                                    class="max-w-xs text-pretty"
+                                >
+                                    {{
+                                        TEAM_ATTENDANCE_FORM_PROFILE_ATTENDANCE_ID_TOOLTIP
+                                    }}
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <p
+                            id="att-external-id"
+                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 font-mono text-sm tabular-nums"
+                        >
+                            {{ activeDraft.attendance_id.trim() || '—' }}
+                        </p>
+                    </div>
+                    <div
+                        v-if="activeDraft.employee_id !== null"
+                        class="grid gap-2"
+                    >
+                        <div class="flex h-6 min-h-6 shrink-0 items-center gap-1.5">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Recording style
+                            </p>
+                            <Tooltip>
+                                <TooltipTrigger as-child>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                        aria-label="Explain recording style"
+                                    >
+                                        <Info
+                                            class="size-3.5 shrink-0"
+                                            aria-hidden="true"
+                                        />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                    side="top"
+                                    class="max-w-xs text-pretty"
+                                >
+                                    {{
+                                        TEAM_ATTENDANCE_FORM_RECORDING_STYLE_TOOLTIP
+                                    }}
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <Badge variant="outline" class="font-normal">
+                                {{
+                                    clockPatternBadgeLabel(
+                                        activeDraft.clock_pattern,
+                                    )
+                                }}
+                            </Badge>
+                            <Badge
+                                v-if="activeDraft.is_overnight_schedule"
+                                variant="outline"
+                                class="font-normal"
+                            >
+                                Overnight
+                            </Badge>
+                        </div>
+                    </div>
+                    <Separator />
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-2"
+                    >
+                        <div class="flex min-h-8 items-center gap-1.5">
+                            <p class="text-sm font-medium text-foreground">
+                                Clock times
+                            </p>
+                            <Tooltip>
+                                <TooltipTrigger as-child>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                        aria-label="Explain clock times fields"
+                                    >
+                                        <Info
+                                            class="size-3.5 shrink-0"
+                                            aria-hidden="true"
+                                        />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                    side="top"
+                                    class="max-w-xs text-pretty"
+                                >
+                                    {{ clockTimesMutateFormTooltip }}
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <Button
+                            v-if="
+                                activeDraft.clock_pattern ===
+                                    'split_sessions' && !scheduleFieldsLocked
+                            "
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            class="h-8"
+                            :disabled="activeDraft.segments.length >= 3"
+                            @click="addSessionSegment"
+                        >
+                            Add session
+                        </Button>
+                    </div>
+                    <div
+                        v-for="(seg, idx) in activeDraft.segments"
+                        :key="`${seg.label}-${idx}`"
+                        class="space-y-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-3"
+                    >
+                        <div class="flex items-center justify-between gap-2">
+                            <Label :for="`att-seg-${idx}-label`"
+                                >Segment label</Label
+                            >
+                            <Button
+                                v-if="
+                                    activeDraft.clock_pattern ===
+                                        'split_sessions' &&
+                                    !scheduleFieldsLocked &&
+                                    activeDraft.segments.length > 2 &&
+                                    idx === activeDraft.segments.length - 1
+                                "
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 text-destructive"
+                                @click="removeLastSessionSegment"
+                            >
+                                Remove
+                            </Button>
+                        </div>
+                        <Input
+                            :id="`att-seg-${idx}-label`"
+                            v-model="seg.label"
+                            class="h-9"
+                            autocomplete="off"
+                            :disabled="scheduleFieldsLocked"
+                        />
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label :for="`att-seg-${idx}-si`"
+                                    >Scheduled in</Label
+                                >
+                                <Input
+                                    :id="`att-seg-${idx}-si`"
+                                    v-model="seg.scheduled_in"
+                                    class="h-9 font-mono tabular-nums"
+                                    placeholder="08:30"
+                                    autocomplete="off"
+                                    :disabled="scheduleFieldsLocked"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label :for="`att-seg-${idx}-so`"
+                                    >Scheduled out</Label
+                                >
+                                <Input
+                                    :id="`att-seg-${idx}-so`"
+                                    v-model="seg.scheduled_out"
+                                    class="h-9 font-mono tabular-nums"
+                                    placeholder="17:00"
+                                    autocomplete="off"
+                                    :disabled="scheduleFieldsLocked"
+                                />
+                            </div>
+                        </div>
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label :for="`att-seg-${idx}-ai`"
+                                    >Actual in</Label
+                                >
+                                <Input
+                                    :id="`att-seg-${idx}-ai`"
+                                    class="h-9 font-mono tabular-nums"
+                                    placeholder="Optional"
+                                    autocomplete="off"
+                                    :model-value="seg.actual_in ?? ''"
+                                    @update:model-value="
+                                        (v) => setActualIn(idx, v)
+                                    "
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label :for="`att-seg-${idx}-ao`"
+                                    >Actual out</Label
+                                >
+                                <Input
+                                    :id="`att-seg-${idx}-ao`"
+                                    class="h-9 font-mono tabular-nums"
+                                    placeholder="Optional"
+                                    autocomplete="off"
+                                    :model-value="seg.actual_out ?? ''"
+                                    @update:model-value="
+                                        (v) => setActualOut(idx, v)
+                                    "
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <p v-if="formError" class="text-sm text-destructive">
+                        {{ formError }}
+                    </p>
+                </div>
+            </ScrollArea>
+            <DialogFooter class="gap-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="mutateDialogOpen = false"
+                    >Cancel</Button
+                >
+                <Button
+                    type="button"
+                    :disabled="employeeAttendanceSetupHint !== null"
+                    @click="applyMutate"
+                >
+                    {{ isEditing ? 'Save changes' : 'Add Entry' }}
+                </Button>
+            </DialogFooter>
+            </TooltipProvider>
+        </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="dtrDialogOpen">
+        <DialogContent class="flex max-h-[min(92vh,720px)] max-w-xl flex-col">
+            <DialogHeader>
+                <DialogTitle>Generate DTR</DialogTitle>
+                <DialogDescription>
+                    Choose who the report covers and the calendar month and
+                    segment. Generate downloads a DTR Excel file based on your
+                    selected scope.
+                </DialogDescription>
+            </DialogHeader>
+            <Tabs
+                class="flex min-h-0 flex-1 flex-col gap-3"
+                :model-value="dtrMode"
+                @update:model-value="onDtrModeTabChange"
+            >
+                <TabsList
+                    class="grid h-10 w-full shrink-0 grid-cols-2 rounded-lg bg-muted/40 p-1"
+                >
+                    <TabsTrigger
+                        value="individual"
+                        class="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                        Individual
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="team"
+                        class="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                        By unit
+                    </TabsTrigger>
+                </TabsList>
+                <ScrollArea
+                    class="max-h-[min(52vh,420px)] min-h-48 pr-3 **:data-[slot=scroll-area-viewport]:focus-visible:ring-0 **:data-[slot=scroll-area-viewport]:focus-visible:outline-none"
+                >
+                    <div class="space-y-4 py-1 pr-1 pb-4">
+                        <TabsContent value="individual" class="mt-0 space-y-4">
+                            <p
+                                v-if="branchUnitsLoadError"
+                                class="text-xs text-amber-700 dark:text-amber-300"
+                            >
+                                {{ branchUnitsLoadError }}
+                            </p>
+                            <p
+                                v-if="chartBranchId === null"
+                                class="text-xs text-destructive"
+                            >
+                                Select a workspace branch (header) to load units
+                                and search employees.
+                            </p>
+                            <div class="grid gap-2">
+                                <Label for="dtr-ind-unit">Unit</Label>
+                                <TeamHrUnitCombobox
+                                    id="dtr-ind-unit"
+                                    :units="branchUnits"
+                                    :model-value="dtrIndividualUnitId"
+                                    :loading="branchUnitsLoading"
+                                    :disabled="
+                                        chartBranchId === null ||
+                                        branchUnits.length === 0
+                                    "
+                                    placeholder="Search or choose unit…"
+                                    @update:model-value="
+                                        (v) => (dtrIndividualUnitId = v)
+                                    "
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="dtr-ind-emp">Employee</Label>
+                                <TeamHrEmployeeCombobox
+                                    id="dtr-ind-emp"
+                                    v-model="dtrSelectedEmployee"
+                                    :chart-branch-id="chartBranchId"
+                                    :unit-id="dtrIndividualUnitId"
+                                    :disabled="
+                                        chartBranchId === null ||
+                                        dtrIndividualUnitId === null
+                                    "
+                                />
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="team" class="mt-0 space-y-4">
+                            <p
+                                v-if="branchUnitsLoadError"
+                                class="text-xs text-amber-700 dark:text-amber-300"
+                            >
+                                {{ branchUnitsLoadError }}
+                            </p>
+                            <p
+                                v-if="chartBranchId === null"
+                                class="text-xs text-destructive"
+                            >
+                                Select a workspace branch (header) first.
+                            </p>
+                            <div class="grid gap-2">
+                                <Label for="dtr-team-unit">Unit</Label>
+                                <TeamHrUnitCombobox
+                                    id="dtr-team-unit"
+                                    :units="branchUnits"
+                                    :model-value="dtrTeamUnitId"
+                                    :loading="branchUnitsLoading"
+                                    :disabled="
+                                        chartBranchId === null ||
+                                        branchUnits.length === 0
+                                    "
+                                    placeholder="Search or choose unit…"
+                                    @update:model-value="
+                                        (v) => (dtrTeamUnitId = v)
+                                    "
+                                />
+                            </div>
+                        </TabsContent>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="dtr-calendar-month-trigger">
+                                    Calendar month
+                                </Label>
+                                <Popover v-model:open="dtrMonthPopoverOpen">
+                                    <PopoverTrigger as-child>
+                                        <Button
+                                            id="dtr-calendar-month-trigger"
+                                            type="button"
+                                            variant="outline"
+                                            class="h-9 w-full justify-between gap-2 font-normal"
+                                            aria-label="Choose month and year"
+                                        >
+                                            <span
+                                                class="flex min-w-0 items-center gap-2"
+                                            >
+                                                <CalendarIcon
+                                                    class="size-4 shrink-0 text-muted-foreground"
+                                                    aria-hidden="true"
+                                                />
+                                                <span
+                                                    class="truncate tabular-nums"
+                                                    >{{
+                                                        dtrYearMonthPickerLabel(
+                                                            dtrYearMonth,
+                                                        )
+                                                    }}</span
+                                                >
+                                            </span>
+                                            <ChevronDown
+                                                class="size-4 shrink-0 opacity-50"
+                                                aria-hidden="true"
+                                            />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        class="w-[calc(100vw-2rem)] max-w-[20rem] p-4 sm:w-80"
+                                        align="start"
+                                    >
+                                        <div class="grid gap-4 sm:grid-cols-2">
+                                            <div class="grid gap-2">
+                                                <Label for="dtr-pop-month"
+                                                    >Month</Label
+                                                >
+                                                <Select
+                                                    :model-value="
+                                                        String(
+                                                            dtrPickerParts.month,
+                                                        )
+                                                    "
+                                                    @update:model-value="
+                                                        onDtrPickerMonthPick
+                                                    "
+                                                >
+                                                    <SelectTrigger
+                                                        id="dtr-pop-month"
+                                                        class="h-9 w-full"
+                                                        aria-label="Month"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="Month"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem
+                                                            v-for="opt in dtrMonthChoices"
+                                                            :key="opt.value"
+                                                            :value="
+                                                                String(
+                                                                    opt.value,
+                                                                )
+                                                            "
+                                                        >
+                                                            {{ opt.label }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div class="grid gap-2">
+                                                <Label for="dtr-pop-year"
+                                                    >Year</Label
+                                                >
+                                                <Select
+                                                    :model-value="
+                                                        String(
+                                                            dtrPickerParts.year,
+                                                        )
+                                                    "
+                                                    @update:model-value="
+                                                        onDtrPickerYearPick
+                                                    "
+                                                >
+                                                    <SelectTrigger
+                                                        id="dtr-pop-year"
+                                                        class="h-9 w-full"
+                                                        aria-label="Year"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="Year"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem
+                                                            v-for="y in dtrYearChoices"
+                                                            :key="y"
+                                                            :value="String(y)"
+                                                        >
+                                                            {{ y }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="dtr-month-part">Segment</Label>
+                                <Select
+                                    :model-value="dtrMonthPart"
+                                    @update:model-value="
+                                        (v: unknown) => {
+                                            const s = String(v ?? '');
+                                            if (
+                                                s === 'whole' ||
+                                                s === 'first_half' ||
+                                                s === 'second_half'
+                                            ) {
+                                                dtrMonthPart = s;
+                                                dtrFormError = null;
+                                            }
+                                        }
+                                    "
+                                >
+                                    <SelectTrigger
+                                        id="dtr-month-part"
+                                        class="h-9 w-full"
+                                        aria-label="Segment"
+                                    >
+                                        <SelectValue
+                                            placeholder="Whole month"
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="whole"
+                                            >Whole month</SelectItem
+                                        >
+                                        <SelectItem value="first_half"
+                                            >Days 1–15</SelectItem
+                                        >
+                                        <SelectItem value="second_half"
+                                            >Days 16 – end</SelectItem
+                                        >
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <p
+                            v-if="dtrFormError"
+                            class="text-sm text-destructive"
+                            role="alert"
+                        >
+                            {{ dtrFormError }}
+                        </p>
+                    </div>
+                </ScrollArea>
+            </Tabs>
+            <DialogFooter class="shrink-0 gap-2 pt-4 sm:pt-4">
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="dtrDialogOpen = false"
+                >
+                    Cancel
+                </Button>
+                <Button type="button" @click="generateDtrExcel">
+                    Generate DTR
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <AlertDialog v-model:open="deleteDialogOpen">
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Delete attendance entry?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This archives the attendance day (soft delete). The row will
+                    disappear from this team list after the page reloads.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel @click="deleteTarget = null"
+                    >Cancel</AlertDialogCancel
+                >
+                <AlertDialogAction
+                    class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    @click="confirmDelete"
+                >
+                    Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+</template>

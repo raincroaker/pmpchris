@@ -1,0 +1,127 @@
+import type { HrisDemoDirectoryFields } from '@/lib/hrisDemoDirectoryFields';
+import { hrisAugmentTeamHrRowWithDemoDirectory } from '@/lib/hrisDemoDirectoryFields';
+import type { TeamLeaveRow } from '@/pages/Leave/teamLeaveTypes';
+
+/** Mock persona for “My leaves” UI until tied to the signed-in employee. */
+export const MY_LEAVE_MOCK_PERSONA = {
+    display_name: 'Jordan Cruz',
+    id_number: 'PMPC-10177',
+    avatar_url: null as string | null,
+} as const;
+
+type TeamLeaveRowBare = Omit<TeamLeaveRow, keyof HrisDemoDirectoryFields>;
+
+/** Personal leave history (UI mock). */
+export function seedMyLeaveRows(): TeamLeaveRow[] {
+    const e = MY_LEAVE_MOCK_PERSONA;
+
+    const base: TeamLeaveRowBare[] = [
+        {
+            id: 5201,
+            employee: { ...e },
+            unit_filter_value: 'u-tagum',
+            unit_name: 'Tagum Branch',
+            unit_code: 'TAG',
+            leave_type_code: 'SL',
+            leave_type_name: 'Sick leave',
+            start_date: '2026-05-05',
+            end_date: '2026-05-06',
+            is_half_day_start: true,
+            is_half_day_end: false,
+            duration_label: '1.5 days',
+            status: 'approved',
+            submitted_at: '2026-05-04',
+            decided_at: '2026-05-05',
+            approver_employee_id: null,
+            approver_id_number: 'PMPC-HRMO',
+            approver_name: 'HR (mock)',
+            reason: 'Medical appointment + recovery.',
+        },
+        {
+            id: 5202,
+            employee: { ...e },
+            unit_filter_value: 'u-tagum',
+            unit_name: 'Tagum Branch',
+            unit_code: 'TAG',
+            leave_type_code: 'VL',
+            leave_type_name: 'Vacation leave',
+            start_date: '2026-05-20',
+            end_date: '2026-05-22',
+            is_half_day_start: false,
+            is_half_day_end: false,
+            duration_label: '3 days',
+            status: 'approved',
+            submitted_at: '2026-05-10',
+            decided_at: '2026-05-11',
+            approver_employee_id: null,
+            approver_id_number: 'PMPC-20001',
+            approver_name: 'R. Santos',
+            reason: 'Long weekend trip.',
+        },
+        {
+            id: 5203,
+            employee: { ...e },
+            unit_filter_value: 'u-tagum',
+            unit_name: 'Tagum Branch',
+            unit_code: 'TAG',
+            leave_type_code: 'VL',
+            leave_type_name: 'Vacation leave',
+            start_date: '2026-06-02',
+            end_date: '2026-06-04',
+            is_half_day_start: false,
+            is_half_day_end: false,
+            duration_label: '3 days',
+            status: 'approved',
+            submitted_at: '2026-05-15',
+            decided_at: '2026-05-16',
+            approver_employee_id: null,
+            approver_id_number: 'PMPC-20001',
+            approver_name: 'R. Santos',
+            reason: null,
+        },
+        {
+            id: 5204,
+            employee: { ...e },
+            unit_filter_value: 'u-tagum',
+            unit_name: 'Tagum Branch',
+            unit_code: 'TAG',
+            leave_type_code: 'BL',
+            leave_type_name: 'Bereavement leave',
+            start_date: '2026-04-28',
+            end_date: '2026-04-30',
+            is_half_day_start: false,
+            is_half_day_end: false,
+            duration_label: '3 days',
+            status: 'approved',
+            submitted_at: '2026-04-26',
+            decided_at: '2026-04-27',
+            approver_employee_id: null,
+            approver_id_number: 'PMPC-HRMO',
+            approver_name: 'HR (mock)',
+            reason: 'Family bereavement.',
+        },
+        {
+            id: 5205,
+            employee: { ...e },
+            unit_filter_value: 'u-tagum',
+            unit_name: 'Tagum Branch',
+            unit_code: 'TAG',
+            leave_type_code: 'LWOP',
+            leave_type_name: 'Leave without pay',
+            start_date: '2026-05-25',
+            end_date: '2026-05-26',
+            is_half_day_start: false,
+            is_half_day_end: false,
+            duration_label: '2 days',
+            status: 'rejected',
+            submitted_at: '2026-05-18',
+            decided_at: '2026-05-19',
+            approver_employee_id: null,
+            approver_id_number: 'PMPC-20002',
+            approver_name: 'D. Ramos',
+            reason: 'Personal errands.',
+        },
+    ];
+
+    return base.map(hrisAugmentTeamHrRowWithDemoDirectory);
+}

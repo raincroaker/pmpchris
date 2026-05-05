@@ -1,0 +1,41 @@
+---
+description: Tech stack, docs, MCP, and PrimeVue conventions for Laravel + Vue 3 + Inertia HRIS app
+alwaysApply: true
+---
+
+# Project stack and conventions
+
+## Stack summary
+
+- **Backend:** Laravel 12, PHP 8.2+, Fortify (auth), Inertia server adapter, Wayfinder (typed routes).
+- **Frontend:** Vue 3, TypeScript, Inertia (Vue 3), Vite 7.
+- **UI:** Reka UI (headless), Tailwind CSS 4, Lucide Vue Next, VeeValidate + Zod, class-variance-authority, tailwind-merge, clsx. **PrimeVue** for listed complex controls (see PrimeVue section); **tabular tables** with **`@tanstack/vue-table`** + shadcn-vue **`Table`**; shadcn-vue for layout and customizability.
+- **Paths:** `@/` → `resources/js/`; routes from `@/routes` (Wayfinder).
+
+## Documentation
+
+- **Project reference:** Use `PROJECT_CHANGELOG.md` and any `docs/` or root-level `*.md` for "what we built" and key files.
+- **External docs:** For Laravel, Vue, Inertia, Tailwind, Reka UI, or PrimeVue, prefer official or up-to-date documentation. When MCP doc tools are available, use them for current docs instead of relying only on training data.
+- **When adding features:** After adding user-facing or architectural changes, update `PROJECT_CHANGELOG.md` or the relevant doc (curated and refactored, not exhaustive).
+
+## MCP (Model Context Protocol)
+
+- **When to use:** For up-to-date docs, database introspection, browser automation, or other external data, prefer MCP tools when the request clearly benefits from them.
+- **Availability:** MCP is configured in `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project). Do not assume a specific server or tool exists; treat only tools/servers that are listed or exposed as available.
+- **Before calling a tool:** List or read the MCP tool's schema/descriptor (parameters, behavior) before invoking it, so arguments are correct and the tool is actually available.
+- **Doc-heavy questions:** Prefer using available MCP doc tools when the question is about external library/framework docs.
+
+## PrimeVue
+
+- **Use for:** Prefer PrimeVue over shadcn-vue for **non-tabular data-heavy views** and specialized grids: **Data grids (not plain tables):** TreeTable, Tree, DataView, OrderList, PickList. **Tabular lists** (sort, filter, pagination on flat rows): **`@tanstack/vue-table`** + shadcn-vue **`Table`** in `resources/js/components/ui/table`—see [`docs/primevue-vs-shadcn.md`](docs/primevue-vs-shadcn.md); **do not** use PrimeVue **DataTable** for those. **Selection:** AutoComplete, MultiSelect, Chips. **Files/media:** FileUpload, Galleria, ImageCompare. **Charts:** Chart. **Structure:** OrganizationChart, Timeline. **Other:** ColorPicker, Rating, Knob, VirtualScroller. PrimeVue is already installed; use it where the doc lists it, while using shadcn-vue/REKA for layout, standard form controls, and TanStack-backed tables.
+- **Theming:** PrimeVue is registered in [`resources/js/app.ts`](resources/js/app.ts) with the **Aura** preset from `@primeuix/themes/aura` (`darkModeSelector: 'html.dark'`). Treat it as **styled** PrimeVue aligned with the app shell; refine with **Tailwind / theme tokens** next to shadcn-vue where tables and data UIs should feel consistent. Optional `pt` / overrides per component when a control needs to match shadcn patterns more closely.
+- **Docs:** Prefer official PrimeVue documentation (or MCP if a PrimeVue doc server is available) for APIs and examples; keep implementation guidance high-level in this rule.
+- **PrimeVue docs for AI:** Prefer the PrimeVue MCP when answering PrimeVue questions. If fetching docs by URL instead: use **index** `https://primevue.org/llms/llms.txt` for the list of guides and components; use **per-component (Markdown)** `https://primevue.org/<component>.md` (e.g. `https://primevue.org/treetable.md`) for API and examples. For **tabular DataTables**, use the [shadcn-vue Data Table](https://www.shadcn-vue.com/docs/components/data-table) guide and TanStack Table docs—not PrimeVue DataTable.
+
+## Conventions
+
+- **Vue:** Composition API with `<script setup>`, TypeScript. Use Wayfinder route helpers (e.g. `dashboard()`, `login()`) for hrefs; compare with `toUrl()` / `useCurrentUrl()` for active states.
+- **Styling:** Prefer theme tokens (`bg-background`, `text-foreground`, `border-sidebar-border/70`, `text-muted-foreground`) over raw colors. Use `rounded-4xl` for pill buttons; `rounded-md` / `rounded-lg` elsewhere.
+- **Forms:** VeeValidate + Zod; use existing shadcn-style Input, Label, Button. Password fields: optional eye toggle via ref + `:type` and a ghost Button, no InputGroup required. **Date/calendar fields:** use **shadcn-vue `Calendar`** (Popover + `Calendar` from `resources/js/components/ui/calendar`, `@internationalized/date` where already used). **Do not** use PrimeVue **DatePicker** for forms or wizards—see [`docs/primevue-vs-shadcn.md`](docs/primevue-vs-shadcn.md).
+- **Sidebar/header:** AppSidebarHeader is fixed; content uses `pt-16`. Sidebar nav active state uses `isCurrentUrl(item.href)`; `toUrl()` supports route objects with `.url` or `.href`.
+- **Auth:** AuthSplitLayout; default landing and post-logout redirect: `/login` (routes + Fortify config).

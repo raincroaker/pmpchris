@@ -1,0 +1,123 @@
+{
+    "layout": {
+        "centerX": 600,
+        "originY": 0,
+        "verticalGap": 220,
+        "horizontalSiblingGap": 40,
+        "cardWidth": 260,
+        "handleMapping": {
+            "source": "source-bottom",
+            "target": "target-top"
+        }
+    },
+    "nodes": [
+        {
+            "id": "org",
+            "type": "org",
+            "parentId": null,
+            "data": {
+                "fullName": "Panabo Multipurpose Cooperative",
+                "alias": "PMPC"
+            }
+        },
+        {
+            "id": "branch",
+            "type": "branch",
+            "parentId": "org",
+            "data": {
+                "fullName": "Panabo Branch",
+                "alias": "PB"
+            }
+        },
+        {
+            "id": "dept-hr",
+            "type": "dept-hr",
+            "parentId": "branch",
+            "siblingIndex": 0,
+            "data": {
+                "fullName": "Human Resources",
+                "alias": "HR"
+            }
+        },
+        {
+            "id": "dept-it",
+            "type": "dept-it",
+            "parentId": "branch",
+            "siblingIndex": 1,
+            "data": {
+                "fullName": "Information Technology",
+                "alias": "IT"
+            }
+        },
+        {
+            "id": "dept-fin",
+            "type": "dept-fin",
+            "parentId": "branch",
+            "siblingIndex": 2,
+            "data": {
+                "fullName": "Finance",
+                "alias": "FIN"
+            }
+        },
+        {
+            "id": "sec-hr-1",
+            "type": "section",
+            "parentId": "dept-hr",
+            "siblingIndex": 0,
+            "data": {
+                "fullName": "Talent & Recruitment",
+                "alias": "HR-REC"
+            }
+        },
+        {
+            "id": "sec-it-1",
+            "type": "section",
+            "parentId": "dept-it",
+            "siblingIndex": 0,
+            "data": {
+                "fullName": "Infrastructure",
+                "alias": "IT-INF"
+            }
+        },
+        {
+            "id": "sec-it-2",
+            "type": "section",
+            "parentId": "dept-it",
+            "siblingIndex": 1,
+            "data": {
+                "fullName": "Applications",
+                "alias": "IT-APP"
+            }
+        },
+        {
+            "id": "sec-fin-1",
+            "type": "section",
+            "parentId": "dept-fin",
+            "siblingIndex": 0,
+            "data": {
+                "fullName": "Accounting",
+                "alias": "FIN-ACC"
+            }
+        },
+        {
+            "id": "sec-fin-2",
+            "type": "section",
+            "parentId": "dept-fin",
+            "siblingIndex": 1,
+            "data": {
+                "fullName": "Treasury",
+                "alias": "FIN-TRE"
+            }
+        },
+        {
+            "id": "sec-fin-3",
+            "type": "section",
+            "parentId": "dept-fin",
+            "siblingIndex": 2,
+            "data": {
+                "fullName": "Budget & Planning",
+                "alias": "FIN-BUD"
+            }
+        }
+    ]
+}

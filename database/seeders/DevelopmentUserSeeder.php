@@ -1,0 +1,361 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Enums\EmployeeBirthdayVisibility;
+use App\Models\Employee;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use InvalidArgumentException;
+
+class DevelopmentUserSeeder extends Seeder
+{
+    /**
+     * Lean local dev accounts linked to seeded employees and roles.
+     * Includes EMP-SEED-001 … EMP-SEED-014 with focused HR/admin + employee coverage.
+     * Each row gets **exactly one** application role ({@see User::syncRolesByCode}).
+     *
+     * {@see EmployeeBirthdayVisibility} is varied across rows (private / team / branch) for local calendar testing.
+     */
+    public function run(): void
+    {
+        $rows = [
+            [
+                'id_number' => 'EMP-SEED-001',
+                'first_name' => 'Super',
+                'middle_name' => null,
+                'last_name' => 'Admin',
+                'email' => 'superadmin@example.com',
+                'roles' => [Role::CODE_SUPER_ADMIN],
+                'birthdate' => '1972-03-14',
+                'sex' => 'male',
+                'civil_status' => 'married',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Private,
+            ],
+            [
+                'id_number' => 'EMP-SEED-002',
+                'first_name' => 'Helena',
+                'middle_name' => 'Marie',
+                'last_name' => 'Reyes',
+                'email' => 'hrhead1@example.com',
+                'roles' => [Role::CODE_HR_HEAD],
+                'birthdate' => '1981-07-22',
+                'sex' => 'female',
+                'civil_status' => 'married',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Branch,
+            ],
+            [
+                'id_number' => 'EMP-SEED-003',
+                'first_name' => 'Diana',
+                'middle_name' => null,
+                'last_name' => 'Cruz',
+                'email' => 'hrmanager1@example.com',
+                'roles' => [Role::CODE_HR_MANAGER],
+                'birthdate' => '1985-04-18',
+                'sex' => 'female',
+                'civil_status' => 'married',
+                'nationality' => 'Filipino',
+                'religion' => null,
+                'birthday_visibility' => EmployeeBirthdayVisibility::Team,
+            ],
+            [
+                'id_number' => 'EMP-SEED-004',
+                'first_name' => 'Elena',
+                'middle_name' => 'Rosa',
+                'last_name' => 'Torres',
+                'email' => 'hrmanager2@example.com',
+                'roles' => [Role::CODE_HR_MANAGER],
+                'birthdate' => '1983-09-30',
+                'sex' => 'female',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => 'Christianity',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Private,
+            ],
+            [
+                'id_number' => 'EMP-SEED-005',
+                'first_name' => 'Felix',
+                'middle_name' => null,
+                'last_name' => 'Ramos',
+                'email' => 'sysadmin1@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1990-01-12',
+                'sex' => 'male',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Branch,
+            ],
+            [
+                'id_number' => 'EMP-SEED-006',
+                'first_name' => 'Gina',
+                'middle_name' => null,
+                'last_name' => 'Morales',
+                'email' => 'sysadmin2@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1988-06-25',
+                'sex' => 'female',
+                'civil_status' => 'married',
+                'nationality' => 'Filipino',
+                'religion' => 'Islam',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Team,
+            ],
+            [
+                'id_number' => 'EMP-SEED-007',
+                'first_name' => 'Roberto',
+                'middle_name' => null,
+                'last_name' => 'Castillo',
+                'email' => 'ceo@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1968-02-02',
+                'sex' => 'male',
+                'civil_status' => 'married',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Branch,
+            ],
+            [
+                'id_number' => 'EMP-SEED-008',
+                'first_name' => 'Ana',
+                'middle_name' => null,
+                'last_name' => 'Garcia',
+                'email' => 'employee1@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1996-12-05',
+                'sex' => 'female',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Team,
+            ],
+            [
+                'id_number' => 'EMP-SEED-009',
+                'first_name' => 'Ben',
+                'middle_name' => null,
+                'last_name' => 'Lopez',
+                'email' => 'employee2@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1994-08-19',
+                'sex' => 'male',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => null,
+                'birthday_visibility' => EmployeeBirthdayVisibility::Private,
+            ],
+            [
+                'id_number' => 'EMP-SEED-010',
+                'first_name' => 'Carla',
+                'middle_name' => null,
+                'last_name' => 'Mendoza',
+                'email' => 'employee3@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1999-02-28',
+                'sex' => 'female',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Branch,
+            ],
+            [
+                'id_number' => 'EMP-SEED-011',
+                'first_name' => 'Diego',
+                'middle_name' => null,
+                'last_name' => 'Navarro',
+                'email' => 'employee4@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1997-05-11',
+                'sex' => 'male',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => 'Christianity',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Team,
+            ],
+            [
+                'id_number' => 'EMP-SEED-012',
+                'first_name' => 'Sofia',
+                'middle_name' => null,
+                'last_name' => 'Ramirez',
+                'email' => 'employee5@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1995-03-21',
+                'sex' => 'female',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Private,
+            ],
+            [
+                'id_number' => 'EMP-SEED-013',
+                'first_name' => 'Luis',
+                'middle_name' => null,
+                'last_name' => 'Fernandez',
+                'email' => 'employee6@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1993-10-08',
+                'sex' => 'male',
+                'civil_status' => 'married',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Branch,
+            ],
+            [
+                'id_number' => 'EMP-SEED-014',
+                'first_name' => 'Patricia',
+                'middle_name' => null,
+                'last_name' => 'Villanueva',
+                'email' => 'employee7@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1998-01-16',
+                'sex' => 'female',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => null,
+                'birthday_visibility' => EmployeeBirthdayVisibility::Team,
+            ],
+            [
+                'id_number' => 'EMP-SEED-015',
+                'first_name' => 'Panabo',
+                'middle_name' => null,
+                'last_name' => 'Pending',
+                'email' => 'employee8@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1992-04-09',
+                'sex' => 'female',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Branch,
+            ],
+            [
+                'id_number' => 'EMP-SEED-016',
+                'first_name' => 'Tagum',
+                'middle_name' => null,
+                'last_name' => 'Pending',
+                'email' => 'employee9@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1991-11-23',
+                'sex' => 'male',
+                'civil_status' => 'married',
+                'nationality' => 'Filipino',
+                'religion' => null,
+                'birthday_visibility' => EmployeeBirthdayVisibility::Team,
+            ],
+            [
+                'id_number' => 'EMP-SEED-017',
+                'first_name' => 'Taylor',
+                'middle_name' => null,
+                'last_name' => 'Acquisition',
+                'email' => 'employee10@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1994-09-17',
+                'sex' => 'female',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Branch,
+            ],
+            [
+                'id_number' => 'EMP-SEED-018',
+                'first_name' => 'Tristan',
+                'middle_name' => null,
+                'last_name' => 'Acquisition',
+                'email' => 'employee11@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1996-02-13',
+                'sex' => 'male',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => null,
+                'birthday_visibility' => EmployeeBirthdayVisibility::Team,
+            ],
+            [
+                'id_number' => 'EMP-SEED-019',
+                'first_name' => 'Erica',
+                'middle_name' => null,
+                'last_name' => 'Relations',
+                'email' => 'employee12@example.com',
+                'roles' => [Role::CODE_EMPLOYEE],
+                'birthdate' => '1990-12-01',
+                'sex' => 'female',
+                'civil_status' => 'married',
+                'nationality' => 'Filipino',
+                'religion' => 'Christianity',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Branch,
+            ],
+            [
+                'id_number' => 'EMP-SEED-020',
+                'first_name' => 'Noel',
+                'middle_name' => null,
+                'last_name' => 'Intern',
+                'email' => null,
+                'roles' => [],
+                'create_user' => false,
+                'birthdate' => '1999-04-06',
+                'sex' => 'male',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => 'Catholic',
+                'birthday_visibility' => EmployeeBirthdayVisibility::Team,
+            ],
+            [
+                'id_number' => 'EMP-SEED-021',
+                'first_name' => 'Nica',
+                'middle_name' => null,
+                'last_name' => 'Intern',
+                'email' => null,
+                'roles' => [],
+                'create_user' => false,
+                'birthdate' => '2000-08-12',
+                'sex' => 'female',
+                'civil_status' => 'single',
+                'nationality' => 'Filipino',
+                'religion' => null,
+                'birthday_visibility' => EmployeeBirthdayVisibility::Branch,
+            ],
+        ];
+
+        foreach ($rows as $row) {
+            $employee = Employee::query()->create([
+                'id_number' => $row['id_number'],
+                'first_name' => $row['first_name'],
+                'middle_name' => $row['middle_name'],
+                'last_name' => $row['last_name'],
+                'suffix' => null,
+                'birthdate' => $row['birthdate'],
+                'birthday_visibility' => $row['birthday_visibility'],
+                'sex' => $row['sex'],
+                'civil_status' => $row['civil_status'],
+                'nationality' => $row['nationality'],
+                'religion' => $row['religion'],
+            ]);
+
+            $name = trim($row['first_name'].' '.$row['last_name']);
+
+            $createUser = (bool) ($row['create_user'] ?? true);
+            if (! $createUser) {
+                continue;
+            }
+
+            /** @var User $user */
+            $user = User::factory()->create([
+                'name' => $name,
+                'email' => $row['email'],
+                'employee_id' => $employee->id,
+            ]);
+
+            $roleCodes = $row['roles'];
+            if (count($roleCodes) !== 1) {
+                throw new InvalidArgumentException(
+                    'DevelopmentUserSeeder: each row must define exactly one role code.',
+                );
+            }
+
+            $user->syncRolesByCode($roleCodes);
+        }
+    }
+}
