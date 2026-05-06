@@ -118,14 +118,14 @@ function createOrgWideEmployee(OrganizationalUnit $root, string $firstName, stri
 
 test('hr head can search chart employees filtered by chart branch and query', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     $tagum = OrganizationalUnit::query()->where('code', 'TAG')->whereNull('parent_id')->firstOrFail();
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
     $tagumSection = OrganizationalUnit::query()->where('code', 'TAG-D1-S1')->firstOrFail();
 
     createEmployeeForChartBranch($panabo, $panaboSection, 'Alice', 'EMP-ALICE');
@@ -149,10 +149,10 @@ test('hr head can search chart employees filtered by chart branch and query', fu
 
 test('employee search endpoint forbids hr manager on unmanaged branch', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     $tagum = OrganizationalUnit::query()->where('code', 'TAG')->whereNull('parent_id')->firstOrFail();
@@ -176,10 +176,10 @@ test('employee search endpoint forbids hr manager on unmanaged branch', function
 
 test('employee search endpoint returns 404 when node is outside chart root', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     $tagumSection = OrganizationalUnit::query()->where('code', 'TAG-D1-S1')->firstOrFail();
@@ -198,14 +198,14 @@ test('employee search endpoint returns 404 when node is outside chart root', fun
 
 test('employee search endpoint includes current user and excludes already assigned employees from selected unit', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
-    $panaboOtherSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
+    $panaboOtherSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S2')->firstOrFail();
 
     $selfEmployee = createEmployeeForChartBranch($panabo, $panaboOtherSection, 'Self', 'EMP-SELF');
     createEmployeeForChartBranch($panabo, $panaboSection, 'AlreadyAssigned', 'EMP-ASSIGNED');
@@ -233,13 +233,13 @@ test('employee search endpoint includes current user and excludes already assign
 
 test('employee search includes branch and org-wide employees for hr head and branch manager', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
 
     createOrgWideEmployee($panabo, 'Orgwide', 'EMP-ORGWIDE');
     createEmployeeForChartBranch($panabo, $panaboSection, 'Branch', 'EMP-BRANCH');

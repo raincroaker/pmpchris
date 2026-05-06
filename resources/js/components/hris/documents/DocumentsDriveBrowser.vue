@@ -38,6 +38,7 @@ import {
     User,
     X,
     XCircle,
+    Sparkles,
 } from 'lucide-vue-next';
 import type { Component } from 'vue';
 import { computed, ref, watch } from 'vue';
@@ -160,6 +161,18 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { appToast } from '@/lib/app-toast-client';
+import {
+    companyDocumentDownloadUrl,
+    companyDocumentPreviewUrl,
+    createCompanyFolder,
+    deleteCompanyDocument,
+    deleteCompanyFolder,
+    fetchCompanyDocumentsItems,
+    updateCompanyDocument,
+    updateCompanyDocumentInternalMetadata,
+    updateCompanyFolder,
+    uploadCompanyDocument,
+} from '@/lib/companyDocumentsApi';
 import { fetchTeamHrFormUnits } from '@/lib/teamHrFormApi';
 import type { TeamHrFormUnit } from '@/lib/teamHrFormApi';
 import { cn } from '@/lib/utils';
@@ -169,6 +182,7 @@ type DocumentsAdminCan = {
     canViewDocumentAdminViewTeam?: boolean;
     canViewDocumentAdminViewBranch?: boolean;
     canViewDocumentAdminViewCompany?: boolean;
+    canEditCompanyDocumentInternalMetadata?: boolean;
     /** Team leave/overtime HR gate — when true, team-documents unit list is branch-wide. */
     canViewEmployeeTeamLeaveOvertime?: boolean;
 };
@@ -279,6 +293,55 @@ const canDownloadDriveFilesForActiveScope = computed((): boolean => {
     }
 
     return canViewDocumentAdminViewForActiveScope.value;
+});
+
+const isCompanyDriveScope = computed(
+    () => props.scope === 'company' && !isTrashView.value,
+);
+const canEditCompanyDocumentInternalMetadata = computed(
+    () =>
+        isCompanyDriveScope.value &&
+        page.props.can?.canEditCompanyDocumentInternalMetadata === true,
+);
+
+function companyFolderIdFromUiId(uiId: string | null): number | null {
+    if (uiId === null || !uiId.startsWith('folder-')) {
+        return null;
+    }
+
+    const parsed = Number.parseInt(uiId.slice('folder-'.length), 10);
+
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function companyDocumentIdFromUiId(uiId: string): number | null {
+    if (!uiId.startsWith('file-')) {
+        return null;
+    }
+
+    const parsed = Number.parseInt(uiId.slice('file-'.length), 10);
+
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * Company library rule: only company document approvers (super admin / HR head)
+ * may directly access files; everyone else must request access.
+ */
+const requiresCompanyAccessRequestForCurrentUser = computed((): boolean => {
+    if (props.scope !== 'company' || isTrashView.value || isMyCatalogView.value) {
+        return false;
+    }
+
+    return !canViewDocumentAdminViewForActiveScope.value;
+});
+
+const canDirectAccessCompanyFiles = computed((): boolean => {
+    if (!isCompanyDriveScope.value) {
+        return false;
+    }
+
+    return page.props.can?.canViewDocumentAdminViewCompany === true;
 });
 
 const selectionIncludesFolder = computed((): boolean => {
@@ -746,20 +809,57 @@ function initialDriveItems(): DriveItem[] {
         return createInitialItems('my');
     }
 
+    if (sc === 'company') {
+        return [];
+    }
+
     return loadDriveFromSession(sc) ?? createInitialItems(sc);
 }
 
 const items = ref<DriveItem[]>(initialDriveItems());
+const companyItemsLoading = ref(false);
+const companyItemsLoadedOnce = ref(false);
+
+async function reloadCompanyDriveItems(): Promise<void> {
+    if (!isCompanyDriveScope.value) {
+        return;
+    }
+
+    companyItemsLoading.value = true;
+    try {
+        items.value = await fetchCompanyDocumentsItems();
+        selectedIds.value = [];
+        companyItemsLoadedOnce.value = true;
+    } catch (error) {
+        const message =
+            error instanceof Error && error.message !== ''
+                ? error.message
+                : 'Unable to load company documents.';
+        appToast.error(message);
+    } finally {
+        companyItemsLoading.value = false;
+    }
+}
 
 watch(
     items,
     (v) => {
-        if (isTrashView.value || !props.scope) {
+        if (isTrashView.value || !props.scope || props.scope === 'company') {
             return;
         }
         saveDriveToSession(props.scope, v);
     },
     { deep: true },
+);
+
+watch(
+    isCompanyDriveScope,
+    (isCompanyScope) => {
+        if (isCompanyScope) {
+            void reloadCompanyDriveItems();
+        }
+    },
+    { immediate: true },
 );
 const searchQuery = ref('');
 const ownershipChip = ref<DriveOwnershipChip>('all');
@@ -823,6 +923,20 @@ const uploadTagDraft = ref('');
 const uploadTagInputRef = ref<HTMLInputElement | null>(null);
 const uploadNotes = ref('');
 const UPLOAD_TAGS_MAX = 8;
+const internalMetadataDialogOpen = ref(false);
+const internalMetadataSaving = ref(false);
+const internalMetadataTargetId = ref<string | null>(null);
+const internalMetadataDraft = ref({
+    submittedAt: '',
+    decidedAt: '',
+    createdAt: '',
+    updatedAt: '',
+    status: 'approved' as 'approved' | 'pending' | 'rejected' | 'cancelled',
+    accessMode: 'private' as 'private' | 'public',
+    decisionNote: '',
+    notes: '',
+    tags: '',
+});
 
 watch(currentFolderId, () => {
     detailSheetOpen.value = false;
@@ -944,6 +1058,23 @@ function mySubmissionStatusListBadgeClass(
     }
 }
 
+function matchesDriveSearchQuery(item: DriveItem, query: string): boolean {
+    const q = query.trim().toLowerCase();
+    if (q === '') {
+        return true;
+    }
+
+    const haystack = [
+        item.name,
+        ...(item.tags ?? []),
+        item.notesLabel ?? '',
+    ]
+        .join(' ')
+        .toLowerCase();
+
+    return haystack.includes(q);
+}
+
 /**
  * My documents: flat file list with search, type, submission status, and ownership filters.
  */
@@ -951,7 +1082,7 @@ function buildMyCatalogFileList(): DriveFileItem[] {
     let filtered = items.value.filter((i): i is DriveFileItem => i.type === 'file');
     const q = searchQuery.value.trim().toLowerCase();
     if (q) {
-        filtered = filtered.filter((i) => i.name.toLowerCase().includes(q));
+        filtered = filtered.filter((i) => matchesDriveSearchQuery(i, q));
     }
 
     const tf = typeFilter.value;
@@ -1058,7 +1189,7 @@ const visibleChildren = computed(() => {
     const raw = getChildren(items.value, currentFolderId.value);
     const q = searchQuery.value.trim().toLowerCase();
     let filtered = q
-        ? raw.filter((i) => i.name.toLowerCase().includes(q))
+        ? raw.filter((i) => matchesDriveSearchQuery(i, q))
         : raw;
 
     const tf = typeFilter.value;
@@ -1246,12 +1377,28 @@ function driveFileMayDownloadInUi(item: DriveFileItem): boolean {
         return true;
     }
 
+    if (isCompanyDriveScope.value && canDirectAccessCompanyFiles.value) {
+        return true;
+    }
+
+    if (requiresCompanyAccessRequestForCurrentUser.value) {
+        return false;
+    }
+
     return canDownloadDriveFilesForActiveScope.value && driveFileCanDownload(item);
 }
 
 function driveFileShowsRequestAccessInUi(item: DriveFileItem): boolean {
     if (isTrashView.value) {
         return false;
+    }
+
+    if (isCompanyDriveScope.value && canDirectAccessCompanyFiles.value) {
+        return false;
+    }
+
+    if (requiresCompanyAccessRequestForCurrentUser.value) {
+        return true;
     }
 
     return (
@@ -1355,7 +1502,7 @@ function openRename(item: DriveItem): void {
     renameOpen.value = true;
 }
 
-function confirmRename(): void {
+async function confirmRename(): Promise<void> {
     if (isTrashView.value) {
         return;
     }
@@ -1371,6 +1518,35 @@ function confirmRename(): void {
         return;
     }
 
+    if (isCompanyDriveScope.value) {
+        const target = items.value[idx];
+        try {
+            if (target.type === 'folder') {
+                const folderId = companyFolderIdFromUiId(target.id);
+                if (folderId !== null) {
+                    await updateCompanyFolder(folderId, { name });
+                }
+            } else {
+                const documentId = companyDocumentIdFromUiId(target.id);
+                if (documentId !== null) {
+                    await updateCompanyDocument(documentId, { name });
+                }
+            }
+            renameOpen.value = false;
+            renameTargetId.value = null;
+            await reloadCompanyDriveItems();
+            appToast.success('Renamed.');
+        } catch (error) {
+            const message =
+                error instanceof Error && error.message !== ''
+                    ? error.message
+                    : 'Unable to rename item.';
+            appToast.error(message);
+        }
+
+        return;
+    }
+
     items.value[idx] = { ...items.value[idx], name } as DriveItem;
     renameOpen.value = false;
     renameTargetId.value = null;
@@ -1382,8 +1558,42 @@ function openDelete(ids: string[]): void {
     deleteOpen.value = true;
 }
 
-function confirmDelete(): void {
+async function confirmDelete(): Promise<void> {
     if (isTrashView.value || !props.scope) {
+        return;
+    }
+
+    if (isCompanyDriveScope.value) {
+        try {
+            for (const id of deleteTargetIds.value) {
+                const node = findItem(items.value, id);
+                if (!node) {
+                    continue;
+                }
+                if (node.type === 'folder') {
+                    const folderId = companyFolderIdFromUiId(node.id);
+                    if (folderId !== null) {
+                        await deleteCompanyFolder(folderId);
+                    }
+                } else {
+                    const documentId = companyDocumentIdFromUiId(node.id);
+                    if (documentId !== null) {
+                        await deleteCompanyDocument(documentId);
+                    }
+                }
+            }
+            deleteOpen.value = false;
+            deleteTargetIds.value = [];
+            await reloadCompanyDriveItems();
+            appToast.success('Deleted.');
+        } catch (error) {
+            const message =
+                error instanceof Error && error.message !== ''
+                    ? error.message
+                    : 'Unable to delete item.';
+            appToast.error(message);
+        }
+
         return;
     }
 
@@ -1465,12 +1675,51 @@ function openMove(ids: string[]): void {
     moveOpen.value = true;
 }
 
-function confirmMove(): void {
+async function confirmMove(): Promise<void> {
     if (isTrashView.value) {
         return;
     }
 
     const dest = moveDestinationId.value;
+    if (isCompanyDriveScope.value) {
+        try {
+            const destinationFolderId = companyFolderIdFromUiId(dest);
+            for (const id of moveTargetIds.value) {
+                const node = findItem(items.value, id);
+                if (!node) {
+                    continue;
+                }
+                if (node.type === 'folder') {
+                    const folderId = companyFolderIdFromUiId(node.id);
+                    if (folderId !== null) {
+                        await updateCompanyFolder(folderId, {
+                            parentId: destinationFolderId,
+                        });
+                    }
+                } else {
+                    const documentId = companyDocumentIdFromUiId(node.id);
+                    if (documentId !== null) {
+                        await updateCompanyDocument(documentId, {
+                            folderId: destinationFolderId,
+                        });
+                    }
+                }
+            }
+            moveOpen.value = false;
+            moveTargetIds.value = [];
+            await reloadCompanyDriveItems();
+            appToast.success('Moved.');
+        } catch (error) {
+            const message =
+                error instanceof Error && error.message !== ''
+                    ? error.message
+                    : 'Unable to move item.';
+            appToast.error(message);
+        }
+
+        return;
+    }
+
     for (const id of moveTargetIds.value) {
         const node = findItem(items.value, id);
         if (!node) {
@@ -1635,7 +1884,7 @@ function onUploadChange(e: Event): void {
     uploadPendingFile.value = file;
 }
 
-function confirmUploadWithMetadata(): void {
+async function confirmUploadWithMetadata(): Promise<void> {
     if (isTrashView.value || !props.scope || props.scope === 'my') {
         return;
     }
@@ -1647,6 +1896,28 @@ function confirmUploadWithMetadata(): void {
     const tags = finalizeUploadTagsList();
     uploadTagDraft.value = '';
     const notesTrimmed = uploadNotes.value.trim();
+    if (isCompanyDriveScope.value) {
+        try {
+            await uploadCompanyDocument({
+                file,
+                folderId: companyFolderIdFromUiId(currentFolderId.value),
+                tags,
+                notes: notesTrimmed,
+            });
+            resetUploadDialogDraft();
+            await reloadCompanyDriveItems();
+            appToast.success('File uploaded.');
+        } catch (error) {
+            const message =
+                error instanceof Error && error.message !== ''
+                    ? error.message
+                    : 'Unable to upload file.';
+            appToast.error(message);
+        }
+
+        return;
+    }
+
     const nowIso = new Date().toISOString();
     const kind = inferKindFromFileName(file.name);
     const localPdfObjectUrl =
@@ -1693,13 +1964,34 @@ function openNewFolder(): void {
     newFolderOpen.value = true;
 }
 
-function confirmNewFolder(): void {
+async function confirmNewFolder(): Promise<void> {
     if (isTrashView.value || !props.scope || props.scope === 'my') {
         return;
     }
 
     const name = newFolderName.value.trim();
     if (!name) {
+        return;
+    }
+
+    if (isCompanyDriveScope.value) {
+        try {
+            await createCompanyFolder({
+                name,
+                parentId: companyFolderIdFromUiId(currentFolderId.value),
+            });
+            newFolderOpen.value = false;
+            newFolderName.value = '';
+            await reloadCompanyDriveItems();
+            appToast.success('Folder created.');
+        } catch (error) {
+            const message =
+                error instanceof Error && error.message !== ''
+                    ? error.message
+                    : 'Unable to create folder.';
+            appToast.error(message);
+        }
+
         return;
     }
 
@@ -1720,6 +2012,15 @@ function confirmNewFolder(): void {
 }
 
 function downloadItem(item: DriveFileItem): void {
+    if (isCompanyDriveScope.value) {
+        const documentId = companyDocumentIdFromUiId(item.id);
+        if (documentId !== null) {
+            window.location.href = companyDocumentDownloadUrl(documentId);
+        }
+
+        return;
+    }
+
     if (!isTrashView.value && !canDownloadDriveFilesForActiveScope.value) {
         requestAccessForFile(item);
 
@@ -1736,6 +2037,19 @@ function downloadItem(item: DriveFileItem): void {
 }
 
 function openUploadedPdfInNewTab(item: DriveFileItem): void {
+    if (isCompanyDriveScope.value) {
+        const documentId = companyDocumentIdFromUiId(item.id);
+        if (documentId !== null) {
+            window.open(
+                companyDocumentPreviewUrl(documentId),
+                '_blank',
+                'noopener,noreferrer',
+            );
+        }
+
+        return;
+    }
+
     if (!isTrashView.value && !driveFileCanDownload(item)) {
         appToast.info('Request access to preview this file. (Session mock.)');
 
@@ -1821,6 +2135,123 @@ function detailOverflowRestore(): void {
     }
 }
 
+function toDateTimeLocalValue(value: string | undefined): string {
+    if (!value) {
+        return '';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+function openInternalMetadataDialogForFile(file: DriveFileItem): void {
+    internalMetadataTargetId.value = file.id;
+    internalMetadataDraft.value = {
+        submittedAt: toDateTimeLocalValue(file.uploadedAt),
+        decidedAt: '',
+        createdAt: toDateTimeLocalValue(file.modifiedAt),
+        updatedAt: toDateTimeLocalValue(file.modifiedAt),
+        status: (file.approvalStatusLabel?.toLowerCase() ?? 'approved').includes(
+            'pending',
+        )
+            ? 'pending'
+            : (file.approvalStatusLabel?.toLowerCase() ?? '').includes('reject')
+              ? 'rejected'
+              : 'approved',
+        accessMode: file.accessMode === 'public' ? 'public' : 'private',
+        decisionNote: '',
+        notes: file.notesLabel ?? '',
+        tags: (file.tags ?? []).join(', '),
+    };
+    internalMetadataDialogOpen.value = true;
+}
+
+function openInternalMetadataDialogFromItem(item: DriveItem): void {
+    if (!canEditCompanyDocumentInternalMetadata.value || item.type !== 'file') {
+        return;
+    }
+
+    openInternalMetadataDialogForFile(item);
+}
+
+function openInternalMetadataDialog(): void {
+    if (!canEditCompanyDocumentInternalMetadata.value) {
+        return;
+    }
+    if (detailItem.value?.type !== 'file') {
+        return;
+    }
+
+    openInternalMetadataDialogForFile(detailItem.value);
+}
+
+async function saveInternalMetadata(): Promise<void> {
+    const targetId = internalMetadataTargetId.value;
+    const documentId = companyDocumentIdFromUiId(targetId);
+    if (documentId === null) {
+        return;
+    }
+
+    const tags = internalMetadataDraft.value.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter((tag) => tag !== '');
+
+    internalMetadataSaving.value = true;
+    try {
+        await updateCompanyDocumentInternalMetadata(documentId, {
+            submittedAt:
+                internalMetadataDraft.value.submittedAt === ''
+                    ? null
+                    : internalMetadataDraft.value.submittedAt,
+            decidedAt:
+                internalMetadataDraft.value.decidedAt === ''
+                    ? null
+                    : internalMetadataDraft.value.decidedAt,
+            createdAt:
+                internalMetadataDraft.value.createdAt === ''
+                    ? null
+                    : internalMetadataDraft.value.createdAt,
+            updatedAt:
+                internalMetadataDraft.value.updatedAt === ''
+                    ? null
+                    : internalMetadataDraft.value.updatedAt,
+            status: internalMetadataDraft.value.status,
+            accessMode: internalMetadataDraft.value.accessMode,
+            decisionNote:
+                internalMetadataDraft.value.decisionNote.trim() === ''
+                    ? null
+                    : internalMetadataDraft.value.decisionNote.trim(),
+            notes:
+                internalMetadataDraft.value.notes.trim() === ''
+                    ? null
+                    : internalMetadataDraft.value.notes.trim(),
+            tags,
+        });
+        await reloadCompanyDriveItems();
+        detailTargetId.value = targetId;
+        internalMetadataDialogOpen.value = false;
+        appToast.success('Internal metadata updated.');
+    } catch (error) {
+        const message =
+            error instanceof Error && error.message !== ''
+                ? error.message
+                : 'Unable to update internal metadata.';
+        appToast.error(message);
+    } finally {
+        internalMetadataSaving.value = false;
+    }
+}
+
 const driveSelectionBarVisible = computed(
     () => !isTrashView.value && selectedIds.value.length >= 2,
 );
@@ -1843,6 +2274,174 @@ const sortControlModel = computed({
         sortOrder.value = o;
     },
 });
+
+const aiSearchDialogOpen = ref(false);
+const aiSearchMode = ref<'keywords' | 'prompt'>('keywords');
+const aiKeywordDraft = ref('');
+const aiKeywords = ref<string[]>([]);
+const aiPromptDraft = ref('');
+const aiSearchExecuted = ref(false);
+const aiSearching = ref(false);
+
+type AiSearchResultRow = {
+    id: string;
+    itemId: string;
+    title: string;
+    snippet: string;
+    tags: string[];
+    confidence: 'High confidence' | 'Medium confidence' | 'Low confidence';
+    score: number;
+};
+
+const aiSearchResults = ref<AiSearchResultRow[]>([]);
+
+function commitAiKeyword(token: string): void {
+    const t = token.trim();
+    if (t === '' || aiKeywords.value.includes(t)) {
+        return;
+    }
+    aiKeywords.value = [...aiKeywords.value, t];
+}
+
+function removeAiKeyword(index: number): void {
+    aiKeywords.value = aiKeywords.value.filter((_, i) => i !== index);
+}
+
+function onAiKeywordInputKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const pieces = aiKeywordDraft.value
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+        for (const piece of pieces) {
+            commitAiKeyword(piece);
+        }
+        aiKeywordDraft.value = '';
+        return;
+    }
+
+    if (e.key === 'Backspace' && aiKeywordDraft.value === '') {
+        aiKeywords.value = aiKeywords.value.slice(0, -1);
+    }
+}
+
+function openAiSearchDialog(): void {
+    aiSearchDialogOpen.value = true;
+}
+
+function aiSearchTokens(): string[] {
+    if (aiSearchMode.value === 'keywords') {
+        return aiKeywords.value
+            .map((row) => row.trim().toLowerCase())
+            .filter((row) => row.length > 0);
+    }
+
+    return aiPromptDraft.value
+        .toLowerCase()
+        .split(/[^a-z0-9]+/g)
+        .map((row) => row.trim())
+        .filter((row) => row.length >= 3);
+}
+
+function aiMatchScore(item: DriveItem, tokens: string[]): number {
+    if (tokens.length === 0) {
+        return 0;
+    }
+
+    const haystackParts = [
+        item.name,
+        item.ownerLabel,
+        item.primaryOwnerLabel,
+        item.visibilityLabel,
+        item.approvalStatusLabel,
+        ...(item.tags ?? []),
+        item.notesLabel,
+    ]
+        .filter((row): row is string => typeof row === 'string' && row !== '')
+        .map((row) => row.toLowerCase());
+
+    let score = 0;
+    for (const token of tokens) {
+        for (const part of haystackParts) {
+            if (part.includes(token)) {
+                score += part === item.name.toLowerCase() ? 3 : 1;
+                break;
+            }
+        }
+    }
+
+    return score;
+}
+
+function aiConfidenceLabel(score: number): AiSearchResultRow['confidence'] {
+    if (score >= 6) {
+        return 'High confidence';
+    }
+    if (score >= 3) {
+        return 'Medium confidence';
+    }
+
+    return 'Low confidence';
+}
+
+async function runAiSearch(): Promise<void> {
+    const tokens = aiSearchTokens();
+    aiSearchExecuted.value = true;
+
+    if (tokens.length === 0) {
+        aiSearchResults.value = [];
+        appToast.info('Add keywords or a prompt to run AI Search.');
+        return;
+    }
+
+    aiSearching.value = true;
+    await Promise.resolve();
+
+    const rows = items.value
+        .map((item): AiSearchResultRow | null => {
+            const score = aiMatchScore(item, tokens);
+            if (score <= 0) {
+                return null;
+            }
+
+            const snippetParts = [
+                item.visibilityLabel ?? 'Company library',
+                item.approvalStatusLabel ?? 'Approved',
+                item.type === 'file' ? 'File' : 'Folder',
+            ];
+
+            return {
+                id: `ai-${item.id}`,
+                itemId: item.id,
+                title: item.name,
+                snippet: `${snippetParts.join(' • ')} • Owner: ${item.primaryOwnerLabel ?? item.ownerLabel}`,
+                tags: (item.tags ?? []).slice(0, 3),
+                confidence: aiConfidenceLabel(score),
+                score,
+            };
+        })
+        .filter((row): row is AiSearchResultRow => row !== null)
+        .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
+        .slice(0, 12);
+
+    aiSearchResults.value = rows;
+    aiSearching.value = false;
+}
+
+function openAiResult(row: AiSearchResultRow): void {
+    const item = findItem(items.value, row.itemId);
+    if (!item) {
+        return;
+    }
+
+    if (item.parentId !== null) {
+        currentFolderId.value = item.parentId;
+    } else {
+        currentFolderId.value = null;
+    }
+    openDetail(item);
+}
 
 function timestampForModified(item: DriveItem): number {
     return Date.parse(item.modifiedAt) || 0;
@@ -1994,7 +2593,7 @@ function gridCheckboxSlotClass(item: DriveItem): string {
 
         <HrisIndexToolbar>
             <template #start>
-                <div class="w-full max-w-md">
+                <div class="flex w-full max-w-3xl items-center gap-2">
                     <InputGroup class="max-w-md">
                         <InputGroupAddon align="inline-start">
                             <Search
@@ -2019,6 +2618,16 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                             "
                         />
                     </InputGroup>
+                    <Button
+                        v-if="isCompanyDriveScope"
+                        type="button"
+                        variant="outline"
+                        class="h-9 shrink-0 gap-2 rounded-4xl border-violet-400/70 text-violet-800 hover:bg-violet-500/12 dark:border-violet-500/55 dark:text-violet-200 dark:hover:bg-violet-500/15"
+                        @click="openAiSearchDialog"
+                    >
+                        <Sparkles class="size-4" aria-hidden="true" />
+                        AI Search
+                    </Button>
                 </div>
             </template>
             <template #end>
@@ -2529,7 +3138,10 @@ function gridCheckboxSlotClass(item: DriveItem): string {
         <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
             <div>
                 <div
-                    v-if="visibleChildren.length === 0"
+                    v-if="
+                        visibleChildren.length === 0 &&
+                        (!isCompanyDriveScope || !companyItemsLoading)
+                    "
                     class="flex min-h-[200px] flex-col items-center justify-center gap-2 py-12 text-center"
                 >
                     <template v-if="isTrashView">
@@ -2607,6 +3219,22 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                             </Button>
                         </div>
                     </template>
+                </div>
+                <div
+                    v-else-if="
+                        isCompanyDriveScope &&
+                        companyItemsLoading &&
+                        !companyItemsLoadedOnce
+                    "
+                    class="flex min-h-[200px] flex-col items-center justify-center gap-2 py-12 text-center"
+                >
+                    <Folder
+                        class="size-12 animate-pulse text-muted-foreground/50"
+                        aria-hidden="true"
+                    />
+                    <p class="text-sm font-medium text-foreground">
+                        Loading company documents...
+                    </p>
                 </div>
 
                 <!-- Grid (Drive-style tile: header strip + large preview) -->
@@ -2765,6 +3393,23 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                                                     aria-hidden="true"
                                                 />
                                                 Information
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                v-if="
+                                                    canEditCompanyDocumentInternalMetadata &&
+                                                    item.type === 'file'
+                                                "
+                                                @click="
+                                                    openInternalMetadataDialogFromItem(
+                                                        item,
+                                                    )
+                                                "
+                                            >
+                                                <Pencil
+                                                    class="size-4"
+                                                    aria-hidden="true"
+                                                />
+                                                Admin: edit metadata
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 v-if="
@@ -3272,6 +3917,23 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     v-if="
+                                                        canEditCompanyDocumentInternalMetadata &&
+                                                        item.type === 'file'
+                                                    "
+                                                    @click="
+                                                        openInternalMetadataDialogFromItem(
+                                                            item,
+                                                        )
+                                                    "
+                                                >
+                                                    <Pencil
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Admin: edit metadata
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    v-if="
                                                         item.type === 'file' &&
                                                         item.kind === 'pdf' &&
                                                         driveFileMayPreviewInUi(
@@ -3591,11 +4253,25 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                                     <div
                                         class="rounded-lg border border-border/60 bg-muted/20 p-3"
                                     >
-                                        <p
-                                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                        >
-                                            Information
-                                        </p>
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p
+                                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                            >
+                                                Information
+                                            </p>
+                                            <Button
+                                                v-if="
+                                                    canEditCompanyDocumentInternalMetadata &&
+                                                    detailItem.type === 'file'
+                                                "
+                                                variant="ghost"
+                                                size="sm"
+                                                class="h-7 px-2 text-[11px]"
+                                                @click="openInternalMetadataDialog"
+                                            >
+                                                Internal edit
+                                            </Button>
+                                        </div>
                                         <dl
                                             class="mt-3 space-y-3 text-foreground"
                                         >
@@ -4353,6 +5029,263 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                         @click="confirmUploadWithMetadata"
                     >
                         Upload
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog v-model:open="aiSearchDialogOpen">
+            <DialogContent class="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle class="flex items-center gap-2">
+                        <Sparkles class="size-4 text-violet-600 dark:text-violet-300" />
+                        Smart Search AI
+                    </DialogTitle>
+                    <DialogDescription>
+                        Mock design preview for semantic document search in Company
+                        Documents. This is UI-only for now.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div class="grid gap-4 py-1">
+                    <div class="grid gap-2 sm:grid-cols-2">
+                        <label
+                            class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
+                        >
+                            <Checkbox
+                                :model-value="aiSearchMode === 'keywords'"
+                                @update:model-value="
+                                    (next) => {
+                                        if (next === true) {
+                                            aiSearchMode = 'keywords';
+                                        }
+                                    }
+                                "
+                            />
+                            <div class="grid gap-0.5">
+                                <span class="text-sm font-medium"
+                                    >Keyword search</span
+                                >
+                                <span class="text-xs text-muted-foreground">
+                                    Add terms like policy names, tags, or
+                                    document themes.
+                                </span>
+                            </div>
+                        </label>
+                        <label
+                            class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
+                        >
+                            <Checkbox
+                                :model-value="aiSearchMode === 'prompt'"
+                                @update:model-value="
+                                    (next) => {
+                                        if (next === true) {
+                                            aiSearchMode = 'prompt';
+                                        }
+                                    }
+                                "
+                            />
+                            <div class="grid gap-0.5">
+                                <span class="text-sm font-medium"
+                                    >Prompt search</span
+                                >
+                                <span class="text-xs text-muted-foreground">
+                                    Describe what you need in natural language.
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div
+                        v-if="aiSearchMode === 'keywords'"
+                        class="grid gap-2 rounded-md border p-3"
+                    >
+                        <Label for="company-ai-keywords">Keywords</Label>
+                        <Input
+                            id="company-ai-keywords"
+                            v-model="aiKeywordDraft"
+                            placeholder="Type keyword and press Enter or comma"
+                            @keydown="onAiKeywordInputKeydown"
+                        />
+                        <div class="flex flex-wrap gap-2">
+                            <Badge
+                                v-for="(tag, idx) in aiKeywords"
+                                :key="`${tag}-${idx}`"
+                                variant="secondary"
+                                class="inline-flex items-center gap-1"
+                            >
+                                {{ tag }}
+                                <button
+                                    type="button"
+                                    class="rounded-sm p-0.5 hover:bg-muted"
+                                    :aria-label="`Remove keyword ${tag}`"
+                                    @click="removeAiKeyword(idx)"
+                                >
+                                    <X class="size-3" />
+                                </button>
+                            </Badge>
+                            <span
+                                v-if="aiKeywords.length === 0"
+                                class="text-xs text-muted-foreground"
+                            >
+                                No keywords yet.
+                            </span>
+                        </div>
+                    </div>
+
+                    <div
+                        v-else
+                        class="grid gap-2 rounded-md border p-3"
+                    >
+                        <Label for="company-ai-prompt">Prompt</Label>
+                        <Textarea
+                            id="company-ai-prompt"
+                            v-model="aiPromptDraft"
+                            placeholder="Example: Find approved company policy updates related to leave, attendance, and onboarding."
+                            class="min-h-24"
+                        />
+                    </div>
+
+                    <div class="grid gap-2 rounded-md border p-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-medium">AI results</p>
+                            <Badge variant="outline">
+                                {{ aiSearchResults.length }} match{{
+                                    aiSearchResults.length === 1 ? '' : 'es'
+                                }}
+                            </Badge>
+                        </div>
+                        <div
+                            v-if="aiSearching"
+                            class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+                        >
+                            Searching documents...
+                        </div>
+                        <div
+                            v-else-if="
+                                aiSearchExecuted && aiSearchResults.length === 0
+                            "
+                            class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+                        >
+                            No documents matched your search terms.
+                        </div>
+                        <div v-else class="grid gap-2">
+                            <div
+                                v-for="result in aiSearchResults"
+                                :key="result.id"
+                                class="rounded-md border bg-muted/20 p-3"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-3"
+                                >
+                                    <button
+                                        type="button"
+                                        class="text-left text-sm font-medium text-foreground hover:underline"
+                                        @click="openAiResult(result)"
+                                    >
+                                        {{ result.title }}
+                                    </button>
+                                    <Badge
+                                        variant="secondary"
+                                        class="whitespace-nowrap text-[11px]"
+                                    >
+                                        {{ result.confidence }}
+                                    </Badge>
+                                </div>
+                                <p class="mt-1 text-xs text-muted-foreground">
+                                    {{ result.snippet }}
+                                </p>
+                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                    <Badge
+                                        v-for="tag in result.tags"
+                                        :key="`${result.id}-${tag}`"
+                                        variant="outline"
+                                        class="text-[10px]"
+                                    >
+                                        {{ tag }}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <DialogFooter class="gap-2 sm:justify-end">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="aiSearchDialogOpen = false"
+                    >
+                        Close
+                    </Button>
+                    <Button type="button" @click="runAiSearch">
+                        <Sparkles class="size-4" />
+                        Search
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog v-model:open="internalMetadataDialogOpen">
+            <DialogContent class="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Internal metadata edit</DialogTitle>
+                    <DialogDescription>
+                        Super admin tool for internal timestamp and metadata corrections.
+                    </DialogDescription>
+                </DialogHeader>
+                <div class="grid gap-4 py-2 sm:grid-cols-2">
+                    <div class="space-y-2">
+                        <Label for="internal-created-at">Created at</Label>
+                        <Input id="internal-created-at" v-model="internalMetadataDraft.createdAt" type="datetime-local" />
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="internal-updated-at">Updated at</Label>
+                        <Input id="internal-updated-at" v-model="internalMetadataDraft.updatedAt" type="datetime-local" />
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="internal-submitted-at">Uploaded/submitted at</Label>
+                        <Input id="internal-submitted-at" v-model="internalMetadataDraft.submittedAt" type="datetime-local" />
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="internal-decided-at">Decided at</Label>
+                        <Input id="internal-decided-at" v-model="internalMetadataDraft.decidedAt" type="datetime-local" />
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="internal-status">Status</Label>
+                        <NativeSelect id="internal-status" v-model="internalMetadataDraft.status">
+                            <option value="approved">Approved</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="cancelled">Cancelled</option>
+                        </NativeSelect>
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="internal-access-mode">Access mode</Label>
+                        <NativeSelect id="internal-access-mode" v-model="internalMetadataDraft.accessMode">
+                            <option value="private">Private</option>
+                            <option value="public">Public</option>
+                        </NativeSelect>
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <Label for="internal-tags">Tags (comma-separated)</Label>
+                        <Input id="internal-tags" v-model="internalMetadataDraft.tags" type="text" />
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <Label for="internal-notes">Notes</Label>
+                        <Textarea id="internal-notes" v-model="internalMetadataDraft.notes" rows="3" />
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <Label for="internal-decision-note">Decision note</Label>
+                        <Textarea id="internal-decision-note" v-model="internalMetadataDraft.decisionNote" rows="3" />
+                    </div>
+                </div>
+                <DialogFooter class="gap-2">
+                    <Button variant="outline" :disabled="internalMetadataSaving" @click="internalMetadataDialogOpen = false">
+                        Cancel
+                    </Button>
+                    <Button :disabled="internalMetadataSaving" @click="saveInternalMetadata">
+                        {{ internalMetadataSaving ? 'Saving...' : 'Save internal metadata' }}
                     </Button>
                 </DialogFooter>
             </DialogContent>

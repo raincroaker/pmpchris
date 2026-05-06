@@ -634,7 +634,7 @@ test('employee role cannot access administration pages', function () {
     $user = User::factory()->withRoles(Role::CODE_EMPLOYEE)->create();
 
     $this->actingAs($user)
-        ->get(route('admin.audit-logs'))
+        ->get(route('admin.users'))
         ->assertForbidden();
 });
 
@@ -647,15 +647,15 @@ test('administration pages are restricted to top admins and branch-assigned hr m
     $viewer = User::factory()->withRoles(Role::CODE_HR_MANAGER)->create();
 
     $this->actingAs($superAdmin)
-        ->get(route('admin.audit-logs'))
+        ->get(route('admin.users'))
         ->assertSuccessful();
 
     $this->actingAs($hrHead)
-        ->get(route('admin.audit-logs'))
+        ->get(route('admin.users'))
         ->assertSuccessful();
 
     $this->actingAs($viewer)
-        ->get(route('admin.audit-logs'))
+        ->get(route('admin.users'))
         ->assertRedirect(route('dashboard'));
 });
 

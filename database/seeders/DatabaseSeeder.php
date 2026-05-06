@@ -29,7 +29,6 @@ class DatabaseSeeder extends Seeder
             $this->call(WorkScheduleTemplatesSeeder::class);
             $this->call(DevelopmentEmployeeAttendanceProfileSeeder::class);
             $this->call(DevelopmentEmployeeAttendanceDaysSeeder::class);
-            $this->call(DevelopmentEmployeeAttendanceDtrDemoSeeder::class);
             $this->call(LeaveAndOvertimePoliciesSeeder::class);
             $this->call(DevelopmentTeamHrMay2026LeaveOvertimeSeeder::class);
         }

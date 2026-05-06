@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { getCoreRowModel, useVueTable } from '@tanstack/vue-table';
 import type { ColumnDef } from '@tanstack/vue-table';
 import {
-    Calendar as CalendarIcon,
-    ChevronDown,
+    CheckCircle2,
+    Clock3,
     Eye,
-    FileSpreadsheet,
+    Timer,
+    XCircle,
     Search,
 } from 'lucide-vue-next';
 import { computed, h, ref, watch } from 'vue';
 import HrisColumnFilterPopover from '@/components/hris/HrisColumnFilterPopover.vue';
+import HrisKpiCard from '@/components/hris/HrisKpiCard.vue';
 import HrisServerTablePagination from '@/components/hris/HrisServerTablePagination.vue';
 import HrisTanStackTable from '@/components/hris/HrisTanStackTable.vue';
 import TeamIndexDateRangePickers from '@/components/hris/TeamIndexDateRangePickers.vue';
@@ -30,20 +32,7 @@ import {
     InputGroupAddon,
     InputGroupInput,
 } from '@/components/ui/input-group';
-import { Label } from '@/components/ui/label';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useDebouncedSearchInput } from '@/composables/useDebouncedSearchInput';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -72,7 +61,6 @@ import {
     team as attendanceTeam,
     my as attendanceMy,
 } from '@/routes/attendance';
-import { dtrMockSample } from '@/routes/attendance/reports';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -131,15 +119,6 @@ const props = withDefaults(
         hasEmployeeRecord: true,
     },
 );
-
-const page = usePage<{
-    auth: {
-        user: { name?: string; email?: string } | null;
-    };
-    branchContext: { id: number; code: string; name: string } | null;
-}>();
-
-const chartBranchId = computed(() => page.props.branchContext?.id ?? null);
 
 const tablePlainHeadClass = 'font-medium text-muted-foreground';
 const dialogScrollAreaClass =
@@ -271,192 +250,6 @@ const recordingStyleChipOptions: Array<{
 const viewDialogOpen = ref(false);
 const viewTarget = ref<TeamAttendanceRow | null>(null);
 
-type DtrMonthPart = 'whole' | 'first_half' | 'second_half';
-
-const dtrDialogOpen = ref(false);
-const dtrFormError = ref<string | null>(null);
-const dtrYearMonth = ref('');
-const dtrMonthPart = ref<DtrMonthPart>('whole');
-const dtrMonthPopoverOpen = ref(false);
-
-const DTR_YEAR_LOOKBACK = 5;
-
-const DTR_YEAR_LOOKAHEAD = 3;
-
-const dtrPickerParts = computed((): { year: number; month: number } => {
-    const ym = dtrYearMonth.value.trim();
-    if (/^\d{4}-\d{2}$/.test(ym)) {
-        const [ys, ms] = ym.split('-');
-        const y = Number.parseInt(ys ?? '', 10);
-        const m = Number.parseInt(ms ?? '', 10);
-        if (!Number.isNaN(y) && !Number.isNaN(m) && m >= 1 && m <= 12) {
-            return { year: y, month: m };
-        }
-    }
-
-    const now = new Date();
-
-    return { year: now.getFullYear(), month: now.getMonth() + 1 };
-});
-
-function patchMyDtrYearMonth(year: number, month: number): void {
-    dtrYearMonth.value = `${year}-${String(month).padStart(2, '0')}`;
-    dtrFormError.value = null;
-}
-
-function onMyDtrPickerMonthPick(v: unknown): void {
-    const m = Number.parseInt(String(v ?? ''), 10);
-    if (Number.isNaN(m) || m < 1 || m > 12) {
-        return;
-    }
-
-    patchMyDtrYearMonth(dtrPickerParts.value.year, m);
-}
-
-function onMyDtrPickerYearPick(v: unknown): void {
-    const y = Number.parseInt(String(v ?? ''), 10);
-    if (Number.isNaN(y)) {
-        return;
-    }
-
-    patchMyDtrYearMonth(y, dtrPickerParts.value.month);
-}
-
-const dtrYearChoices = computed((): number[] => {
-    const anchor = new Date().getFullYear();
-    const out: number[] = [];
-    for (
-        let y = anchor - DTR_YEAR_LOOKBACK;
-        y <= anchor + DTR_YEAR_LOOKAHEAD;
-        y++
-    ) {
-        out.push(y);
-    }
-
-    return out;
-});
-
-const dtrMonthChoices = computed(
-    (): Array<{ value: number; label: string }> => {
-        return Array.from({ length: 12 }, (_, i) => {
-            const month = i + 1;
-            const label = new Date(2000, i, 1).toLocaleDateString(undefined, {
-                month: 'long',
-            });
-
-            return { value: month, label };
-        });
-    },
-);
-
-function myDtrYearMonthPickerLabel(isoYm: string): string {
-    const ym = isoYm.trim();
-    if (!/^\d{4}-\d{2}$/.test(ym)) {
-        return 'Pick month…';
-    }
-
-    return new Date(`${ym}-01T12:00:00`).toLocaleDateString(undefined, {
-        month: 'long',
-        year: 'numeric',
-    });
-}
-
-function resetMyDtrForm(): void {
-    const now = new Date();
-    dtrYearMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    dtrMonthPart.value = 'whole';
-    dtrFormError.value = null;
-    dtrMonthPopoverOpen.value = false;
-}
-
-function openMyDtrDialog(): void {
-    resetMyDtrForm();
-    dtrDialogOpen.value = true;
-}
-
-function myDtrResolvedDateRange(): { from: string; to: string } | null {
-    const ym = dtrYearMonth.value.trim();
-    if (!/^\d{4}-\d{2}$/.test(ym)) {
-        return null;
-    }
-
-    const parts = ym.split('-').map((s) => Number.parseInt(s, 10));
-    const y = parts[0];
-    const mo = parts[1];
-    if (
-        Number.isNaN(y) ||
-        Number.isNaN(mo) ||
-        mo === undefined ||
-        mo < 1 ||
-        mo > 12
-    ) {
-        return null;
-    }
-
-    const lastDay = new Date(y, mo, 0).getDate();
-    let fromDay = 1;
-    let toDay = lastDay;
-    switch (dtrMonthPart.value) {
-        case 'first_half':
-            fromDay = 1;
-            toDay = Math.min(15, lastDay);
-
-            break;
-        case 'second_half':
-            fromDay = Math.min(16, lastDay);
-            toDay = lastDay;
-
-            break;
-        default:
-            fromDay = 1;
-            toDay = lastDay;
-
-            break;
-    }
-
-    if (fromDay > toDay) {
-        return null;
-    }
-
-    const pad = (n: number): string => String(n).padStart(2, '0');
-
-    return {
-        from: `${ym}-${pad(fromDay)}`,
-        to: `${ym}-${pad(toDay)}`,
-    };
-}
-
-function validateMyDtrForm(): string | null {
-    if (chartBranchId.value === null) {
-        return 'Select a workspace branch (header) before generating a DTR.';
-    }
-
-    if (myDtrResolvedDateRange() === null) {
-        return 'Pick a valid calendar month and segment.';
-    }
-
-    return null;
-}
-
-function generateMyDtrExcel(): void {
-    const err = validateMyDtrForm();
-    if (err) {
-        dtrFormError.value = err;
-
-        return;
-    }
-
-    if (myDtrResolvedDateRange() === null) {
-        dtrFormError.value = 'Could not derive a date range.';
-
-        return;
-    }
-
-    dtrFormError.value = null;
-    dtrDialogOpen.value = false;
-    window.location.assign(dtrMockSample.url());
-}
-
 const statusFilterOptions = computed(() => [
     {
         value: 'complete',
@@ -526,6 +319,34 @@ const toolbarDateToModel = computed({
 });
 
 const totalRows = computed(() => props.myAttendanceDays.total);
+
+const myAttendanceKpis = computed(() => {
+    const rows = props.myAttendanceDays.data;
+
+    return rows.reduce(
+        (acc, row) => {
+            if (row.punctuality === 'on_time') {
+                acc.onTime += 1;
+            } else if (row.punctuality === 'late') {
+                acc.late += 1;
+            }
+
+            if (row.status === 'incomplete') {
+                acc.incomplete += 1;
+            }
+
+            acc.netHours += Number(row.net_hours ?? 0);
+
+            return acc;
+        },
+        {
+            onTime: 0,
+            late: 0,
+            incomplete: 0,
+            netHours: 0,
+        },
+    );
+});
 
 const emptyMessage = computed((): string => {
     if (!props.hasEmployeeRecord) {
@@ -772,6 +593,37 @@ const table = useVueTable({
                 </p>
             </div>
 
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <HrisKpiCard
+                    title="On-time rows"
+                    :value="myAttendanceKpis.onTime"
+                    hint="Current page records"
+                    tone="emerald"
+                    :icon="CheckCircle2"
+                />
+                <HrisKpiCard
+                    title="Late rows"
+                    :value="myAttendanceKpis.late"
+                    hint="Current page records"
+                    tone="amber"
+                    :icon="Clock3"
+                />
+                <HrisKpiCard
+                    title="Incomplete rows"
+                    :value="myAttendanceKpis.incomplete"
+                    hint="Missing punch details"
+                    tone="rose"
+                    :icon="XCircle"
+                />
+                <HrisKpiCard
+                    title="Net hours"
+                    :value="myAttendanceKpis.netHours.toFixed(1)"
+                    hint="Summed in this page"
+                    tone="violet"
+                    :icon="Timer"
+                />
+            </div>
+
             <div class="flex flex-col gap-3">
                 <div class="w-full max-w-md min-w-0">
                     <InputGroup>
@@ -826,18 +678,6 @@ const table = useVueTable({
                             compact-row
                             class="min-w-0"
                         />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            class="h-9 shrink-0 border-primary/60 text-primary hover:bg-primary/10 hover:text-primary dark:border-primary/70 dark:hover:bg-primary/15"
-                            @click="openMyDtrDialog"
-                        >
-                            <FileSpreadsheet
-                                class="size-4"
-                                aria-hidden="true"
-                            />
-                            <span class="ml-1">Generate DTR</span>
-                        </Button>
                     </div>
                 </div>
             </div>
@@ -902,182 +742,4 @@ const table = useVueTable({
         </DialogContent>
     </Dialog>
 
-    <Dialog v-model:open="dtrDialogOpen">
-        <DialogContent class="gap-4 sm:max-w-lg">
-            <DialogHeader class="gap-2 text-left">
-                <DialogTitle>Generate DTR</DialogTitle>
-                <DialogDescription>
-                    Pick month and segment, then generate to download the sample
-                    Excel file for now — filters apply when export is wired.
-                    Choose a workspace branch in the header first if needed.
-                </DialogDescription>
-            </DialogHeader>
-            <div class="grid gap-3">
-                <div class="grid gap-3 sm:grid-cols-2 sm:gap-4">
-                    <div class="grid gap-2">
-                        <Label for="my-dtr-calendar-month-trigger">
-                            Calendar month
-                        </Label>
-                        <Popover v-model:open="dtrMonthPopoverOpen">
-                            <PopoverTrigger as-child>
-                                <Button
-                                    id="my-dtr-calendar-month-trigger"
-                                    type="button"
-                                    variant="outline"
-                                    class="h-9 w-full justify-between gap-2 font-normal"
-                                    aria-label="Choose month and year"
-                                >
-                                    <span
-                                        class="flex min-w-0 items-center gap-2"
-                                    >
-                                        <CalendarIcon
-                                            class="size-4 shrink-0 text-muted-foreground"
-                                            aria-hidden="true"
-                                        />
-                                        <span class="truncate tabular-nums">{{
-                                            myDtrYearMonthPickerLabel(
-                                                dtrYearMonth,
-                                            )
-                                        }}</span>
-                                    </span>
-                                    <ChevronDown
-                                        class="size-4 shrink-0 opacity-50"
-                                        aria-hidden="true"
-                                    />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                                class="w-[calc(100vw-2rem)] max-w-[20rem] p-4 sm:w-80"
-                                align="start"
-                            >
-                                <div class="grid gap-4 sm:grid-cols-2">
-                                    <div class="grid gap-2">
-                                        <Label for="my-dtr-pop-month"
-                                            >Month</Label
-                                        >
-                                        <Select
-                                            :model-value="
-                                                String(dtrPickerParts.month)
-                                            "
-                                            @update:model-value="
-                                                onMyDtrPickerMonthPick
-                                            "
-                                        >
-                                            <SelectTrigger
-                                                id="my-dtr-pop-month"
-                                                class="h-9 w-full"
-                                                aria-label="Month"
-                                            >
-                                                <SelectValue
-                                                    placeholder="Month"
-                                                />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem
-                                                    v-for="opt in dtrMonthChoices"
-                                                    :key="opt.value"
-                                                    :value="String(opt.value)"
-                                                >
-                                                    {{ opt.label }}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div class="grid gap-2">
-                                        <Label for="my-dtr-pop-year"
-                                            >Year</Label
-                                        >
-                                        <Select
-                                            :model-value="
-                                                String(dtrPickerParts.year)
-                                            "
-                                            @update:model-value="
-                                                onMyDtrPickerYearPick
-                                            "
-                                        >
-                                            <SelectTrigger
-                                                id="my-dtr-pop-year"
-                                                class="h-9 w-full"
-                                                aria-label="Year"
-                                            >
-                                                <SelectValue
-                                                    placeholder="Year"
-                                                />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem
-                                                    v-for="y in dtrYearChoices"
-                                                    :key="y"
-                                                    :value="String(y)"
-                                                >
-                                                    {{ y }}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="my-dtr-month-part">Segment</Label>
-                        <Select
-                            :model-value="dtrMonthPart"
-                            @update:model-value="
-                                (v: unknown) => {
-                                    const s = String(v ?? '');
-                                    if (
-                                        s === 'whole' ||
-                                        s === 'first_half' ||
-                                        s === 'second_half'
-                                    ) {
-                                        dtrMonthPart = s;
-                                        dtrFormError = null;
-                                    }
-                                }
-                            "
-                        >
-                            <SelectTrigger
-                                id="my-dtr-month-part"
-                                class="h-9 w-full"
-                                aria-label="Segment"
-                            >
-                                <SelectValue placeholder="Whole month" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="whole"
-                                    >Whole month</SelectItem
-                                >
-                                <SelectItem value="first_half"
-                                    >Days 1–15</SelectItem
-                                >
-                                <SelectItem value="second_half"
-                                    >Days 16 – end</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <p
-                    v-if="dtrFormError"
-                    class="text-sm text-destructive"
-                    role="alert"
-                >
-                    {{ dtrFormError }}
-                </p>
-            </div>
-            <DialogFooter class="gap-2 pt-0 sm:justify-end">
-                <Button
-                    type="button"
-                    variant="outline"
-                    @click="dtrDialogOpen = false"
-                >
-                    Cancel
-                </Button>
-                <Button type="button" @click="generateMyDtrExcel">
-                    Generate DTR
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
 </template>

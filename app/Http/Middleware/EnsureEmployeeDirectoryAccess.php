@@ -19,6 +19,10 @@ class EnsureEmployeeDirectoryAccess
     public function handle(Request $request, Closure $next): Response
     {
         if (! $this->employeeTeamHrPagesAccess->allows($request->user(), $request)) {
+            if (! $request->isMethodSafe() || $request->expectsJson()) {
+                abort(403);
+            }
+
             return redirect()->route('dashboard');
         }
 

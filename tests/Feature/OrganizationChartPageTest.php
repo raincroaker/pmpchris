@@ -38,9 +38,9 @@ test('authenticated users can visit the organization chart page', function () {
 
 test('organization chart defaults to first selectable branch root when user has no branch picker session', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
@@ -73,10 +73,10 @@ test('organization chart defaults to first selectable branch root when user has 
 
 test('organization chart uses session branch root when user must select branch', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->firstOrFail();
@@ -107,10 +107,10 @@ test('organization chart uses session branch root when user must select branch',
 
 test('organization chart supports chart-local branch switch via query without mutating session branch', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
@@ -139,10 +139,10 @@ test('organization chart supports chart-local branch switch via query without mu
 
 test('organization chart marks managed branch capabilities for hr manager and denies unmanaged branch', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     $tagum = OrganizationalUnit::query()->where('code', 'TAG')->whereNull('parent_id')->firstOrFail();
@@ -175,10 +175,10 @@ test('organization chart marks managed branch capabilities for hr manager and de
 
 test('organization chart overall scope returns multi-branch graph with read-only capabilities', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
@@ -212,13 +212,13 @@ test('organization chart overall scope returns multi-branch graph with read-only
 
 test('organization chart supports active and all unit visibility modes', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
-    $inactiveUnit = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $inactiveUnit = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
     $inactiveUnit->is_active = false;
     $inactiveUnit->save();
 
@@ -255,10 +255,10 @@ test('organization chart supports active and all unit visibility modes', functio
 
 test('organization chart organization node includes org-level assigned employees', function () {
     /** @var TestCase $this */
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();

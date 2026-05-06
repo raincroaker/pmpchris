@@ -4,7 +4,7 @@ import {
 } from '@/components/hris/documents/documentsDriveHelpers';
 import type { DocumentsScope, DriveItem } from '@/components/hris/documents/documentsDriveTypes';
 
-const DRIVE_KEY_PREFIX = 'pmpchris:documents:drive:v2:';
+const DRIVE_KEY_PREFIX = 'pmpchris:documents:drive:v3:';
 const TOOLBAR_KEY_PREFIX = 'pmpchris:documents:toolbar:v1:';
 const TRASH_KEY = 'pmpchris:documents:trash:v1';
 

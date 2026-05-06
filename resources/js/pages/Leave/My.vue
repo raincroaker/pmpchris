@@ -14,6 +14,7 @@ import {
 import { computed, h, ref, watch } from 'vue';
 import HrisColumnFilterPopover from '@/components/hris/HrisColumnFilterPopover.vue';
 import HrisEmployeeDirectoryUnitAndPositions from '@/components/hris/HrisEmployeeDirectoryUnitAndPositions.vue';
+import HrisKpiCard from '@/components/hris/HrisKpiCard.vue';
 import HrisServerTablePagination from '@/components/hris/HrisServerTablePagination.vue';
 import HrisTanStackTable from '@/components/hris/HrisTanStackTable.vue';
 import TeamHrRequestStatusColumnHeader from '@/components/hris/TeamHrRequestStatusColumnHeader.vue';
@@ -631,142 +632,42 @@ const table = useVueTable({
             </div>
 
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <button
-                    type="button"
-                    class="group rounded-xl border border-border/70 bg-card text-start shadow-none transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                    aria-label="Open breakdown of approved calendar days by leave type"
-                    @click="openLeaveKpiDetail('approved')"
-                >
-                    <div
-                        class="flex gap-3 border-l-4 border-emerald-500 p-4 ps-5 dark:border-emerald-400"
-                    >
-                        <div
-                            class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300"
-                        >
-                            <CheckCircle2
-                                class="size-5 shrink-0"
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p
-                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                            >
-                                Approved days
-                            </p>
-                            <p
-                                class="mt-1 text-2xl font-semibold text-foreground tabular-nums"
-                            >
-                                {{ kpiApprovedDays }}
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                Tap for days by leave type · in range · filtered
-                            </p>
-                        </div>
-                    </div>
-                </button>
-                <button
-                    type="button"
-                    class="group rounded-xl border border-border/70 bg-card text-start shadow-none transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                    aria-label="Open approved vacation leave usage detail"
-                    @click="openLeaveKpiDetail('vacation')"
-                >
-                    <div
-                        class="flex gap-3 border-l-4 border-sky-500 p-4 ps-5 dark:border-sky-400"
-                    >
-                        <div
-                            class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-800 dark:bg-sky-400/15 dark:text-sky-200"
-                        >
-                            <Palmtree
-                                class="size-5 shrink-0"
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p
-                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                            >
-                                Vacation approved
-                            </p>
-                            <p
-                                class="mt-1 text-2xl font-semibold text-foreground tabular-nums"
-                            >
-                                {{ kpiVacationDays }}
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                Tap for VL segments · VL days · filtered window
-                            </p>
-                        </div>
-                    </div>
-                </button>
-                <button
-                    type="button"
-                    class="group rounded-xl border border-border/70 bg-card text-start shadow-none transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                    aria-label="Open list of upcoming leave starts"
-                    @click="openLeaveKpiDetail('upcoming')"
-                >
-                    <div
-                        class="flex gap-3 border-l-4 border-amber-500 p-4 ps-5 dark:border-amber-400"
-                    >
-                        <div
-                            class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-900 dark:bg-amber-400/15 dark:text-amber-200"
-                        >
-                            <CalendarArrowUp
-                                class="size-5 shrink-0"
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p
-                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                            >
-                                Upcoming from {{ kpiToday }}
-                            </p>
-                            <p
-                                class="mt-1 text-2xl font-semibold text-foreground tabular-nums"
-                            >
-                                {{ kpiUpcoming }}
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                Tap for dated rows · &ge; today · filtered
-                            </p>
-                        </div>
-                    </div>
-                </button>
-                <button
-                    type="button"
-                    class="group rounded-xl border border-border/70 bg-card text-start shadow-none transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                    aria-label="Open rejected requests detail"
-                    @click="openLeaveKpiDetail('rejected')"
-                >
-                    <div
-                        class="flex gap-3 border-l-4 border-rose-500 p-4 ps-5 dark:border-rose-400"
-                    >
-                        <div
-                            class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 text-rose-800 dark:bg-rose-400/15 dark:text-rose-200"
-                        >
-                            <XCircle
-                                class="size-5 shrink-0"
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p
-                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                            >
-                                Rejected rows
-                            </p>
-                            <p
-                                class="mt-1 text-2xl font-semibold text-foreground tabular-nums"
-                            >
-                                {{ kpiRejected }}
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                Tap for rejection list · filtered
-                            </p>
-                        </div>
-                    </div>
-                </button>
+                <HrisKpiCard
+                    title="Approved days"
+                    :value="kpiApprovedDays"
+                    hint="Tap for days by leave type · in range · filtered"
+                    tone="emerald"
+                    :icon="CheckCircle2"
+                    clickable
+                    @select="openLeaveKpiDetail('approved')"
+                />
+                <HrisKpiCard
+                    title="Vacation approved"
+                    :value="kpiVacationDays"
+                    hint="Tap for VL segments · VL days · filtered window"
+                    tone="sky"
+                    :icon="Palmtree"
+                    clickable
+                    @select="openLeaveKpiDetail('vacation')"
+                />
+                <HrisKpiCard
+                    :title="`Upcoming from ${kpiToday}`"
+                    :value="kpiUpcoming"
+                    hint="Tap for dated rows · ≥ today · filtered"
+                    tone="amber"
+                    :icon="CalendarArrowUp"
+                    clickable
+                    @select="openLeaveKpiDetail('upcoming')"
+                />
+                <HrisKpiCard
+                    title="Rejected rows"
+                    :value="kpiRejected"
+                    hint="Tap for rejection list · filtered"
+                    tone="rose"
+                    :icon="XCircle"
+                    clickable
+                    @select="openLeaveKpiDetail('rejected')"
+                />
             </div>
 
             <div

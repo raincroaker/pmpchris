@@ -397,7 +397,7 @@ test('hr manager can patch hire date on active employment', function (): void {
         ->and($employment->fresh()->separation_date)->toBeNull();
 });
 
-test('hr manager without managed workspace branch is redirected away from employment dates patch', function (): void {
+test('hr manager without managed workspace branch is forbidden from employment dates patch', function (): void {
     config(['hris.default_organization_code' => 'T-UPDATE-EMP-MGR-GATE']);
 
     $organization = Organization::factory()->create([
@@ -418,7 +418,7 @@ test('hr manager without managed workspace branch is redirected away from employ
         ->patch(route('employees.employments.update-dates', ['employment' => $employment->id]), employmentDatesAuthPayload([
             'hire_date' => '2019-01-12',
         ]))
-        ->assertRedirect(route('dashboard'));
+        ->assertForbidden();
 });
 
 test('active employment rejects separation payload without employment status', function (): void {

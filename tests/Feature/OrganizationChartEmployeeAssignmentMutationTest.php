@@ -162,17 +162,17 @@ function createEligibleEmployeeWithTwoPositions(OrganizationalUnit $root): array
 }
 
 beforeEach(function (): void {
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 });
 
 test('hr head can update unit employee assignment position and head flag', function () {
     /** @var OrganizationalUnit $panabo */
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     /** @var OrganizationalUnit $panaboSection */
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
 
     $setup = createUnitAssignedEmployeeWithTwoPositions($panabo, $panaboSection);
 
@@ -252,7 +252,7 @@ test('hr head can create unit employee assignment', function () {
     /** @var OrganizationalUnit $panabo */
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     /** @var OrganizationalUnit $panaboSection */
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
 
     $setup = createEligibleEmployeeWithTwoPositions($panabo);
 
@@ -342,7 +342,7 @@ test('create assignment rejects duplicate active employee in same unit', functio
     /** @var OrganizationalUnit $panabo */
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     /** @var OrganizationalUnit $panaboSection */
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
 
     $setup = createUnitAssignedEmployeeWithTwoPositions($panabo, $panaboSection);
 
@@ -368,7 +368,7 @@ test('create assignment allows multiple primary employees in the same unit', fun
     /** @var OrganizationalUnit $panabo */
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     /** @var OrganizationalUnit $panaboSection */
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
 
     $first = createEligibleEmployeeWithTwoPositions($panabo);
     $second = createEligibleEmployeeWithTwoPositions($panabo);
@@ -420,7 +420,7 @@ test('create assignment rejects position not owned by selected employee', functi
     /** @var OrganizationalUnit $panabo */
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     /** @var OrganizationalUnit $panaboSection */
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
 
     $candidate = createEligibleEmployeeWithTwoPositions($panabo);
     $other = createEligibleEmployeeWithTwoPositions($panabo);
@@ -447,7 +447,7 @@ test('hr head can remove unit assignment and it becomes available for search', f
     /** @var OrganizationalUnit $panabo */
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     /** @var OrganizationalUnit $panaboSection */
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
 
     $setup = createUnitAssignedEmployeeWithTwoPositions($panabo, $panaboSection);
 
@@ -484,7 +484,7 @@ test('employee assignment mutations reject overall chart scope context', functio
     /** @var OrganizationalUnit $panabo */
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     /** @var OrganizationalUnit $panaboSection */
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
     $setup = createUnitAssignedEmployeeWithTwoPositions($panabo, $panaboSection);
 
     /** @var User $hrHead */
@@ -509,7 +509,7 @@ test('remove assignment rejects past end date', function (): void {
     /** @var OrganizationalUnit $panabo */
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     /** @var OrganizationalUnit $panaboSection */
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
     $setup = createUnitAssignedEmployeeWithTwoPositions($panabo, $panaboSection);
 
     /** @var User $hrHead */

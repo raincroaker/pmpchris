@@ -1,4 +1,4 @@
-export type ChatMemberRole = 'owner' | 'admin' | 'member';
+export type ChatMemberRole = 'admin' | 'member';
 
 export type ChatMember = {
     id: number;
@@ -20,30 +20,20 @@ export type ChatMessage = {
     senderAvatarUrl?: string | null;
 };
 
-export type ChatMediaItem = {
-    id: number;
-    kind: 'image' | 'file' | 'link';
-    title: string;
-    subtitle: string;
-    href?: string;
-};
-
-export type ChatRoom = {
+export type UnitChatThread = {
     id: number;
     name: string;
-    description: string;
     createdLabel: string;
     avatarUrl?: string | null;
     statusLine: string;
     unreadCount: number;
     lastMessage: string;
     lastSeen: string;
-    isMuted: boolean;
-    isPinned: boolean;
     members: ChatMember[];
-    mediaItems: ChatMediaItem[];
     messages: ChatMessage[];
 };
+
+export type ChatRoom = UnitChatThread;
 
 export type EmployeeDirectoryItem = {
     id: number;

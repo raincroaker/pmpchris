@@ -24,6 +24,9 @@ class AttendanceTeamController extends Controller
         return Inertia::render('Attendance/Team', [
             'teamAttendanceDays' => $built['paginator'],
             'attendanceTeamFilters' => $built['filters'],
+            'attendanceTeamKpis' => $built['kpis'],
+            'attendanceTeamKpiEmployees' => $built['kpiEmployees'],
+            'attendanceTeamChart' => $built['chart'],
         ]);
     }
 }

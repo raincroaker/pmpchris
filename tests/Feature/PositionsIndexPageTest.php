@@ -262,9 +262,9 @@ test('employee users do not receive administration nav visibility shared prop', 
 });
 
 test('non-employee users receive administration nav visibility shared prop', function () {
-    $manager = User::factory()->withRoles(Role::CODE_HR_MANAGER)->create();
+    $hrHead = User::factory()->withRoles(Role::CODE_HR_HEAD)->create();
 
-    $this->actingAs($manager)
+    $this->actingAs($hrHead)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('showHrAdminNav', true));

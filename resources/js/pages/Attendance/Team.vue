@@ -3,11 +3,11 @@ import type { RequestPayload } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { getCoreRowModel, useVueTable } from '@tanstack/vue-table';
 import type { ColumnDef } from '@tanstack/vue-table';
+import { StackedBar } from '@unovis/ts';
+import { VisAxis, VisStackedBar, VisTooltip, VisXYContainer } from '@unovis/vue';
 import {
-    Calendar as CalendarIcon,
-    ChevronDown,
-    FileSpreadsheet,
     Info,
+    ListFilter,
     Plus,
     Search,
 } from 'lucide-vue-next';
@@ -49,11 +49,6 @@ import {
     InputGroupInput,
 } from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
@@ -63,7 +58,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Tooltip,
     TooltipContent,
@@ -114,7 +108,6 @@ import {
     TEAM_ATTENDANCE_FORM_WORK_SCHEDULE_TOOLTIP,
 } from '@/pages/Attendance/teamAttendanceUi';
 import { employeeSchedules, team as attendanceTeam } from '@/routes/attendance';
-import { dtrMockSample } from '@/routes/attendance/reports';
 import teamAttendanceDayRoutes from '@/routes/attendance/team/attendance-days';
 import type { BreadcrumbItem } from '@/types';
 
@@ -128,9 +121,50 @@ type AttendanceTeamFiltersProp = {
     status: TeamAttendanceStatusFilter;
     punctuality: TeamAttendancePunctualityFilter;
     recording_style: TeamAttendanceRecordingStyleFilter;
+    chart_half: 'first_half' | 'second_half';
     sort: 'work_date';
     direction: 'asc' | 'desc';
 };
+
+type AttendanceTeamKpis = {
+    lates_today: number;
+    absent_yesterday: number;
+    on_leave_today: number;
+    ot_yesterday: number;
+};
+
+type AttendanceTeamChartRow = {
+    date: string;
+    on_time: number;
+    late: number;
+    absent: number;
+};
+
+type AttendanceTeamChartProp = {
+    half: 'first_half' | 'second_half';
+    rows: AttendanceTeamChartRow[];
+};
+
+type AttendanceKpiEmployee = {
+    id: number;
+    display_name: string;
+    id_number: string;
+    unit_name: string;
+    unit_code: string | null;
+};
+
+type AttendanceTeamKpiEmployees = {
+    lates_today: AttendanceKpiEmployee[];
+    absent_yesterday: AttendanceKpiEmployee[];
+    on_leave_today: AttendanceKpiEmployee[];
+    ot_yesterday: AttendanceKpiEmployee[];
+};
+
+type KpiKey =
+    | 'lates_today'
+    | 'absent_yesterday'
+    | 'on_leave_today'
+    | 'ot_yesterday';
 
 type TeamAttendancePaginator = {
     data: TeamAttendanceRow[];
@@ -155,6 +189,9 @@ const props = withDefaults(
     defineProps<{
         teamAttendanceDays: TeamAttendancePaginator;
         attendanceTeamFilters: AttendanceTeamFiltersProp;
+        attendanceTeamKpis: AttendanceTeamKpis;
+        attendanceTeamKpiEmployees: AttendanceTeamKpiEmployees;
+        attendanceTeamChart: AttendanceTeamChartProp;
     }>(),
     {
         teamAttendanceDays: () => ({
@@ -175,8 +212,25 @@ const props = withDefaults(
             status: 'all',
             punctuality: 'all',
             recording_style: 'all',
+            chart_half: 'first_half',
             sort: 'work_date',
             direction: 'desc',
+        }),
+        attendanceTeamKpis: () => ({
+            lates_today: 0,
+            absent_yesterday: 0,
+            on_leave_today: 0,
+            ot_yesterday: 0,
+        }),
+        attendanceTeamChart: () => ({
+            half: 'first_half',
+            rows: [],
+        }),
+        attendanceTeamKpiEmployees: () => ({
+            lates_today: [],
+            absent_yesterday: [],
+            on_leave_today: [],
+            ot_yesterday: [],
         }),
     },
 );
@@ -206,6 +260,10 @@ function normalizedAttendanceFilters(): AttendanceTeamFiltersProp {
         status: (f.status ?? 'all') as TeamAttendanceStatusFilter,
         punctuality: (f.punctuality ?? 'all') as TeamAttendancePunctualityFilter,
         recording_style: (f.recording_style ?? 'all') as TeamAttendanceRecordingStyleFilter,
+        chart_half:
+            (f.chart_half ?? 'first_half') === 'second_half'
+                ? 'second_half'
+                : 'first_half',
         sort: 'work_date',
         direction: (f.direction ?? 'desc') === 'asc' ? 'asc' : 'desc',
     };
@@ -222,6 +280,7 @@ function buildQuery(
         status: TeamAttendanceStatusFilter;
         punctuality: TeamAttendancePunctualityFilter;
         recording_style: TeamAttendanceRecordingStyleFilter;
+        chart_half: 'first_half' | 'second_half';
         sort: 'work_date';
         direction: 'asc' | 'desc';
     }> = {},
@@ -240,6 +299,7 @@ function buildQuery(
         status: merged.status,
         punctuality: merged.punctuality,
         recording_style: merged.recording_style,
+        chart_half: merged.chart_half,
         sort: merged.sort,
         direction: merged.direction,
     };
@@ -267,6 +327,7 @@ function applyQuery(
         status: TeamAttendanceStatusFilter;
         punctuality: TeamAttendancePunctualityFilter;
         recording_style: TeamAttendanceRecordingStyleFilter;
+        chart_half: 'first_half' | 'second_half';
         sort: 'work_date';
         direction: 'asc' | 'desc';
     }> = {},
@@ -280,6 +341,139 @@ function applyQuery(
             replace: true,
         },
     );
+}
+
+const halfMonthOptions: Array<{ value: 'first_half' | 'second_half'; label: string }> = [
+    { value: 'first_half', label: '1st half (1-15)' },
+    { value: 'second_half', label: '2nd half (16-end)' },
+];
+
+const halfMonthSelectValue = computed(
+    () => props.attendanceTeamFilters.chart_half ?? 'first_half',
+);
+
+const halfMonthLabel = computed(() =>
+    props.attendanceTeamChart.half === 'second_half' ? '2nd half' : '1st half',
+);
+
+const chartData = computed(() => props.attendanceTeamChart.rows);
+const chartMonthLabel = computed(() => {
+    const date = new Date(`${props.attendanceTeamFilters.date_from}T12:00:00`);
+
+    return date.toLocaleDateString(undefined, {
+        month: 'long',
+        year: 'numeric',
+    });
+});
+const chartX = (d: AttendanceTeamChartRow): string => d.date;
+const chartY = [
+    (d: AttendanceTeamChartRow): number => d.on_time,
+    (d: AttendanceTeamChartRow): number => d.late,
+    (d: AttendanceTeamChartRow): number => d.absent,
+];
+const chartColors = ['#22c55e', '#f59e0b', '#ef4444'];
+const chartSeriesLegend = [
+    { label: 'On time', colorClass: 'bg-emerald-500' },
+    { label: 'Late', colorClass: 'bg-amber-500' },
+    { label: 'Absent', colorClass: 'bg-red-500' },
+];
+
+const chartTotals = computed(() =>
+    chartData.value.reduce(
+        (acc, row) => {
+            acc.on_time += row.on_time;
+            acc.late += row.late;
+            acc.absent += row.absent;
+
+            return acc;
+        },
+        { on_time: 0, late: 0, absent: 0 },
+    ),
+);
+const chartTooltipTriggers = {
+    [StackedBar.selectors.bar]: (d: AttendanceTeamChartRow): string => {
+        return `
+        <div style="display:grid;gap:4px;">
+            <div style="font-weight:600;">${d.date}</div>
+            <div>On time: ${d.on_time}</div>
+            <div>Late: ${d.late}</div>
+            <div>Absent: ${d.absent}</div>
+        </div>
+        `;
+    },
+};
+
+const kpiDialogOpen = ref(false);
+const kpiDialogKey = ref<KpiKey | null>(null);
+
+const kpiMeta: Record<
+    KpiKey,
+    {
+        title: string;
+        subtitle: string;
+        accentClass: string;
+        borderClass: string;
+        valueClass: string;
+    }
+> = {
+    lates_today: {
+        title: 'Lates today',
+        subtitle: 'Employees marked late today.',
+        accentClass: 'text-amber-600 dark:text-amber-300',
+        borderClass: 'border-amber-500/35',
+        valueClass: 'text-amber-600 dark:text-amber-300',
+    },
+    absent_yesterday: {
+        title: 'Absence yesterday',
+        subtitle: 'Employees with no attendance/leave yesterday.',
+        accentClass: 'text-red-600 dark:text-red-300',
+        borderClass: 'border-red-500/35',
+        valueClass: 'text-red-600 dark:text-red-300',
+    },
+    on_leave_today: {
+        title: 'On leave today',
+        subtitle: 'Employees on approved leave today.',
+        accentClass: 'text-sky-600 dark:text-sky-300',
+        borderClass: 'border-sky-500/35',
+        valueClass: 'text-sky-600 dark:text-sky-300',
+    },
+    ot_yesterday: {
+        title: 'OT yesterday',
+        subtitle: 'Employees with approved overtime yesterday.',
+        accentClass: 'text-violet-600 dark:text-violet-300',
+        borderClass: 'border-violet-500/35',
+        valueClass: 'text-violet-600 dark:text-violet-300',
+    },
+};
+
+const kpiCards = computed(() => {
+    return (Object.keys(kpiMeta) as KpiKey[]).map((key) => ({
+        key,
+        ...kpiMeta[key],
+        value: props.attendanceTeamKpis[key],
+        employees: props.attendanceTeamKpiEmployees[key] ?? [],
+    }));
+});
+
+const activeKpiMeta = computed(() => {
+    if (kpiDialogKey.value === null) {
+        return null;
+    }
+
+    return kpiMeta[kpiDialogKey.value];
+});
+
+const activeKpiEmployees = computed(() => {
+    if (kpiDialogKey.value === null) {
+        return [];
+    }
+
+    return props.attendanceTeamKpiEmployees[kpiDialogKey.value] ?? [];
+});
+
+function openKpiDialog(key: KpiKey): void {
+    kpiDialogKey.value = key;
+    kpiDialogOpen.value = true;
 }
 
 function toggleSort(column: AttendanceTeamFiltersProp['sort']): void {
@@ -549,257 +743,6 @@ const employeeAttendanceSetupHint = computed((): string | null => {
 
 const deleteDialogOpen = ref(false);
 const deleteTarget = ref<TeamAttendanceRow | null>(null);
-
-type DtrGenerationMode = 'individual' | 'team';
-
-type DtrMonthPart = 'whole' | 'first_half' | 'second_half';
-
-const dtrDialogOpen = ref(false);
-const dtrFormError = ref<string | null>(null);
-const dtrMode = ref<DtrGenerationMode>('individual');
-const dtrIndividualUnitId = ref<number | null>(null);
-const dtrSelectedEmployee = ref<TeamHrFormEmployeeHit | null>(null);
-const dtrYearMonth = ref('');
-const dtrMonthPart = ref<DtrMonthPart>('whole');
-const dtrTeamUnitId = ref<number | null>(null);
-const dtrMonthPopoverOpen = ref(false);
-
-const DTR_YEAR_LOOKBACK = 5;
-
-const DTR_YEAR_LOOKAHEAD = 3;
-
-const dtrPickerParts = computed((): { year: number; month: number } => {
-    const ym = dtrYearMonth.value.trim();
-    if (/^\d{4}-\d{2}$/.test(ym)) {
-        const [ys, ms] = ym.split('-');
-        const y = Number.parseInt(ys ?? '', 10);
-        const m = Number.parseInt(ms ?? '', 10);
-        if (!Number.isNaN(y) && !Number.isNaN(m) && m >= 1 && m <= 12) {
-            return { year: y, month: m };
-        }
-    }
-
-    const now = new Date();
-
-    return { year: now.getFullYear(), month: now.getMonth() + 1 };
-});
-
-function patchDtrYearMonth(year: number, month: number): void {
-    dtrYearMonth.value = `${year}-${String(month).padStart(2, '0')}`;
-    dtrFormError.value = null;
-}
-
-function onDtrPickerMonthPick(v: unknown): void {
-    const m = Number.parseInt(String(v ?? ''), 10);
-    if (Number.isNaN(m) || m < 1 || m > 12) {
-        return;
-    }
-
-    patchDtrYearMonth(dtrPickerParts.value.year, m);
-}
-
-function onDtrPickerYearPick(v: unknown): void {
-    const y = Number.parseInt(String(v ?? ''), 10);
-    if (Number.isNaN(y)) {
-        return;
-    }
-
-    patchDtrYearMonth(y, dtrPickerParts.value.month);
-}
-
-const dtrYearChoices = computed((): number[] => {
-    const anchor = new Date().getFullYear();
-    const out: number[] = [];
-    for (
-        let y = anchor - DTR_YEAR_LOOKBACK;
-        y <= anchor + DTR_YEAR_LOOKAHEAD;
-        y++
-    ) {
-        out.push(y);
-    }
-
-    return out;
-});
-
-const dtrMonthChoices = computed(
-    (): Array<{ value: number; label: string }> => {
-        return Array.from({ length: 12 }, (_, i) => {
-            const month = i + 1;
-            const label = new Date(2000, i, 1).toLocaleDateString(undefined, {
-                month: 'long',
-            });
-
-            return { value: month, label };
-        });
-    },
-);
-
-function dtrYearMonthPickerLabel(isoYm: string): string {
-    const ym = isoYm.trim();
-    if (!/^\d{4}-\d{2}$/.test(ym)) {
-        return 'Pick month…';
-    }
-
-    return new Date(`${ym}-01T12:00:00`).toLocaleDateString(undefined, {
-        month: 'long',
-        year: 'numeric',
-    });
-}
-
-function resetDtrForm(): void {
-    dtrMode.value = 'individual';
-    dtrIndividualUnitId.value = null;
-    dtrSelectedEmployee.value = null;
-    const now = new Date();
-    dtrYearMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    dtrMonthPart.value = 'whole';
-    dtrTeamUnitId.value = null;
-    dtrFormError.value = null;
-    dtrMonthPopoverOpen.value = false;
-}
-
-function openDtrDialog(): void {
-    void ensureBranchUnitsLoaded();
-    resetDtrForm();
-    dtrDialogOpen.value = true;
-}
-
-function dtrResolvedDateRange(): { from: string; to: string } | null {
-    const ym = dtrYearMonth.value.trim();
-    if (!/^\d{4}-\d{2}$/.test(ym)) {
-        return null;
-    }
-
-    const parts = ym.split('-').map((s) => Number.parseInt(s, 10));
-    const y = parts[0];
-    const mo = parts[1];
-    if (
-        Number.isNaN(y) ||
-        Number.isNaN(mo) ||
-        mo === undefined ||
-        mo < 1 ||
-        mo > 12
-    ) {
-        return null;
-    }
-
-    const lastDay = new Date(y, mo, 0).getDate();
-    let fromDay = 1;
-    let toDay = lastDay;
-    switch (dtrMonthPart.value) {
-        case 'first_half':
-            fromDay = 1;
-            toDay = Math.min(15, lastDay);
-
-            break;
-        case 'second_half':
-            fromDay = Math.min(16, lastDay);
-            toDay = lastDay;
-
-            break;
-        default:
-            fromDay = 1;
-            toDay = lastDay;
-
-            break;
-    }
-
-    if (fromDay > toDay) {
-        return null;
-    }
-
-    const pad = (n: number): string => String(n).padStart(2, '0');
-
-    return {
-        from: `${ym}-${pad(fromDay)}`,
-        to: `${ym}-${pad(toDay)}`,
-    };
-}
-
-function validateDtrForm(): string | null {
-    if (chartBranchId.value === null) {
-        return 'Select a workspace branch (header) before generating a DTR.';
-    }
-
-    if (branchUnitsLoading.value) {
-        return 'Units are still loading — try again in a moment.';
-    }
-
-    if (branchUnits.value.length === 0) {
-        return 'No units are available for this workspace branch.';
-    }
-
-    if (dtrMode.value === 'individual') {
-        if (dtrIndividualUnitId.value === null) {
-            return 'Choose a unit to search employees.';
-        }
-
-        if (dtrSelectedEmployee.value === null) {
-            return 'Choose an employee.';
-        }
-    } else if (dtrTeamUnitId.value === null) {
-        return 'Choose a unit.';
-    }
-
-    if (dtrResolvedDateRange() === null) {
-        return 'Pick a valid calendar month and segment.';
-    }
-
-    return null;
-}
-
-function generateDtrExcel(): void {
-    const err = validateDtrForm();
-    if (err) {
-        dtrFormError.value = err;
-
-        return;
-    }
-
-    if (dtrResolvedDateRange() === null) {
-        dtrFormError.value = 'Could not derive a date range.';
-
-        return;
-    }
-
-    const range = dtrResolvedDateRange();
-    if (range === null) {
-        dtrFormError.value = 'Could not derive a date range.';
-
-        return;
-    }
-
-    const query: Record<string, string | number> = {
-        mode: dtrMode.value,
-        date_from: range.from,
-        date_to: range.to,
-    };
-
-    if (dtrMode.value === 'individual' && dtrSelectedEmployee.value !== null) {
-        query.employee_id = dtrSelectedEmployee.value.id;
-    }
-
-    if (dtrMode.value === 'team' && dtrTeamUnitId.value !== null) {
-        query.unit_id = dtrTeamUnitId.value;
-    }
-
-    dtrFormError.value = null;
-    dtrDialogOpen.value = false;
-    appToast.info('Generating DTR export...');
-    window.location.assign(dtrMockSample.url({ query }));
-}
-
-function onDtrModeTabChange(v: string | number): void {
-    const s = String(v);
-    if (s === 'individual' || s === 'team') {
-        dtrMode.value = s;
-        dtrFormError.value = null;
-    }
-}
-
-watch(dtrIndividualUnitId, () => {
-    dtrSelectedEmployee.value = null;
-});
 
 
 async function ensureBranchUnitsLoaded(): Promise<void> {
@@ -1591,7 +1534,7 @@ const table = useVueTable({
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 lg:px-16"
+            class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto rounded-xl p-4 lg:px-16"
         >
             <div class="space-y-1">
                 <h1 class="text-xl font-semibold text-foreground">
@@ -1600,17 +1543,132 @@ const table = useVueTable({
                 <p
                     class="max-w-3xl text-sm leading-relaxed text-muted-foreground"
                 >
-                    Track clock-in and clock-out times for your branch workspace.
-                    Rows load from the server; search and filters update the URL.
-                    An attendance ID (ingest key or employee attendance ID) ties
-                    device or import data to each row. Toolbar dates filter by
-                    <span class="font-medium text-foreground">work date</span>
-                    (inclusive). Authorized HR users can add, edit, or soft-delete
-                    attendance days for employees in this workspace.
+                    Monitor team attendance and daily workforce KPIs.
                 </p>
             </div>
 
-            <div class="flex flex-col gap-3">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <button
+                    v-for="card in kpiCards"
+                    :key="card.key"
+                    type="button"
+                    class="group rounded-lg border bg-card p-4 text-left transition hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+                    :class="card.borderClass"
+                    @click="openKpiDialog(card.key)"
+                >
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                            {{ card.title }}
+                        </p>
+                        <ListFilter class="size-4 shrink-0 text-muted-foreground transition group-hover:text-foreground" />
+                    </div>
+                    <p class="mt-1 text-2xl font-semibold tabular-nums" :class="card.valueClass">
+                        {{ card.value }}
+                    </p>
+                    <p class="mt-1 text-xs text-muted-foreground">
+                        Click to view employees.
+                    </p>
+                </button>
+            </div>
+
+            <div
+                class="flex-none overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm"
+            >
+                <div
+                    class="flex flex-col gap-3 border-b border-border/60 bg-linear-to-r from-emerald-500/8 via-amber-500/6 to-red-500/8 px-4 py-3 sm:flex-row sm:items-start sm:justify-between"
+                >
+                    <div>
+                        <h2 class="text-sm font-semibold text-foreground">
+                            Attendance Trend
+                        </h2>
+                        <p class="text-xs text-muted-foreground">
+                            {{ chartMonthLabel }} • {{ halfMonthLabel }}
+                        </p>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            Stacked daily totals for on-time, late, and absent employees.
+                        </p>
+                    </div>
+                    <Select
+                        :model-value="halfMonthSelectValue"
+                        @update:model-value="
+                            (v) =>
+                                applyQuery({
+                                    chart_half:
+                                        v === 'second_half'
+                                            ? 'second_half'
+                                            : 'first_half',
+                                    page: 1,
+                                })
+                        "
+                    >
+                        <SelectTrigger
+                            class="h-9 w-full min-w-52 justify-between text-start font-normal sm:w-56"
+                            aria-label="Filter chart by half month"
+                        >
+                            <SelectValue placeholder="Select half month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem
+                                v-for="opt in halfMonthOptions"
+                                :key="opt.value"
+                                :value="opt.value"
+                            >
+                                {{ opt.label }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div class="relative z-10 grid gap-3 p-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" class="font-normal">
+                            Period: {{ chartMonthLabel }}
+                        </Badge>
+                        <Badge variant="outline" class="font-normal">
+                            Range: {{ halfMonthLabel }}
+                        </Badge>
+                        <Badge variant="outline" class="font-normal">
+                            On time {{ chartTotals.on_time }}
+                        </Badge>
+                        <Badge variant="outline" class="font-normal">
+                            Late {{ chartTotals.late }}
+                        </Badge>
+                        <Badge variant="outline" class="font-normal">
+                            Absent {{ chartTotals.absent }}
+                        </Badge>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div
+                            v-for="item in chartSeriesLegend"
+                            :key="item.label"
+                            class="inline-flex items-center gap-2 text-xs text-muted-foreground"
+                        >
+                            <span
+                                class="size-2.5 rounded-full"
+                                :class="item.colorClass"
+                            />
+                            <span>{{ item.label }}</span>
+                        </div>
+                    </div>
+
+                    <div
+                        class="relative h-[320px] min-w-0 overflow-hidden rounded-lg border border-border/60 bg-background/40 px-2 py-2"
+                    >
+                        <VisXYContainer :data="chartData">
+                            <VisAxis type="x" :x="chartX" />
+                            <VisAxis type="y" />
+                            <VisStackedBar
+                                :x="chartX"
+                                :y="chartY"
+                                :color="chartColors"
+                            />
+                            <VisTooltip :triggers="chartTooltipTriggers" />
+                        </VisXYContainer>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative z-0 flex flex-col gap-3">
                 <div
                     class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                 >
@@ -1677,18 +1735,6 @@ const table = useVueTable({
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            class="h-9 shrink-0 border-primary/60 text-primary hover:bg-primary/10 hover:text-primary dark:border-primary/70 dark:hover:bg-primary/15"
-                            @click="openDtrDialog"
-                        >
-                            <FileSpreadsheet
-                                class="size-4"
-                                aria-hidden="true"
-                            />
-                            <span class="mr-1">Generate DTR</span>
-                        </Button>
                         <Button
                             v-if="canAddTeamAttendanceRecords"
                             type="button"
@@ -1795,6 +1841,65 @@ const table = useVueTable({
                     type="button"
                     variant="outline"
                     @click="viewDialogOpen = false"
+                >
+                    Close
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="kpiDialogOpen">
+        <DialogContent class="sm:max-w-xl">
+            <DialogHeader>
+                <DialogTitle>
+                    {{ activeKpiMeta?.title ?? 'KPI employees' }}
+                </DialogTitle>
+                <DialogDescription>
+                    {{ activeKpiMeta?.subtitle ?? 'Employees for this KPI result.' }}
+                </DialogDescription>
+            </DialogHeader>
+
+            <ScrollArea :class="dialogViewScrollAreaClass">
+                <div
+                    v-if="activeKpiEmployees.length === 0"
+                    class="rounded-lg border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground"
+                >
+                    No employees matched this KPI for the current workspace and filters.
+                </div>
+                <div v-else class="grid gap-2">
+                    <div
+                        v-for="employee in activeKpiEmployees"
+                        :key="employee.id"
+                        class="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 px-3 py-2"
+                    >
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-medium text-foreground">
+                                {{ employee.display_name }}
+                            </p>
+                            <p class="font-mono text-xs text-muted-foreground">
+                                {{ employee.id_number }}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p class="truncate text-xs text-foreground">
+                                {{ employee.unit_name }}
+                            </p>
+                            <p
+                                v-if="employee.unit_code"
+                                class="font-mono text-[11px] text-muted-foreground"
+                            >
+                                {{ employee.unit_code }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </ScrollArea>
+
+            <DialogFooter>
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="kpiDialogOpen = false"
                 >
                     Close
                 </Button>
@@ -2225,302 +2330,6 @@ const table = useVueTable({
                 </Button>
             </DialogFooter>
             </TooltipProvider>
-        </DialogContent>
-    </Dialog>
-
-    <Dialog v-model:open="dtrDialogOpen">
-        <DialogContent class="flex max-h-[min(92vh,720px)] max-w-xl flex-col">
-            <DialogHeader>
-                <DialogTitle>Generate DTR</DialogTitle>
-                <DialogDescription>
-                    Choose who the report covers and the calendar month and
-                    segment. Generate downloads a DTR Excel file based on your
-                    selected scope.
-                </DialogDescription>
-            </DialogHeader>
-            <Tabs
-                class="flex min-h-0 flex-1 flex-col gap-3"
-                :model-value="dtrMode"
-                @update:model-value="onDtrModeTabChange"
-            >
-                <TabsList
-                    class="grid h-10 w-full shrink-0 grid-cols-2 rounded-lg bg-muted/40 p-1"
-                >
-                    <TabsTrigger
-                        value="individual"
-                        class="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        Individual
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="team"
-                        class="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        By unit
-                    </TabsTrigger>
-                </TabsList>
-                <ScrollArea
-                    class="max-h-[min(52vh,420px)] min-h-48 pr-3 **:data-[slot=scroll-area-viewport]:focus-visible:ring-0 **:data-[slot=scroll-area-viewport]:focus-visible:outline-none"
-                >
-                    <div class="space-y-4 py-1 pr-1 pb-4">
-                        <TabsContent value="individual" class="mt-0 space-y-4">
-                            <p
-                                v-if="branchUnitsLoadError"
-                                class="text-xs text-amber-700 dark:text-amber-300"
-                            >
-                                {{ branchUnitsLoadError }}
-                            </p>
-                            <p
-                                v-if="chartBranchId === null"
-                                class="text-xs text-destructive"
-                            >
-                                Select a workspace branch (header) to load units
-                                and search employees.
-                            </p>
-                            <div class="grid gap-2">
-                                <Label for="dtr-ind-unit">Unit</Label>
-                                <TeamHrUnitCombobox
-                                    id="dtr-ind-unit"
-                                    :units="branchUnits"
-                                    :model-value="dtrIndividualUnitId"
-                                    :loading="branchUnitsLoading"
-                                    :disabled="
-                                        chartBranchId === null ||
-                                        branchUnits.length === 0
-                                    "
-                                    placeholder="Search or choose unit…"
-                                    @update:model-value="
-                                        (v) => (dtrIndividualUnitId = v)
-                                    "
-                                />
-                            </div>
-                            <div class="grid gap-2">
-                                <Label for="dtr-ind-emp">Employee</Label>
-                                <TeamHrEmployeeCombobox
-                                    id="dtr-ind-emp"
-                                    v-model="dtrSelectedEmployee"
-                                    :chart-branch-id="chartBranchId"
-                                    :unit-id="dtrIndividualUnitId"
-                                    :disabled="
-                                        chartBranchId === null ||
-                                        dtrIndividualUnitId === null
-                                    "
-                                />
-                            </div>
-                        </TabsContent>
-                        <TabsContent value="team" class="mt-0 space-y-4">
-                            <p
-                                v-if="branchUnitsLoadError"
-                                class="text-xs text-amber-700 dark:text-amber-300"
-                            >
-                                {{ branchUnitsLoadError }}
-                            </p>
-                            <p
-                                v-if="chartBranchId === null"
-                                class="text-xs text-destructive"
-                            >
-                                Select a workspace branch (header) first.
-                            </p>
-                            <div class="grid gap-2">
-                                <Label for="dtr-team-unit">Unit</Label>
-                                <TeamHrUnitCombobox
-                                    id="dtr-team-unit"
-                                    :units="branchUnits"
-                                    :model-value="dtrTeamUnitId"
-                                    :loading="branchUnitsLoading"
-                                    :disabled="
-                                        chartBranchId === null ||
-                                        branchUnits.length === 0
-                                    "
-                                    placeholder="Search or choose unit…"
-                                    @update:model-value="
-                                        (v) => (dtrTeamUnitId = v)
-                                    "
-                                />
-                            </div>
-                        </TabsContent>
-
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="grid gap-2">
-                                <Label for="dtr-calendar-month-trigger">
-                                    Calendar month
-                                </Label>
-                                <Popover v-model:open="dtrMonthPopoverOpen">
-                                    <PopoverTrigger as-child>
-                                        <Button
-                                            id="dtr-calendar-month-trigger"
-                                            type="button"
-                                            variant="outline"
-                                            class="h-9 w-full justify-between gap-2 font-normal"
-                                            aria-label="Choose month and year"
-                                        >
-                                            <span
-                                                class="flex min-w-0 items-center gap-2"
-                                            >
-                                                <CalendarIcon
-                                                    class="size-4 shrink-0 text-muted-foreground"
-                                                    aria-hidden="true"
-                                                />
-                                                <span
-                                                    class="truncate tabular-nums"
-                                                    >{{
-                                                        dtrYearMonthPickerLabel(
-                                                            dtrYearMonth,
-                                                        )
-                                                    }}</span
-                                                >
-                                            </span>
-                                            <ChevronDown
-                                                class="size-4 shrink-0 opacity-50"
-                                                aria-hidden="true"
-                                            />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        class="w-[calc(100vw-2rem)] max-w-[20rem] p-4 sm:w-80"
-                                        align="start"
-                                    >
-                                        <div class="grid gap-4 sm:grid-cols-2">
-                                            <div class="grid gap-2">
-                                                <Label for="dtr-pop-month"
-                                                    >Month</Label
-                                                >
-                                                <Select
-                                                    :model-value="
-                                                        String(
-                                                            dtrPickerParts.month,
-                                                        )
-                                                    "
-                                                    @update:model-value="
-                                                        onDtrPickerMonthPick
-                                                    "
-                                                >
-                                                    <SelectTrigger
-                                                        id="dtr-pop-month"
-                                                        class="h-9 w-full"
-                                                        aria-label="Month"
-                                                    >
-                                                        <SelectValue
-                                                            placeholder="Month"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem
-                                                            v-for="opt in dtrMonthChoices"
-                                                            :key="opt.value"
-                                                            :value="
-                                                                String(
-                                                                    opt.value,
-                                                                )
-                                                            "
-                                                        >
-                                                            {{ opt.label }}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div class="grid gap-2">
-                                                <Label for="dtr-pop-year"
-                                                    >Year</Label
-                                                >
-                                                <Select
-                                                    :model-value="
-                                                        String(
-                                                            dtrPickerParts.year,
-                                                        )
-                                                    "
-                                                    @update:model-value="
-                                                        onDtrPickerYearPick
-                                                    "
-                                                >
-                                                    <SelectTrigger
-                                                        id="dtr-pop-year"
-                                                        class="h-9 w-full"
-                                                        aria-label="Year"
-                                                    >
-                                                        <SelectValue
-                                                            placeholder="Year"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem
-                                                            v-for="y in dtrYearChoices"
-                                                            :key="y"
-                                                            :value="String(y)"
-                                                        >
-                                                            {{ y }}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            <div class="grid gap-2">
-                                <Label for="dtr-month-part">Segment</Label>
-                                <Select
-                                    :model-value="dtrMonthPart"
-                                    @update:model-value="
-                                        (v: unknown) => {
-                                            const s = String(v ?? '');
-                                            if (
-                                                s === 'whole' ||
-                                                s === 'first_half' ||
-                                                s === 'second_half'
-                                            ) {
-                                                dtrMonthPart = s;
-                                                dtrFormError = null;
-                                            }
-                                        }
-                                    "
-                                >
-                                    <SelectTrigger
-                                        id="dtr-month-part"
-                                        class="h-9 w-full"
-                                        aria-label="Segment"
-                                    >
-                                        <SelectValue
-                                            placeholder="Whole month"
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="whole"
-                                            >Whole month</SelectItem
-                                        >
-                                        <SelectItem value="first_half"
-                                            >Days 1–15</SelectItem
-                                        >
-                                        <SelectItem value="second_half"
-                                            >Days 16 – end</SelectItem
-                                        >
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <p
-                            v-if="dtrFormError"
-                            class="text-sm text-destructive"
-                            role="alert"
-                        >
-                            {{ dtrFormError }}
-                        </p>
-                    </div>
-                </ScrollArea>
-            </Tabs>
-            <DialogFooter class="shrink-0 gap-2 pt-4 sm:pt-4">
-                <Button
-                    type="button"
-                    variant="outline"
-                    @click="dtrDialogOpen = false"
-                >
-                    Cancel
-                </Button>
-                <Button type="button" @click="generateDtrExcel">
-                    Generate DTR
-                </Button>
-            </DialogFooter>
         </DialogContent>
     </Dialog>
 

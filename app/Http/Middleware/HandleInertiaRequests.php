@@ -115,6 +115,7 @@ class HandleInertiaRequests extends Middleware
                 'canViewDocumentAdminViewCompany' => $this->canViewDocumentAdminViewCompany($user),
                 'canViewDocumentAdminViewBranch' => $this->canViewDocumentAdminViewBranch($user, $request),
                 'canViewDocumentAdminViewTeam' => $this->canViewDocumentAdminViewTeam($user, $request, $branchContext),
+                'canEditCompanyDocumentInternalMetadata' => $user?->hasRole(Role::CODE_SUPER_ADMIN) ?? false,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'showHrAdminNav' => $this->canShowAdministrationNav($user, $request),

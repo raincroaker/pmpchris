@@ -28,6 +28,7 @@ class IndexTeamAttendanceRequest extends FormRequest
             'status' => ['nullable', Rule::in(['all', 'complete', 'ongoing', 'incomplete'])],
             'punctuality' => ['nullable', Rule::in(['all', 'on_time', 'late', 'not_applicable'])],
             'recording_style' => ['nullable', Rule::in(['all', 'simple', 'split', 'overnight'])],
+            'chart_half' => ['nullable', Rule::in(['first_half', 'second_half'])],
             'sort' => ['required', Rule::in(['work_date'])],
             'direction' => ['required', Rule::in(['asc', 'desc'])],
         ];
@@ -71,6 +72,10 @@ class IndexTeamAttendanceRequest extends FormRequest
             $merge['recording_style'] = 'all';
         }
 
+        if (! $this->filled('chart_half')) {
+            $merge['chart_half'] = 'first_half';
+        }
+
         if (! $this->has('sort') || ! in_array((string) $this->input('sort'), ['work_date'], true)) {
             $merge['sort'] = 'work_date';
         }
@@ -104,6 +109,7 @@ class IndexTeamAttendanceRequest extends FormRequest
             'status' => $v['status'] ?? 'all',
             'punctuality' => $v['punctuality'] ?? 'all',
             'recording_style' => $v['recording_style'] ?? 'all',
+            'chart_half' => $v['chart_half'] ?? 'first_half',
             'sort' => $v['sort'] ?? 'work_date',
             'direction' => $v['direction'] ?? 'desc',
         ];

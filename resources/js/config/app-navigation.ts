@@ -19,11 +19,10 @@ import {
     organizationChart,
     positions,
 } from '@/routes';
-import { auditLogs, users } from '@/routes/admin';
+import { users } from '@/routes/admin';
 import {
     employeeSchedules as attendanceEmployeeSchedules,
     my as attendanceMy,
-    reports as attendanceReports,
     shifts as attendanceShifts,
     team as attendanceTeam,
 } from '@/routes/attendance';
@@ -133,7 +132,6 @@ export const appNavigationTree: NavTreeEntry[] = [
         items: [
             { title: 'My Attendance', href: () => attendanceMy() },
             { title: 'Team Attendance', href: () => attendanceTeam() },
-            { title: 'Attendance Reports', href: () => attendanceReports() },
         ],
     },
     {
@@ -206,7 +204,6 @@ export const appNavigationTree: NavTreeEntry[] = [
         adminOnly: true,
         items: [
             { title: 'Users & Roles', href: () => users() },
-            { title: 'Audit Logs', href: () => auditLogs() },
         ],
     },
 ];

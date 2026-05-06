@@ -221,7 +221,7 @@ test('hr head can patch basics for directory visible employee', function (): voi
         ->and((string) $employee->attendance_id)->toBe('ATT-NEW-1');
 });
 
-test('hr manager without managed workspace branch is redirected from about-me basics patch', function (): void {
+test('hr manager without managed workspace branch is forbidden from about-me basics patch', function (): void {
     config(['hris.default_organization_code' => 'T-ABOUT-ME-MGR-GATE']);
 
     $organization = Organization::factory()->create([
@@ -241,7 +241,7 @@ test('hr manager without managed workspace branch is redirected from about-me ba
             'last_name' => 'Route',
             'id_number' => $employee->id_number,
         ])
-        ->assertRedirect(route('dashboard'));
+        ->assertForbidden();
 });
 
 test('hr manager can patch basics for directory visible employee when workspace branch is managed', function (): void {

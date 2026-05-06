@@ -91,9 +91,21 @@ test('hr head may access employee team pages after selecting workspace branch', 
             ->component('Attendance/Team')
             ->has('teamAttendanceDays.data')
             ->has('attendanceTeamFilters')
+            ->has('attendanceTeamKpis')
+            ->has('attendanceTeamKpiEmployees')
+            ->has('attendanceTeamChart.rows')
             ->where('attendanceTeamFilters.recording_style', 'all')
+            ->where('attendanceTeamFilters.chart_half', 'first_half')
             ->where('attendanceTeamFilters.sort', 'work_date')
             ->where('attendanceTeamFilters.direction', 'desc'));
+
+    $this->actingAs($user)
+        ->get(route('attendance.team', ['chart_half' => 'second_half']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Attendance/Team')
+            ->where('attendanceTeamFilters.chart_half', 'second_half')
+            ->where('attendanceTeamChart.half', 'second_half'));
 });
 
 test('super admin may access employee team pages after selecting workspace branch', function (): void {

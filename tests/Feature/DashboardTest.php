@@ -2,8 +2,13 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    config(['hris.branch_picker_enabled' => false]);
+});
 
 test('guests are redirected to the login page', function () {
     $response = $this->get(route('dashboard'));
@@ -11,9 +16,18 @@ test('guests are redirected to the login page', function () {
 });
 
 test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
+    /** @var User $user */
+    $user = User::factory()->createOne();
     $this->actingAs($user);
 
-    $response = $this->get(route('dashboard'));
-    $response->assertOk();
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Dashboard')
+            ->has('kpis')
+            ->has('attendance.rows')
+            ->has('attendance.stats')
+            ->has('upcomingEvents')
+            ->has('todayFocus')
+            ->has('meta.updated_at'));
 });

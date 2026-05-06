@@ -152,6 +152,14 @@ class User extends Authenticatable
         return $this->hasMany(TeamCalendarEvent::class, 'last_edited_by_user_id');
     }
 
+    /**
+     * @return HasMany<UnitChatRead, $this>
+     */
+    public function unitChatReads(): HasMany
+    {
+        return $this->hasMany(UnitChatRead::class);
+    }
+
     public function hasRole(string $code): bool
     {
         return $this->roles()->where('code', $code)->exists();

@@ -13,6 +13,7 @@ import {
 import { computed, h, ref, watch } from 'vue';
 import HrisColumnFilterPopover from '@/components/hris/HrisColumnFilterPopover.vue';
 import HrisEmployeeDirectoryUnitAndPositions from '@/components/hris/HrisEmployeeDirectoryUnitAndPositions.vue';
+import HrisKpiCard from '@/components/hris/HrisKpiCard.vue';
 import HrisServerTablePagination from '@/components/hris/HrisServerTablePagination.vue';
 import HrisTanStackTable from '@/components/hris/HrisTanStackTable.vue';
 import TeamHrRequestStatusColumnHeader from '@/components/hris/TeamHrRequestStatusColumnHeader.vue';
@@ -583,143 +584,42 @@ const table = useVueTable({
             </div>
 
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <button
-                    type="button"
-                    class="group rounded-xl border border-border/70 bg-card text-start shadow-none transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                    aria-label="Open breakdown of approved hours by overtime policy"
-                    @click="openOvertimeKpiDetail('approved')"
-                >
-                    <div
-                        class="flex gap-3 border-l-4 border-emerald-500 p-4 ps-5 dark:border-emerald-400"
-                    >
-                        <div
-                            class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300"
-                        >
-                            <CheckCircle2
-                                class="size-5 shrink-0"
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p
-                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                            >
-                                Approved hours
-                            </p>
-                            <p
-                                class="mt-1 text-2xl font-semibold text-foreground tabular-nums"
-                            >
-                                {{ kpiApprovedHours.toFixed(1) }}
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                Tap for hours-by-policy breakdown · filtered
-                            </p>
-                        </div>
-                    </div>
-                </button>
-                <button
-                    type="button"
-                    class="group rounded-xl border border-border/70 bg-card text-start shadow-none transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                    aria-label="Open list of all filtered overtime entries"
-                    @click="openOvertimeKpiDetail('entries')"
-                >
-                    <div
-                        class="flex gap-3 border-l-4 border-violet-500 p-4 ps-5 dark:border-violet-400"
-                    >
-                        <div
-                            class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-900 dark:bg-violet-400/15 dark:text-violet-200"
-                        >
-                            <ListOrdered
-                                class="size-5 shrink-0"
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p
-                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                            >
-                                Entries filtered
-                            </p>
-                            <p
-                                class="mt-1 text-2xl font-semibold text-foreground tabular-nums"
-                            >
-                                {{ kpiEntries }}
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                Tap for chronological list · same filters as
-                                table
-                            </p>
-                        </div>
-                    </div>
-                </button>
-                <button
-                    type="button"
-                    class="group rounded-xl border border-border/70 bg-card text-start shadow-none transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                    aria-label="Open upcoming overtime by OT date"
-                    @click="openOvertimeKpiDetail('upcoming')"
-                >
-                    <div
-                        class="flex gap-3 border-l-4 border-amber-500 p-4 ps-5 dark:border-amber-400"
-                    >
-                        <div
-                            class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-900 dark:bg-amber-400/15 dark:text-amber-200"
-                        >
-                            <CalendarClock
-                                class="size-5 shrink-0"
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p
-                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                            >
-                                Upcoming OT from {{ kpiToday }}
-                            </p>
-                            <p
-                                class="mt-1 text-2xl font-semibold text-foreground tabular-nums"
-                            >
-                                {{ kpiUpcomingCount }}
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                Tap for dated rows · OT date ≥ today · filtered
-                            </p>
-                        </div>
-                    </div>
-                </button>
-                <button
-                    type="button"
-                    class="group rounded-xl border border-border/70 bg-card text-start shadow-none transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                    aria-label="Open rejected overtime detail"
-                    @click="openOvertimeKpiDetail('rejected')"
-                >
-                    <div
-                        class="flex gap-3 border-l-4 border-rose-500 p-4 ps-5 dark:border-rose-400"
-                    >
-                        <div
-                            class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 text-rose-800 dark:bg-rose-400/15 dark:text-rose-200"
-                        >
-                            <XCircle
-                                class="size-5 shrink-0"
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p
-                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                            >
-                                Rejected rows
-                            </p>
-                            <p
-                                class="mt-1 text-2xl font-semibold text-foreground tabular-nums"
-                            >
-                                {{ kpiRejected }}
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                Tap for rejection list · filtered
-                            </p>
-                        </div>
-                    </div>
-                </button>
+                <HrisKpiCard
+                    title="Approved hours"
+                    :value="kpiApprovedHours.toFixed(1)"
+                    hint="Tap for hours-by-policy breakdown · filtered"
+                    tone="emerald"
+                    :icon="CheckCircle2"
+                    clickable
+                    @select="openOvertimeKpiDetail('approved')"
+                />
+                <HrisKpiCard
+                    title="Entries filtered"
+                    :value="kpiEntries"
+                    hint="Tap for chronological list · same filters as table"
+                    tone="violet"
+                    :icon="ListOrdered"
+                    clickable
+                    @select="openOvertimeKpiDetail('entries')"
+                />
+                <HrisKpiCard
+                    :title="`Upcoming OT from ${kpiToday}`"
+                    :value="kpiUpcomingCount"
+                    hint="Tap for dated rows · OT date ≥ today · filtered"
+                    tone="amber"
+                    :icon="CalendarClock"
+                    clickable
+                    @select="openOvertimeKpiDetail('upcoming')"
+                />
+                <HrisKpiCard
+                    title="Rejected rows"
+                    :value="kpiRejected"
+                    hint="Tap for rejection list · filtered"
+                    tone="rose"
+                    :icon="XCircle"
+                    clickable
+                    @select="openOvertimeKpiDetail('rejected')"
+                />
             </div>
 
             <div

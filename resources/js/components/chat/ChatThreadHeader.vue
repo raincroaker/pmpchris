@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Info, MoreHorizontal } from 'lucide-vue-next';
+import { ArrowLeft, Info } from 'lucide-vue-next';
 import type { ChatRoom } from '@/components/chat/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,7 @@ function initials(name: string): string {
         <button
             type="button"
             class="min-w-0 flex-1 text-left"
-            aria-label="Open group details"
+            aria-label="Open unit details"
             @click="$emit('open-info')"
         >
             <p class="truncate text-sm font-semibold text-foreground md:text-base">
@@ -62,13 +62,10 @@ function initials(name: string): string {
             variant="ghost"
             size="icon"
             class="size-9 shrink-0 rounded-full"
-            aria-label="Open group details"
+            aria-label="Open unit details"
             @click="$emit('open-info')"
         >
             <Info class="size-4" />
-        </Button>
-        <Button type="button" variant="ghost" size="icon" class="size-9 shrink-0 rounded-full" aria-label="Chat actions">
-            <MoreHorizontal class="size-5" />
         </Button>
     </div>
 </template>

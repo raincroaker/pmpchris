@@ -167,7 +167,7 @@ test('company events index applies search and category filters', function (): vo
         'is_active' => true,
     ]);
 
-    CompanyCalendarEvent::query()->create([
+    $event = CompanyCalendarEvent::query()->create([
         'organization_id' => $organization->id,
         'category_id' => $meetingCategory->id,
         'title' => 'Leadership meeting',
@@ -175,7 +175,7 @@ test('company events index applies search and category filters', function (): vo
         'ends_at' => '2026-05-15 10:00:00',
         'is_all_day' => false,
     ]);
-    CompanyCalendarEvent::query()->create([
+    $event = CompanyCalendarEvent::query()->create([
         'organization_id' => $organization->id,
         'category_id' => $opsCategory->id,
         'title' => 'Operations sync',
@@ -212,7 +212,7 @@ test('company events index includes recurring occurrences in list results', func
         'is_active' => true,
     ]);
 
-    CompanyCalendarEvent::query()->create([
+    $event = CompanyCalendarEvent::query()->create([
         'organization_id' => $organization->id,
         'category_id' => $category->id,
         'title' => 'Weekly training',
@@ -241,7 +241,7 @@ test('company events index includes recurring occurrences in list results', func
         ->assertOk()
         ->assertJsonCount(4, 'data')
         ->assertJsonPath('data.0.title', 'Weekly training')
-        ->assertJsonPath('data.0.seriesId', 'company-1');
+        ->assertJsonPath('data.0.seriesId', 'company-'.$event->id);
 });
 
 test('branch events index includes recurring occurrences in list results', function (): void {
@@ -268,7 +268,7 @@ test('branch events index includes recurring occurrences in list results', funct
         'color_key' => 'emerald',
         'is_active' => true,
     ]);
-    BranchCalendarEvent::query()->create([
+    $event = BranchCalendarEvent::query()->create([
         'organization_id' => $organization->id,
         'root_unit_id' => $root->id,
         'category_id' => $category->id,
@@ -307,7 +307,7 @@ test('branch events index includes recurring occurrences in list results', funct
         ->assertOk()
         ->assertJsonCount(4, 'data')
         ->assertJsonPath('data.0.title', 'Branch recurring huddle')
-        ->assertJsonPath('data.0.seriesId', 'branch-1');
+        ->assertJsonPath('data.0.seriesId', 'branch-'.$event->id);
 });
 
 test('team events index includes recurring occurrences in list results', function (): void {
@@ -346,7 +346,7 @@ test('team events index includes recurring occurrences in list results', functio
         'is_active' => true,
     ]);
 
-    TeamCalendarEvent::query()->create([
+    $event = TeamCalendarEvent::query()->create([
         'organization_id' => $organization->id,
         'root_unit_id' => $root->id,
         'unit_id' => $unit->id,
@@ -387,7 +387,7 @@ test('team events index includes recurring occurrences in list results', functio
         ->assertOk()
         ->assertJsonCount(4, 'data')
         ->assertJsonPath('data.0.title', 'Team recurring coaching')
-        ->assertJsonPath('data.0.seriesId', 'team-1');
+        ->assertJsonPath('data.0.seriesId', 'team-'.$event->id);
 });
 
 test('company events index applies recurrence exceptions to occurrence list', function (): void {

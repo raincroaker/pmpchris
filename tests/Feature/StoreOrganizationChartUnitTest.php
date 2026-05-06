@@ -17,10 +17,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
+    config(['hris.default_organization_code' => 'PMPC']);
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
-    config(['hris.default_organization_code' => 'PMPC']);
 });
 
 test('hr head can create unit under managed chart branch subtree', function () {
@@ -136,7 +136,7 @@ test('create unit rejects duplicate code within organization', function () {
             'node_id' => 'unit-'.$panaboDepartment->id,
             'unit_type_name' => 'Section',
             'name' => 'Duplicate Code Section',
-            'code' => 'PAN-D1-S1',
+            'code' => 'PAN-D2-S1',
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['code']);
