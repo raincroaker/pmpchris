@@ -184,7 +184,9 @@ function toggleSort(column: EmployeeFilters['sort']): void {
     applyQuery({ sort: column, direction: nextDir, page: 1 });
 }
 
-function sortDirectionFor(column: EmployeeFilters['sort']): 'asc' | 'desc' | null {
+function sortDirectionFor(
+    column: EmployeeFilters['sort'],
+): 'asc' | 'desc' | null {
     if (props.filters.sort !== column) {
         return null;
     }
@@ -497,8 +499,8 @@ const table = useVueTable({
                 <h1 class="text-xl font-semibold text-foreground">Employees</h1>
                 <p v-if="organization" class="text-sm text-muted-foreground">
                     {{ organization.name }}
-                    <span class="text-muted-foreground/80"
-                        > ({{ organization.code }})</span
+                    <span class="text-muted-foreground/80">
+                        ({{ organization.code }})</span
                     >
                 </p>
                 <p v-else class="text-sm text-muted-foreground">
@@ -513,8 +515,8 @@ const table = useVueTable({
                     <span class="font-medium text-foreground">{{
                         branchScope.name
                     }}</span>
-                    <span class="text-muted-foreground/80"
-                        > ({{ branchScope.code }})</span
+                    <span class="text-muted-foreground/80">
+                        ({{ branchScope.code }})</span
                     >.
                 </p>
             </div>
@@ -558,7 +560,9 @@ const table = useVueTable({
                                     <template #default="{ modelValue }">
                                         <HrisUnitSelectTriggerLabel
                                             :select-model-value="modelValue"
-                                            :options="employeesToolbarUnitFilterOptions"
+                                            :options="
+                                                employeesToolbarUnitFilterOptions
+                                            "
                                         />
                                     </template>
                                 </SelectValue>

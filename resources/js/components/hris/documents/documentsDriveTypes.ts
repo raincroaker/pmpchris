@@ -100,8 +100,4 @@ export type DriveOutgoingRequestKind = 'none' | 'upload' | 'access';
  * Filter by outstanding request kind.
  * `none` = show only files with no upload/access request; `upload` / `access` = that queue.
  */
-export type DriveRequestFilter =
-    | 'all'
-    | 'none'
-    | 'upload'
-    | 'access';
+export type DriveRequestFilter = 'all' | 'none' | 'upload' | 'access';

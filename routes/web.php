@@ -40,6 +40,7 @@ use App\Http\Controllers\DestroyTeamAttendanceDayController;
 use App\Http\Controllers\DestroyTeamCalendarEventController;
 use App\Http\Controllers\DestroyWorkScheduleTemplateController;
 use App\Http\Controllers\DownloadCompanyDocumentController;
+use App\Http\Controllers\DownloadDtrMockExcelController;
 use App\Http\Controllers\EmployeesAboutMeController;
 use App\Http\Controllers\EmployeesCreateController;
 use App\Http\Controllers\EmployeesEmploymentHistoryController;
@@ -285,6 +286,8 @@ Route::middleware(['auth', 'verified', 'branch.selected'])->group(function () {
     });
 
     Route::get('attendance/my', AttendanceMyController::class)->name('attendance.my');
+    Route::get('attendance/reports/dtr-mock-sample', DownloadDtrMockExcelController::class)
+        ->name('attendance.reports.dtr-mock-sample');
     Route::permanentRedirect('attendance/schedule-assignment', '/attendance/employee-schedules');
 
     Route::get('attendance/shifts', WorkSchedulesController::class)->name('attendance.shifts');

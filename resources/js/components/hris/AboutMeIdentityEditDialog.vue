@@ -82,22 +82,19 @@ const birthdateTriggerLabel = computed((): string => {
     if (!selected) {
         return '';
     }
-    if (
-        !('toDate' in selected) ||
-        typeof selected.toDate !== 'function'
-    ) {
+    if (!('toDate' in selected) || typeof selected.toDate !== 'function') {
         return '';
     }
 
-    return formatCalendarTriggerFromDate(
-        selected.toDate(getLocalTimeZone()),
-    );
+    return formatCalendarTriggerFromDate(selected.toDate(getLocalTimeZone()));
 });
 
 const birthInvalid = computed(
     () => attemptedSave.value && birthdate.value === undefined,
 );
-const sexInvalid = computed(() => attemptedSave.value && sex.value.trim() === '');
+const sexInvalid = computed(
+    () => attemptedSave.value && sex.value.trim() === '',
+);
 const religionOtherInvalid = computed(
     () =>
         attemptedSave.value &&
@@ -140,8 +137,7 @@ function resetFromProfile(): void {
     fieldErrors.value = {};
     const d = props.profile.demographics;
     birthdate.value =
-        d.birthdate_iso !== null &&
-        /^\d{4}-\d{2}-\d{2}$/.test(d.birthdate_iso)
+        d.birthdate_iso !== null && /^\d{4}-\d{2}-\d{2}$/.test(d.birthdate_iso)
             ? (parseDate(d.birthdate_iso) as unknown as DateValue)
             : undefined;
     sex.value = d.sex;
@@ -210,11 +206,7 @@ function resolveReligionForSave(): {
 
 function onSave(): void {
     attemptedSave.value = true;
-    if (
-        birthInvalid.value ||
-        sexInvalid.value ||
-        religionOtherInvalid.value
-    ) {
+    if (birthInvalid.value || sexInvalid.value || religionOtherInvalid.value) {
         return;
     }
 
@@ -380,7 +372,10 @@ const genericFormError = computed((): string | null => {
                         class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-2"
                     >
                         <div class="grid gap-3">
-                            <Label for="about_me_id_sex" :class="aboutMeLabelRowClass">
+                            <Label
+                                for="about_me_id_sex"
+                                :class="aboutMeLabelRowClass"
+                            >
                                 <span>Sex</span>
                                 <Badge v-if="sexInvalid" variant="destructive">
                                     Required
@@ -391,7 +386,9 @@ const genericFormError = computed((): string | null => {
                                 @update:model-value="
                                     (v) => {
                                         sex =
-                                            typeof v === 'string' ? v : String(v);
+                                            typeof v === 'string'
+                                                ? v
+                                                : String(v);
                                     }
                                 "
                             >
@@ -573,10 +570,7 @@ const genericFormError = computed((): string | null => {
                         </p>
                     </div>
 
-                    <div
-                        v-if="religion === 'Other'"
-                        class="grid gap-3"
-                    >
+                    <div v-if="religion === 'Other'" class="grid gap-3">
                         <Label
                             for="about_me_id_religion_other"
                             :class="aboutMeLabelRowClass"

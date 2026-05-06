@@ -31,7 +31,8 @@ export const EMPLOYMENT_STATUS_LABEL: Record<EmploymentStatusApi, string> = {
 export function employmentStatusBadgeClass(
     status: EmploymentStatusApi,
 ): string {
-    const base = 'rounded-full border-transparent text-xs font-medium capitalize';
+    const base =
+        'rounded-full border-transparent text-xs font-medium capitalize';
     switch (status) {
         case 'active':
             return `${base} bg-emerald-100 text-emerald-900 dark:bg-emerald-900/45 dark:text-emerald-100`;

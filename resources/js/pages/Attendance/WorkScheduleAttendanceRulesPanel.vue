@@ -63,8 +63,8 @@ const fieldLabelClass =
                     <WorkScheduleFormFieldHint
                         ariaLabel="About regular attendance preview"
                     >
-                        Configures how clock punches become gross/net regular time.
-                        These fields are stored as JSON on the template
+                        Configures how clock punches become gross/net regular
+                        time. These fields are stored as JSON on the template
                         (attendance_rules) for the upcoming rules engine.
                     </WorkScheduleFormFieldHint>
                 </div>
@@ -79,10 +79,14 @@ const fieldLabelClass =
                         :class="fieldLabelClass"
                         :for="`${idPrefix}-grace-min`"
                     >
-                        <span class="min-w-0 shrink">Grace period (minutes)</span>
-                        <WorkScheduleFormFieldHint ariaLabel="About grace period">
-                            Minutes after the scheduled first start of the day that still
-                            count as on-time (first clock-in only).
+                        <span class="min-w-0 shrink"
+                            >Grace period (minutes)</span
+                        >
+                        <WorkScheduleFormFieldHint
+                            ariaLabel="About grace period"
+                        >
+                            Minutes after the scheduled first start of the day
+                            that still count as on-time (first clock-in only).
                             {{ graceScopeHint }}
                         </WorkScheduleFormFieldHint>
                     </Label>
@@ -107,8 +111,9 @@ const fieldLabelClass =
                         <WorkScheduleFormFieldHint
                             ariaLabel="About clock-in rounding"
                         >
-                            Snap the recorded first clock-in to the nearest interval before
-                            lateness and net-time math (placeholder).
+                            Snap the recorded first clock-in to the nearest
+                            interval before lateness and net-time math
+                            (placeholder).
                         </WorkScheduleFormFieldHint>
                     </Label>
                     <Select v-model="rules.clockInRounding">
@@ -121,7 +126,9 @@ const fieldLabelClass =
                         <SelectContent>
                             <SelectItem value="none">None (exact)</SelectItem>
                             <SelectItem value="5">Nearest 5 minutes</SelectItem>
-                            <SelectItem value="15">Nearest 15 minutes</SelectItem>
+                            <SelectItem value="15"
+                                >Nearest 15 minutes</SelectItem
+                            >
                             <SelectItem value="custom">Custom…</SelectItem>
                         </SelectContent>
                     </Select>
@@ -135,11 +142,14 @@ const fieldLabelClass =
                         :class="fieldLabelClass"
                         :for="`${idPrefix}-clock-round-custom`"
                     >
-                        <span class="min-w-0 shrink">Custom interval (minutes)</span>
+                        <span class="min-w-0 shrink"
+                            >Custom interval (minutes)</span
+                        >
                         <WorkScheduleFormFieldHint
                             ariaLabel="About custom rounding interval"
                         >
-                            Used when “Custom…” is selected for clock-in rounding.
+                            Used when “Custom…” is selected for clock-in
+                            rounding.
                         </WorkScheduleFormFieldHint>
                     </Label>
                     <Input
@@ -168,12 +178,15 @@ const fieldLabelClass =
                         <p class="text-sm font-medium text-foreground">
                             Cap net regular hours
                         </p>
-                        <WorkScheduleFormFieldHint ariaLabel="About net regular hours cap">
-                            Net credited time for regular pay does not exceed this daily
-                            standard when enabled. When the Schedule tab yields a net
-                            duration, this value follows it automatically (same as Gross −
-                            breaks / split gaps). If times are still incomplete, enter hours
-                            manually here, or finish the Schedule tab so net time can be
+                        <WorkScheduleFormFieldHint
+                            ariaLabel="About net regular hours cap"
+                        >
+                            Net credited time for regular pay does not exceed
+                            this daily standard when enabled. When the Schedule
+                            tab yields a net duration, this value follows it
+                            automatically (same as Gross − breaks / split gaps).
+                            If times are still incomplete, enter hours manually
+                            here, or finish the Schedule tab so net time can be
                             derived and this cap matches it.
                         </WorkScheduleFormFieldHint>
                     </div>
@@ -187,10 +200,14 @@ const fieldLabelClass =
                             class="flex flex-wrap items-center gap-2"
                         >
                             <p
-                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm tabular-nums text-foreground"
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
                                 :aria-label="`Net regular cap ${formatWorkScheduleNetHours(scheduledNetHours)} hours from schedule`"
                             >
-                                {{ formatWorkScheduleNetHours(scheduledNetHours) }}
+                                {{
+                                    formatWorkScheduleNetHours(
+                                        scheduledNetHours,
+                                    )
+                                }}
                                 <span class="text-muted-foreground">hours</span>
                             </p>
                             <span class="text-xs text-muted-foreground">
@@ -243,21 +260,27 @@ const fieldLabelClass =
                             class="space-y-3 border-t border-border/50 bg-muted/5 px-3 py-3"
                         >
                             <p class="text-xs text-muted-foreground">
-                                Optional guardrails when you need to limit how often late
-                                arrivals still qualify as “within grace” in a month.
+                                Optional guardrails when you need to limit how
+                                often late arrivals still qualify as “within
+                                grace” in a month.
                             </p>
                             <div
                                 class="flex flex-col gap-2 rounded-md border border-border/50 bg-background/40 p-3 sm:flex-row sm:items-center sm:justify-between"
                             >
-                                <div class="flex min-w-0 flex-1 items-center gap-2">
-                                    <p class="text-sm font-medium text-foreground">
+                                <div
+                                    class="flex min-w-0 flex-1 items-center gap-2"
+                                >
+                                    <p
+                                        class="text-sm font-medium text-foreground"
+                                    >
                                         Limit grace uses per employee / month
                                     </p>
                                     <WorkScheduleFormFieldHint
                                         ariaLabel="About grace uses limit"
                                     >
-                                        After the limit, additional late arrivals follow
-                                        policy (placeholder — not persisted yet).
+                                        After the limit, additional late
+                                        arrivals follow policy (placeholder —
+                                        not persisted yet).
                                     </WorkScheduleFormFieldHint>
                                 </div>
                                 <Switch
@@ -276,12 +299,15 @@ const fieldLabelClass =
                                         :class="fieldLabelClass"
                                         :for="`${idPrefix}-grace-limit`"
                                     >
-                                        <span class="min-w-0 shrink">Uses per month</span>
+                                        <span class="min-w-0 shrink"
+                                            >Uses per month</span
+                                        >
                                         <WorkScheduleFormFieldHint
                                             ariaLabel="About grace uses per month"
                                         >
-                                            Maximum times grace can apply to first clock-in
-                                            per employee per calendar month (placeholder).
+                                            Maximum times grace can apply to
+                                            first clock-in per employee per
+                                            calendar month (placeholder).
                                         </WorkScheduleFormFieldHint>
                                     </Label>
                                     <Input
@@ -293,7 +319,10 @@ const fieldLabelClass =
                                         step="1"
                                         class="w-full max-w-xs tabular-nums"
                                     />
-                                    <div :class="footerSpacerClass" aria-hidden="true" />
+                                    <div
+                                        :class="footerSpacerClass"
+                                        aria-hidden="true"
+                                    />
                                 </div>
                             </div>
                         </div>

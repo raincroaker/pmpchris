@@ -367,24 +367,28 @@ function mergeOvertimeRulesFromPayload(
 }
 
 /** Read-only view dialog: merged attendance rules when stored JSON exists. */
-const viewAttendanceDisplay = computed((): WorkScheduleAttendanceRulesDraft | null => {
-    const t = viewTarget.value;
-    if (t === null || t.attendance_rules == null) {
-        return null;
-    }
+const viewAttendanceDisplay = computed(
+    (): WorkScheduleAttendanceRulesDraft | null => {
+        const t = viewTarget.value;
+        if (t === null || t.attendance_rules == null) {
+            return null;
+        }
 
-    return mergeAttendanceRulesFromPayload(t.attendance_rules);
-});
+        return mergeAttendanceRulesFromPayload(t.attendance_rules);
+    },
+);
 
 /** Read-only view dialog: merged overtime rules when stored JSON exists. */
-const viewOvertimeDisplay = computed((): WorkScheduleOvertimeRulesDraft | null => {
-    const t = viewTarget.value;
-    if (t === null || t.overtime_rules == null) {
-        return null;
-    }
+const viewOvertimeDisplay = computed(
+    (): WorkScheduleOvertimeRulesDraft | null => {
+        const t = viewTarget.value;
+        if (t === null || t.overtime_rules == null) {
+            return null;
+        }
 
-    return mergeOvertimeRulesFromPayload(t.overtime_rules);
-});
+        return mergeOvertimeRulesFromPayload(t.overtime_rules);
+    },
+);
 
 function viewClockInRoundingSummary(
     rules: WorkScheduleAttendanceRulesDraft,
@@ -480,7 +484,9 @@ watch(
     { deep: true },
 );
 
-function cloneSplitSegmentsForDraft(segments: readonly ShiftSegment[]): SplitSegments {
+function cloneSplitSegmentsForDraft(
+    segments: readonly ShiftSegment[],
+): SplitSegments {
     if (segments.length < 2) {
         return [...defaultSplitSegments()];
     }
@@ -1917,10 +1923,10 @@ const table = useVueTable({
                                 Working schedule
                             </p>
                             <p class="text-xs text-muted-foreground">
-                                Split Sessions — gaps between Session 1 and 2 are
-                                unpaid breaktime (derived). Scheduled overtime
-                                uses the Overtime tab (not an extra session row
-                                here).
+                                Split Sessions — gaps between Session 1 and 2
+                                are unpaid breaktime (derived). Scheduled
+                                overtime uses the Overtime tab (not an extra
+                                session row here).
                             </p>
                         </div>
                         <div class="grid gap-1.5">
@@ -2076,7 +2082,7 @@ const table = useVueTable({
                                 <span class="text-xs text-muted-foreground"
                                     >Round clock-in to</span
                                 >
-                                <span class="tabular-nums text-foreground">{{
+                                <span class="text-foreground tabular-nums">{{
                                     viewClockInRoundingSummary(
                                         viewAttendanceDisplay,
                                     )
@@ -2092,7 +2098,7 @@ const table = useVueTable({
                                 <span class="text-xs text-muted-foreground"
                                     >Cap net regular hours</span
                                 >
-                                <span class="tabular-nums text-foreground">{{
+                                <span class="text-foreground tabular-nums">{{
                                     viewAttendanceDisplay.netRegularHoursCapEnabled
                                         ? `${formatWorkScheduleNetHours(viewAttendanceDisplay.netRegularHoursCap)} h`
                                         : 'No cap'
@@ -2178,7 +2184,7 @@ const table = useVueTable({
                                 <span class="text-xs text-muted-foreground"
                                     >Implied OT span</span
                                 >
-                                <span class="tabular-nums text-foreground">{{
+                                <span class="text-foreground tabular-nums">{{
                                     viewOvertimeSpanSummary ?? '—'
                                 }}</span>
                                 <span class="text-xs text-muted-foreground"
@@ -2200,7 +2206,7 @@ const table = useVueTable({
                                 <span class="text-xs text-muted-foreground"
                                     >OT boundary grace</span
                                 >
-                                <span class="tabular-nums text-foreground"
+                                <span class="text-foreground tabular-nums"
                                     >{{
                                         viewOvertimeDisplay.otGraceMinutes
                                     }}
@@ -2257,9 +2263,9 @@ const table = useVueTable({
                 <DialogTitle>Add Work Schedule</DialogTitle>
                 <DialogDescription>
                     Define the schedule window, then set attendance and overtime
-                    rules (attendance &amp; OT below are UI-only until the engine
-                    ships). Breaktime uses whole minutes; overnight means time out
-                    is the next calendar day.
+                    rules (attendance &amp; OT below are UI-only until the
+                    engine ships). Breaktime uses whole minutes; overnight means
+                    time out is the next calendar day.
                 </DialogDescription>
             </DialogHeader>
 
@@ -2277,334 +2283,457 @@ const table = useVueTable({
                     </TabsList>
 
                     <ScrollArea :class="dialogScheduleFormScrollClass">
-                    <div class="px-1 pt-1 pb-20">
-                    <TabsContent value="schedule" class="mt-0">
-                <div class="grid gap-4">
-                    <div class="grid gap-2">
-                        <Label for="shift-name">Schedule name</Label>
-                        <Input
-                            id="shift-name"
-                            v-model="activeDraft.name"
-                            placeholder="e.g. Weekday office template"
-                        />
-                    </div>
+                        <div class="px-1 pt-1 pb-20">
+                            <TabsContent value="schedule" class="mt-0">
+                                <div class="grid gap-4">
+                                    <div class="grid gap-2">
+                                        <Label for="shift-name"
+                                            >Schedule name</Label
+                                        >
+                                        <Input
+                                            id="shift-name"
+                                            v-model="activeDraft.name"
+                                            placeholder="e.g. Weekday office template"
+                                        />
+                                    </div>
 
-                    <div class="grid gap-2">
-                        <Label>Working days</Label>
-                        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            <label
-                                v-for="day in dayOfWeekOptions"
-                                :key="day.key"
-                                class="flex items-center gap-2 rounded-md border border-border/60 px-2 py-1.5"
-                            >
-                                <Checkbox
-                                    :model-value="
-                                        activeDraft.days.includes(day.key)
+                                    <div class="grid gap-2">
+                                        <Label>Working days</Label>
+                                        <div
+                                            class="grid grid-cols-2 gap-2 sm:grid-cols-4"
+                                        >
+                                            <label
+                                                v-for="day in dayOfWeekOptions"
+                                                :key="day.key"
+                                                class="flex items-center gap-2 rounded-md border border-border/60 px-2 py-1.5"
+                                            >
+                                                <Checkbox
+                                                    :model-value="
+                                                        activeDraft.days.includes(
+                                                            day.key,
+                                                        )
+                                                    "
+                                                    @update:model-value="
+                                                        toggleDraftDay(
+                                                            day.key,
+                                                            $event,
+                                                        )
+                                                    "
+                                                />
+                                                <span
+                                                    class="text-sm text-foreground"
+                                                    >{{ day.label }}</span
+                                                >
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                                    >
+                                        <template
+                                            v-if="
+                                                activeDraft.clock_pattern ===
+                                                'single_pair'
+                                            "
+                                        >
+                                            <div
+                                                class="flex items-center justify-between rounded-md border border-border/60 px-3 py-3"
+                                            >
+                                                <span
+                                                    class="text-sm font-medium text-foreground"
+                                                    >Overnight Shift</span
+                                                >
+                                                <Switch
+                                                    v-model="
+                                                        activeDraft.is_overnight
+                                                    "
+                                                />
+                                            </div>
+                                            <div
+                                                class="flex items-center justify-between rounded-md border border-border/60 px-3 py-3"
+                                            >
+                                                <span
+                                                    class="text-sm font-medium text-foreground"
+                                                    >Active</span
+                                                >
+                                                <Switch
+                                                    v-model="
+                                                        activeDraft.is_active
+                                                    "
+                                                />
+                                            </div>
+                                        </template>
+                                        <div
+                                            v-else
+                                            class="flex w-full min-w-0 items-center justify-between rounded-md border border-border/60 px-3 py-3 sm:col-span-2"
+                                        >
+                                            <span
+                                                class="text-sm font-medium text-foreground"
+                                                >Active</span
+                                            >
+                                            <Switch
+                                                v-model="activeDraft.is_active"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="space-y-4 rounded-lg border border-border/60 bg-muted/15 p-4"
+                                    >
+                                        <div>
+                                            <p
+                                                class="text-sm font-medium text-foreground"
+                                            >
+                                                Working schedule
+                                            </p>
+                                            <p
+                                                class="text-xs text-muted-foreground"
+                                            >
+                                                Choose Single Session (one
+                                                window) or Split Sessions (gaps
+                                                between blocks are unpaid
+                                                breaktime, derived from times).
+                                            </p>
+                                        </div>
+
+                                        <div class="grid gap-2">
+                                            <Label for="add-clock-pattern"
+                                                >Clock pattern</Label
+                                            >
+                                            <Select
+                                                :model-value="
+                                                    activeDraft.clock_pattern
+                                                "
+                                                @update:model-value="
+                                                    onClockPatternChange
+                                                "
+                                            >
+                                                <SelectTrigger
+                                                    id="add-clock-pattern"
+                                                    class="w-full"
+                                                >
+                                                    <SelectValue
+                                                        placeholder="Clock pattern"
+                                                    />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem
+                                                        value="single_pair"
+                                                    >
+                                                        Single Session
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                        value="split_sessions"
+                                                    >
+                                                        Split Sessions
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <Separator class="bg-border/70" />
+
+                                        <template
+                                            v-if="
+                                                activeDraft.clock_pattern ===
+                                                'single_pair'
+                                            "
+                                        >
+                                            <div>
+                                                <p
+                                                    class="text-sm font-medium text-foreground"
+                                                >
+                                                    Schedule window & hours
+                                                </p>
+                                                <p
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    Set wall-clock times and
+                                                    breaktime; gross and net
+                                                    update here so you can tune
+                                                    without scrolling.
+                                                </p>
+                                            </div>
+                                            <div
+                                                class="grid gap-3 sm:grid-cols-2"
+                                            >
+                                                <div class="grid gap-2">
+                                                    <Label for="shift-time-in"
+                                                        >Time in</Label
+                                                    >
+                                                    <Input
+                                                        id="shift-time-in"
+                                                        v-model="
+                                                            activeDraft.time_in
+                                                        "
+                                                        type="time"
+                                                    />
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <Label for="shift-time-out"
+                                                        >Time out</Label
+                                                    >
+                                                    <Input
+                                                        id="shift-time-out"
+                                                        v-model="
+                                                            activeDraft.time_out
+                                                        "
+                                                        type="time"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="grid gap-3 sm:grid-cols-3"
+                                            >
+                                                <div class="grid gap-2">
+                                                    <div
+                                                        class="flex min-h-9 items-center"
+                                                    >
+                                                        <WorkScheduleMetricLabel
+                                                            metric="gross"
+                                                        />
+                                                    </div>
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftGrossDurationLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <div
+                                                        class="flex min-h-9 items-center"
+                                                    >
+                                                        <Label
+                                                            for="add-break-time"
+                                                            >Breaktime
+                                                            (minutes)</Label
+                                                        >
+                                                    </div>
+                                                    <Input
+                                                        id="add-break-time"
+                                                        v-model.number="
+                                                            activeDraft.unpaid_break_minutes
+                                                        "
+                                                        type="number"
+                                                        min="0"
+                                                        step="5"
+                                                        class="tabular-nums"
+                                                    />
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <div
+                                                        class="flex min-h-9 items-center"
+                                                    >
+                                                        <WorkScheduleMetricLabel
+                                                            metric="net"
+                                                        />
+                                                    </div>
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftNetDurationLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <template
+                                            v-else-if="activeDraft.segments"
+                                        >
+                                            <div>
+                                                <p
+                                                    class="text-sm font-medium text-foreground"
+                                                >
+                                                    Schedule window & hours
+                                                </p>
+                                                <p
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    At least two same-day
+                                                    sessions; each next time in
+                                                    must be at or after the
+                                                    previous time out. Breaktime
+                                                    (minutes) should match the
+                                                    sum of unpaid gaps between
+                                                    sessions—add a third row
+                                                    when overtime is modeled as
+                                                    its own session window, or
+                                                    use the Overtime tab for a
+                                                    parallel OT block.
+                                                </p>
+                                            </div>
+                                            <div
+                                                v-for="(
+                                                    seg, segIdx
+                                                ) in activeDraft.segments"
+                                                :key="`add-seg-${segIdx}`"
+                                                class="space-y-3 rounded-md border border-border/50 bg-background/50 p-3"
+                                            >
+                                                <p
+                                                    class="text-sm font-medium text-foreground"
+                                                >
+                                                    {{
+                                                        seg.label.trim() !== ''
+                                                            ? seg.label
+                                                            : `Session ${segIdx + 1}`
+                                                    }}
+                                                </p>
+                                                <div
+                                                    class="grid gap-2 sm:grid-cols-2"
+                                                >
+                                                    <div class="grid gap-2">
+                                                        <Label
+                                                            :for="`add-seg-in-${segIdx}`"
+                                                            >Time in</Label
+                                                        >
+                                                        <Input
+                                                            :id="`add-seg-in-${segIdx}`"
+                                                            v-model="
+                                                                seg.time_in
+                                                            "
+                                                            type="time"
+                                                        />
+                                                    </div>
+                                                    <div class="grid gap-2">
+                                                        <Label
+                                                            :for="`add-seg-out-${segIdx}`"
+                                                            >Time out</Label
+                                                        >
+                                                        <Input
+                                                            :id="`add-seg-out-${segIdx}`"
+                                                            v-model="
+                                                                seg.time_out
+                                                            "
+                                                            type="time"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="grid gap-3 sm:grid-cols-3"
+                                            >
+                                                <div class="grid gap-2">
+                                                    <WorkScheduleMetricLabel
+                                                        metric="gross"
+                                                    />
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftGrossDurationLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <Label
+                                                        >Breaktime
+                                                        (minutes)</Label
+                                                    >
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftSplitUnpaidGapsLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <WorkScheduleMetricLabel
+                                                        metric="net"
+                                                    />
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftNetDurationLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label
+                                            for="add-shift-notes"
+                                            :class="optionalLabelRowClass"
+                                        >
+                                            <span>Notes</span>
+                                            <Badge variant="outline">
+                                                Optional
+                                            </Badge>
+                                            <Button
+                                                v-if="
+                                                    (
+                                                        activeDraft.notes ?? ''
+                                                    ).trim() !== ''
+                                                "
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                :class="clearFieldButtonClass"
+                                                aria-label="Clear notes"
+                                                @click="activeDraft.notes = ''"
+                                            >
+                                                <X class="size-3.5" />
+                                            </Button>
+                                        </Label>
+                                        <Textarea
+                                            id="add-shift-notes"
+                                            v-model="activeDraft.notes"
+                                            rows="4"
+                                            placeholder="Policy context, coverage, location…"
+                                            class="resize-y"
+                                        />
+                                    </div>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="attendance" class="mt-0">
+                                <WorkScheduleAttendanceRulesPanel
+                                    v-model="attendanceRulesDraft"
+                                    v-model:grace-minutes="
+                                        activeDraft.grace_late_arrival_minutes
                                     "
-                                    @update:model-value="
-                                        toggleDraftDay(day.key, $event)
+                                    id-prefix="add-att"
+                                    :clock-pattern="activeDraft.clock_pattern"
+                                    :scheduled-net-hours="
+                                        draftScheduledNetHours
                                     "
                                 />
-                                <span class="text-sm text-foreground">{{
-                                    day.label
-                                }}</span>
-                            </label>
-                        </div>
-                    </div>
+                            </TabsContent>
 
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <template
-                            v-if="activeDraft.clock_pattern === 'single_pair'"
-                        >
-                            <div
-                                class="flex items-center justify-between rounded-md border border-border/60 px-3 py-3"
-                            >
-                                <span
-                                    class="text-sm font-medium text-foreground"
-                                    >Overnight Shift</span
-                                >
-                                <Switch v-model="activeDraft.is_overnight" />
-                            </div>
-                            <div
-                                class="flex items-center justify-between rounded-md border border-border/60 px-3 py-3"
-                            >
-                                <span
-                                    class="text-sm font-medium text-foreground"
-                                    >Active</span
-                                >
-                                <Switch v-model="activeDraft.is_active" />
-                            </div>
-                        </template>
-                        <div
-                            v-else
-                            class="flex w-full min-w-0 items-center justify-between rounded-md border border-border/60 px-3 py-3 sm:col-span-2"
-                        >
-                            <span class="text-sm font-medium text-foreground"
-                                >Active</span
-                            >
-                            <Switch v-model="activeDraft.is_active" />
-                        </div>
-                    </div>
+                            <TabsContent value="overtime" class="mt-0">
+                                <WorkScheduleOvertimeRulesPanel
+                                    v-model="overtimeRulesDraft"
+                                    id-prefix="add-ot"
+                                    :clock-pattern="activeDraft.clock_pattern"
+                                    :regular-schedule-overnight="
+                                        regularScheduleOvernight
+                                    "
+                                    :scheduled-net-hours="
+                                        draftScheduledNetHours
+                                    "
+                                />
+                            </TabsContent>
 
-                    <div
-                        class="space-y-4 rounded-lg border border-border/60 bg-muted/15 p-4"
-                    >
-                        <div>
-                            <p class="text-sm font-medium text-foreground">
-                                Working schedule
-                            </p>
-                            <p class="text-xs text-muted-foreground">
-                                Choose Single Session (one window) or Split
-                                Sessions (gaps between blocks are unpaid
-                                breaktime, derived from times).
+                            <p
+                                v-if="formError"
+                                class="mt-4 text-sm text-destructive"
+                            >
+                                {{ formError }}
                             </p>
                         </div>
-
-                        <div class="grid gap-2">
-                            <Label for="add-clock-pattern">Clock pattern</Label>
-                            <Select
-                                :model-value="activeDraft.clock_pattern"
-                                @update:model-value="onClockPatternChange"
-                            >
-                                <SelectTrigger
-                                    id="add-clock-pattern"
-                                    class="w-full"
-                                >
-                                    <SelectValue placeholder="Clock pattern" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="single_pair">
-                                        Single Session
-                                    </SelectItem>
-                                    <SelectItem value="split_sessions">
-                                        Split Sessions
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <Separator class="bg-border/70" />
-
-                        <template
-                            v-if="activeDraft.clock_pattern === 'single_pair'"
-                        >
-                            <div>
-                                <p class="text-sm font-medium text-foreground">
-                                    Schedule window & hours
-                                </p>
-                                <p class="text-xs text-muted-foreground">
-                                    Set wall-clock times and breaktime; gross
-                                    and net update here so you can tune without
-                                    scrolling.
-                                </p>
-                            </div>
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                <div class="grid gap-2">
-                                    <Label for="shift-time-in">Time in</Label>
-                                    <Input
-                                        id="shift-time-in"
-                                        v-model="activeDraft.time_in"
-                                        type="time"
-                                    />
-                                </div>
-                                <div class="grid gap-2">
-                                    <Label for="shift-time-out">Time out</Label>
-                                    <Input
-                                        id="shift-time-out"
-                                        v-model="activeDraft.time_out"
-                                        type="time"
-                                    />
-                                </div>
-                            </div>
-                            <div class="grid gap-3 sm:grid-cols-3">
-                                <div class="grid gap-2">
-                                    <div
-                                        class="flex min-h-9 items-center"
-                                    >
-                                        <WorkScheduleMetricLabel
-                                            metric="gross"
-                                        />
-                                    </div>
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftGrossDurationLabel ?? '—' }}
-                                    </p>
-                                </div>
-                                <div class="grid gap-2">
-                                    <div
-                                        class="flex min-h-9 items-center"
-                                    >
-                                        <Label for="add-break-time"
-                                            >Breaktime (minutes)</Label
-                                        >
-                                    </div>
-                                    <Input
-                                        id="add-break-time"
-                                        v-model.number="
-                                            activeDraft.unpaid_break_minutes
-                                        "
-                                        type="number"
-                                        min="0"
-                                        step="5"
-                                        class="tabular-nums"
-                                    />
-                                </div>
-                                <div class="grid gap-2">
-                                    <div
-                                        class="flex min-h-9 items-center"
-                                    >
-                                        <WorkScheduleMetricLabel
-                                            metric="net"
-                                        />
-                                    </div>
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftNetDurationLabel ?? '—' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </template>
-
-                        <template v-else-if="activeDraft.segments">
-                            <div>
-                                <p class="text-sm font-medium text-foreground">
-                                    Schedule window & hours
-                                </p>
-                                <p class="text-xs text-muted-foreground">
-                                    At least two same-day sessions; each next
-                                    time in must be at or after the previous
-                                    time out. Breaktime (minutes) should match
-                                    the sum of unpaid gaps between sessions—add a
-                                    third row when overtime is modeled as its
-                                    own session window, or use the Overtime tab
-                                    for a parallel OT block.
-                                </p>
-                            </div>
-                            <div
-                                v-for="(seg, segIdx) in activeDraft.segments"
-                                :key="`add-seg-${segIdx}`"
-                                class="space-y-3 rounded-md border border-border/50 bg-background/50 p-3"
-                            >
-                                <p class="text-sm font-medium text-foreground">
-                                    {{
-                                        seg.label.trim() !== ''
-                                            ? seg.label
-                                            : `Session ${segIdx + 1}`
-                                    }}
-                                </p>
-                                <div class="grid gap-2 sm:grid-cols-2">
-                                    <div class="grid gap-2">
-                                        <Label :for="`add-seg-in-${segIdx}`"
-                                            >Time in</Label
-                                        >
-                                        <Input
-                                            :id="`add-seg-in-${segIdx}`"
-                                            v-model="seg.time_in"
-                                            type="time"
-                                        />
-                                    </div>
-                                    <div class="grid gap-2">
-                                        <Label :for="`add-seg-out-${segIdx}`"
-                                            >Time out</Label
-                                        >
-                                        <Input
-                                            :id="`add-seg-out-${segIdx}`"
-                                            v-model="seg.time_out"
-                                            type="time"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="grid gap-3 sm:grid-cols-3">
-                                <div class="grid gap-2">
-                                    <WorkScheduleMetricLabel metric="gross" />
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftGrossDurationLabel ?? '—' }}
-                                    </p>
-                                </div>
-                                <div class="grid gap-2">
-                                    <Label>Breaktime (minutes)</Label>
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftSplitUnpaidGapsLabel ?? '—' }}
-                                    </p>
-                                </div>
-                                <div class="grid gap-2">
-                                    <WorkScheduleMetricLabel metric="net" />
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftNetDurationLabel ?? '—' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <div class="space-y-2">
-                        <Label
-                            for="add-shift-notes"
-                            :class="optionalLabelRowClass"
-                        >
-                            <span>Notes</span>
-                            <Badge variant="outline"> Optional </Badge>
-                            <Button
-                                v-if="(activeDraft.notes ?? '').trim() !== ''"
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                :class="clearFieldButtonClass"
-                                aria-label="Clear notes"
-                                @click="activeDraft.notes = ''"
-                            >
-                                <X class="size-3.5" />
-                            </Button>
-                        </Label>
-                        <Textarea
-                            id="add-shift-notes"
-                            v-model="activeDraft.notes"
-                            rows="4"
-                            placeholder="Policy context, coverage, location…"
-                            class="resize-y"
-                        />
-                    </div>
-                </div>
-                    </TabsContent>
-
-                    <TabsContent value="attendance" class="mt-0">
-                        <WorkScheduleAttendanceRulesPanel
-                            v-model="attendanceRulesDraft"
-                            v-model:grace-minutes="
-                                activeDraft.grace_late_arrival_minutes
-                            "
-                            id-prefix="add-att"
-                            :clock-pattern="activeDraft.clock_pattern"
-                            :scheduled-net-hours="draftScheduledNetHours"
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="overtime" class="mt-0">
-                        <WorkScheduleOvertimeRulesPanel
-                            v-model="overtimeRulesDraft"
-                            id-prefix="add-ot"
-                            :clock-pattern="activeDraft.clock_pattern"
-                            :regular-schedule-overnight="regularScheduleOvernight"
-                            :scheduled-net-hours="draftScheduledNetHours"
-                        />
-                    </TabsContent>
-
-                    <p
-                        v-if="formError"
-                        class="mt-4 text-sm text-destructive"
-                    >
-                        {{ formError }}
-                    </p>
-                    </div>
                     </ScrollArea>
                 </Tabs>
             </div>
@@ -2628,10 +2757,10 @@ const table = useVueTable({
             <DialogHeader class="shrink-0 space-y-2">
                 <DialogTitle>Edit Work Schedule</DialogTitle>
                 <DialogDescription>
-                    Update the schedule window and attendance / overtime rule drafts
-                    (attendance &amp; OT tabs are UI-only until persisted). Breaktime
-                    uses whole minutes; overnight means time out is the next calendar
-                    day.
+                    Update the schedule window and attendance / overtime rule
+                    drafts (attendance &amp; OT tabs are UI-only until
+                    persisted). Breaktime uses whole minutes; overnight means
+                    time out is the next calendar day.
                 </DialogDescription>
             </DialogHeader>
 
@@ -2649,339 +2778,458 @@ const table = useVueTable({
                     </TabsList>
 
                     <ScrollArea :class="dialogScheduleFormScrollClass">
-                    <div class="px-1 pt-1 pb-20">
-                    <TabsContent value="schedule" class="mt-0">
-                <div class="grid gap-4">
-                    <div class="grid gap-2">
-                        <Label for="edit-shift-name">Schedule name</Label>
-                        <Input
-                            id="edit-shift-name"
-                            v-model="activeDraft.name"
-                        />
-                    </div>
+                        <div class="px-1 pt-1 pb-20">
+                            <TabsContent value="schedule" class="mt-0">
+                                <div class="grid gap-4">
+                                    <div class="grid gap-2">
+                                        <Label for="edit-shift-name"
+                                            >Schedule name</Label
+                                        >
+                                        <Input
+                                            id="edit-shift-name"
+                                            v-model="activeDraft.name"
+                                        />
+                                    </div>
 
-                    <div class="grid gap-2">
-                        <Label>Working days</Label>
-                        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            <label
-                                v-for="day in dayOfWeekOptions"
-                                :key="`edit-${day.key}`"
-                                class="flex items-center gap-2 rounded-md border border-border/60 px-2 py-1.5"
-                            >
-                                <Checkbox
-                                    :model-value="
-                                        activeDraft.days.includes(day.key)
+                                    <div class="grid gap-2">
+                                        <Label>Working days</Label>
+                                        <div
+                                            class="grid grid-cols-2 gap-2 sm:grid-cols-4"
+                                        >
+                                            <label
+                                                v-for="day in dayOfWeekOptions"
+                                                :key="`edit-${day.key}`"
+                                                class="flex items-center gap-2 rounded-md border border-border/60 px-2 py-1.5"
+                                            >
+                                                <Checkbox
+                                                    :model-value="
+                                                        activeDraft.days.includes(
+                                                            day.key,
+                                                        )
+                                                    "
+                                                    @update:model-value="
+                                                        toggleDraftDay(
+                                                            day.key,
+                                                            $event,
+                                                        )
+                                                    "
+                                                />
+                                                <span
+                                                    class="text-sm text-foreground"
+                                                    >{{ day.label }}</span
+                                                >
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                                    >
+                                        <template
+                                            v-if="
+                                                activeDraft.clock_pattern ===
+                                                'single_pair'
+                                            "
+                                        >
+                                            <div
+                                                class="flex items-center justify-between rounded-md border border-border/60 px-3 py-3"
+                                            >
+                                                <span
+                                                    class="text-sm font-medium text-foreground"
+                                                    >Overnight Shift</span
+                                                >
+                                                <Switch
+                                                    v-model="
+                                                        activeDraft.is_overnight
+                                                    "
+                                                />
+                                            </div>
+                                            <div
+                                                class="flex items-center justify-between rounded-md border border-border/60 px-3 py-3"
+                                            >
+                                                <span
+                                                    class="text-sm font-medium text-foreground"
+                                                    >Active</span
+                                                >
+                                                <Switch
+                                                    v-model="
+                                                        activeDraft.is_active
+                                                    "
+                                                />
+                                            </div>
+                                        </template>
+                                        <div
+                                            v-else
+                                            class="flex w-full min-w-0 items-center justify-between rounded-md border border-border/60 px-3 py-3 sm:col-span-2"
+                                        >
+                                            <span
+                                                class="text-sm font-medium text-foreground"
+                                                >Active</span
+                                            >
+                                            <Switch
+                                                v-model="activeDraft.is_active"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="space-y-4 rounded-lg border border-border/60 bg-muted/15 p-4"
+                                    >
+                                        <div>
+                                            <p
+                                                class="text-sm font-medium text-foreground"
+                                            >
+                                                Working schedule
+                                            </p>
+                                            <p
+                                                class="text-xs text-muted-foreground"
+                                            >
+                                                Choose Single Session (one
+                                                window) or Split Sessions (gaps
+                                                between blocks are unpaid
+                                                breaktime, derived from times).
+                                            </p>
+                                        </div>
+
+                                        <div class="grid gap-2">
+                                            <Label for="edit-clock-pattern"
+                                                >Clock pattern</Label
+                                            >
+                                            <Select
+                                                :model-value="
+                                                    activeDraft.clock_pattern
+                                                "
+                                                @update:model-value="
+                                                    onClockPatternChange
+                                                "
+                                            >
+                                                <SelectTrigger
+                                                    id="edit-clock-pattern"
+                                                    class="w-full"
+                                                >
+                                                    <SelectValue
+                                                        placeholder="Clock pattern"
+                                                    />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem
+                                                        value="single_pair"
+                                                    >
+                                                        Single Session
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                        value="split_sessions"
+                                                    >
+                                                        Split Sessions
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <Separator class="bg-border/70" />
+
+                                        <template
+                                            v-if="
+                                                activeDraft.clock_pattern ===
+                                                'single_pair'
+                                            "
+                                        >
+                                            <div>
+                                                <p
+                                                    class="text-sm font-medium text-foreground"
+                                                >
+                                                    Schedule window & hours
+                                                </p>
+                                                <p
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    Set wall-clock times and
+                                                    breaktime; gross and net
+                                                    update here so you can tune
+                                                    without scrolling.
+                                                </p>
+                                            </div>
+                                            <div
+                                                class="grid gap-3 sm:grid-cols-2"
+                                            >
+                                                <div class="grid gap-2">
+                                                    <Label
+                                                        for="edit-shift-time-in"
+                                                        >Time in</Label
+                                                    >
+                                                    <Input
+                                                        id="edit-shift-time-in"
+                                                        v-model="
+                                                            activeDraft.time_in
+                                                        "
+                                                        type="time"
+                                                    />
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <Label
+                                                        for="edit-shift-time-out"
+                                                        >Time out</Label
+                                                    >
+                                                    <Input
+                                                        id="edit-shift-time-out"
+                                                        v-model="
+                                                            activeDraft.time_out
+                                                        "
+                                                        type="time"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="grid gap-3 sm:grid-cols-3"
+                                            >
+                                                <div class="grid gap-2">
+                                                    <div
+                                                        class="flex min-h-9 items-center"
+                                                    >
+                                                        <WorkScheduleMetricLabel
+                                                            metric="gross"
+                                                        />
+                                                    </div>
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftGrossDurationLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <div
+                                                        class="flex min-h-9 items-center"
+                                                    >
+                                                        <Label
+                                                            for="edit-break-time"
+                                                            >Breaktime
+                                                            (minutes)</Label
+                                                        >
+                                                    </div>
+                                                    <Input
+                                                        id="edit-break-time"
+                                                        v-model.number="
+                                                            activeDraft.unpaid_break_minutes
+                                                        "
+                                                        type="number"
+                                                        min="0"
+                                                        step="5"
+                                                        class="tabular-nums"
+                                                    />
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <div
+                                                        class="flex min-h-9 items-center"
+                                                    >
+                                                        <WorkScheduleMetricLabel
+                                                            metric="net"
+                                                        />
+                                                    </div>
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftNetDurationLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <template
+                                            v-else-if="activeDraft.segments"
+                                        >
+                                            <div>
+                                                <p
+                                                    class="text-sm font-medium text-foreground"
+                                                >
+                                                    Schedule window & hours
+                                                </p>
+                                                <p
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    At least two same-day
+                                                    sessions; each next time in
+                                                    must be at or after the
+                                                    previous time out. Breaktime
+                                                    (minutes) should match the
+                                                    sum of unpaid gaps between
+                                                    sessions—add a third row
+                                                    when overtime is modeled as
+                                                    its own session window, or
+                                                    use the Overtime tab for a
+                                                    parallel OT block.
+                                                </p>
+                                            </div>
+                                            <div
+                                                v-for="(
+                                                    seg, segIdx
+                                                ) in activeDraft.segments"
+                                                :key="`edit-seg-${segIdx}`"
+                                                class="space-y-3 rounded-md border border-border/50 bg-background/50 p-3"
+                                            >
+                                                <p
+                                                    class="text-sm font-medium text-foreground"
+                                                >
+                                                    {{
+                                                        seg.label.trim() !== ''
+                                                            ? seg.label
+                                                            : `Session ${segIdx + 1}`
+                                                    }}
+                                                </p>
+                                                <div
+                                                    class="grid gap-2 sm:grid-cols-2"
+                                                >
+                                                    <div class="grid gap-2">
+                                                        <Label
+                                                            :for="`edit-seg-in-${segIdx}`"
+                                                            >Time in</Label
+                                                        >
+                                                        <Input
+                                                            :id="`edit-seg-in-${segIdx}`"
+                                                            v-model="
+                                                                seg.time_in
+                                                            "
+                                                            type="time"
+                                                        />
+                                                    </div>
+                                                    <div class="grid gap-2">
+                                                        <Label
+                                                            :for="`edit-seg-out-${segIdx}`"
+                                                            >Time out</Label
+                                                        >
+                                                        <Input
+                                                            :id="`edit-seg-out-${segIdx}`"
+                                                            v-model="
+                                                                seg.time_out
+                                                            "
+                                                            type="time"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="grid gap-3 sm:grid-cols-3"
+                                            >
+                                                <div class="grid gap-2">
+                                                    <WorkScheduleMetricLabel
+                                                        metric="gross"
+                                                    />
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftGrossDurationLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <Label
+                                                        >Breaktime
+                                                        (minutes)</Label
+                                                    >
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftSplitUnpaidGapsLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <WorkScheduleMetricLabel
+                                                        metric="net"
+                                                    />
+                                                    <p
+                                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
+                                                    >
+                                                        {{
+                                                            draftNetDurationLabel ??
+                                                            '—'
+                                                        }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label
+                                            for="edit-shift-notes"
+                                            :class="optionalLabelRowClass"
+                                        >
+                                            <span>Notes</span>
+                                            <Badge variant="outline">
+                                                Optional
+                                            </Badge>
+                                            <Button
+                                                v-if="
+                                                    (
+                                                        activeDraft.notes ?? ''
+                                                    ).trim() !== ''
+                                                "
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                :class="clearFieldButtonClass"
+                                                aria-label="Clear notes"
+                                                @click="activeDraft.notes = ''"
+                                            >
+                                                <X class="size-3.5" />
+                                            </Button>
+                                        </Label>
+                                        <Textarea
+                                            id="edit-shift-notes"
+                                            v-model="activeDraft.notes"
+                                            rows="4"
+                                            placeholder="Policy context, coverage, location…"
+                                            class="resize-y"
+                                        />
+                                    </div>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="attendance" class="mt-0">
+                                <WorkScheduleAttendanceRulesPanel
+                                    v-model="attendanceRulesDraft"
+                                    v-model:grace-minutes="
+                                        activeDraft.grace_late_arrival_minutes
                                     "
-                                    @update:model-value="
-                                        toggleDraftDay(day.key, $event)
+                                    id-prefix="edit-att"
+                                    :clock-pattern="activeDraft.clock_pattern"
+                                    :scheduled-net-hours="
+                                        draftScheduledNetHours
                                     "
                                 />
-                                <span class="text-sm text-foreground">{{
-                                    day.label
-                                }}</span>
-                            </label>
-                        </div>
-                    </div>
+                            </TabsContent>
 
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <template
-                            v-if="activeDraft.clock_pattern === 'single_pair'"
-                        >
-                            <div
-                                class="flex items-center justify-between rounded-md border border-border/60 px-3 py-3"
-                            >
-                                <span
-                                    class="text-sm font-medium text-foreground"
-                                    >Overnight Shift</span
-                                >
-                                <Switch v-model="activeDraft.is_overnight" />
-                            </div>
-                            <div
-                                class="flex items-center justify-between rounded-md border border-border/60 px-3 py-3"
-                            >
-                                <span
-                                    class="text-sm font-medium text-foreground"
-                                    >Active</span
-                                >
-                                <Switch v-model="activeDraft.is_active" />
-                            </div>
-                        </template>
-                        <div
-                            v-else
-                            class="flex w-full min-w-0 items-center justify-between rounded-md border border-border/60 px-3 py-3 sm:col-span-2"
-                        >
-                            <span class="text-sm font-medium text-foreground"
-                                >Active</span
-                            >
-                            <Switch v-model="activeDraft.is_active" />
-                        </div>
-                    </div>
+                            <TabsContent value="overtime" class="mt-0">
+                                <WorkScheduleOvertimeRulesPanel
+                                    v-model="overtimeRulesDraft"
+                                    id-prefix="edit-ot"
+                                    :clock-pattern="activeDraft.clock_pattern"
+                                    :regular-schedule-overnight="
+                                        regularScheduleOvernight
+                                    "
+                                    :scheduled-net-hours="
+                                        draftScheduledNetHours
+                                    "
+                                />
+                            </TabsContent>
 
-                    <div
-                        class="space-y-4 rounded-lg border border-border/60 bg-muted/15 p-4"
-                    >
-                        <div>
-                            <p class="text-sm font-medium text-foreground">
-                                Working schedule
-                            </p>
-                            <p class="text-xs text-muted-foreground">
-                                Choose Single Session (one window) or Split
-                                Sessions (gaps between blocks are unpaid
-                                breaktime, derived from times).
+                            <p
+                                v-if="formError"
+                                class="mt-4 text-sm text-destructive"
+                            >
+                                {{ formError }}
                             </p>
                         </div>
-
-                        <div class="grid gap-2">
-                            <Label for="edit-clock-pattern"
-                                >Clock pattern</Label
-                            >
-                            <Select
-                                :model-value="activeDraft.clock_pattern"
-                                @update:model-value="onClockPatternChange"
-                            >
-                                <SelectTrigger
-                                    id="edit-clock-pattern"
-                                    class="w-full"
-                                >
-                                    <SelectValue placeholder="Clock pattern" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="single_pair">
-                                        Single Session
-                                    </SelectItem>
-                                    <SelectItem value="split_sessions">
-                                        Split Sessions
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <Separator class="bg-border/70" />
-
-                        <template
-                            v-if="activeDraft.clock_pattern === 'single_pair'"
-                        >
-                            <div>
-                                <p class="text-sm font-medium text-foreground">
-                                    Schedule window & hours
-                                </p>
-                                <p class="text-xs text-muted-foreground">
-                                    Set wall-clock times and breaktime; gross
-                                    and net update here so you can tune without
-                                    scrolling.
-                                </p>
-                            </div>
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                <div class="grid gap-2">
-                                    <Label for="edit-shift-time-in"
-                                        >Time in</Label
-                                    >
-                                    <Input
-                                        id="edit-shift-time-in"
-                                        v-model="activeDraft.time_in"
-                                        type="time"
-                                    />
-                                </div>
-                                <div class="grid gap-2">
-                                    <Label for="edit-shift-time-out"
-                                        >Time out</Label
-                                    >
-                                    <Input
-                                        id="edit-shift-time-out"
-                                        v-model="activeDraft.time_out"
-                                        type="time"
-                                    />
-                                </div>
-                            </div>
-                            <div class="grid gap-3 sm:grid-cols-3">
-                                <div class="grid gap-2">
-                                    <div
-                                        class="flex min-h-9 items-center"
-                                    >
-                                        <WorkScheduleMetricLabel
-                                            metric="gross"
-                                        />
-                                    </div>
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftGrossDurationLabel ?? '—' }}
-                                    </p>
-                                </div>
-                                <div class="grid gap-2">
-                                    <div
-                                        class="flex min-h-9 items-center"
-                                    >
-                                        <Label for="edit-break-time"
-                                            >Breaktime (minutes)</Label
-                                        >
-                                    </div>
-                                    <Input
-                                        id="edit-break-time"
-                                        v-model.number="
-                                            activeDraft.unpaid_break_minutes
-                                        "
-                                        type="number"
-                                        min="0"
-                                        step="5"
-                                        class="tabular-nums"
-                                    />
-                                </div>
-                                <div class="grid gap-2">
-                                    <div
-                                        class="flex min-h-9 items-center"
-                                    >
-                                        <WorkScheduleMetricLabel
-                                            metric="net"
-                                        />
-                                    </div>
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftNetDurationLabel ?? '—' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </template>
-
-                        <template v-else-if="activeDraft.segments">
-                            <div>
-                                <p class="text-sm font-medium text-foreground">
-                                    Schedule window & hours
-                                </p>
-                                <p class="text-xs text-muted-foreground">
-                                    At least two same-day sessions; each next
-                                    time in must be at or after the previous
-                                    time out. Breaktime (minutes) should match
-                                    the sum of unpaid gaps between sessions—add a
-                                    third row when overtime is modeled as its
-                                    own session window, or use the Overtime tab
-                                    for a parallel OT block.
-                                </p>
-                            </div>
-                            <div
-                                v-for="(seg, segIdx) in activeDraft.segments"
-                                :key="`edit-seg-${segIdx}`"
-                                class="space-y-3 rounded-md border border-border/50 bg-background/50 p-3"
-                            >
-                                <p class="text-sm font-medium text-foreground">
-                                    {{
-                                        seg.label.trim() !== ''
-                                            ? seg.label
-                                            : `Session ${segIdx + 1}`
-                                    }}
-                                </p>
-                                <div class="grid gap-2 sm:grid-cols-2">
-                                    <div class="grid gap-2">
-                                        <Label :for="`edit-seg-in-${segIdx}`"
-                                            >Time in</Label
-                                        >
-                                        <Input
-                                            :id="`edit-seg-in-${segIdx}`"
-                                            v-model="seg.time_in"
-                                            type="time"
-                                        />
-                                    </div>
-                                    <div class="grid gap-2">
-                                        <Label :for="`edit-seg-out-${segIdx}`"
-                                            >Time out</Label
-                                        >
-                                        <Input
-                                            :id="`edit-seg-out-${segIdx}`"
-                                            v-model="seg.time_out"
-                                            type="time"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="grid gap-3 sm:grid-cols-3">
-                                <div class="grid gap-2">
-                                    <WorkScheduleMetricLabel metric="gross" />
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftGrossDurationLabel ?? '—' }}
-                                    </p>
-                                </div>
-                                <div class="grid gap-2">
-                                    <Label>Breaktime (minutes)</Label>
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftSplitUnpaidGapsLabel ?? '—' }}
-                                    </p>
-                                </div>
-                                <div class="grid gap-2">
-                                    <WorkScheduleMetricLabel metric="net" />
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
-                                    >
-                                        {{ draftNetDurationLabel ?? '—' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <div class="space-y-2">
-                        <Label
-                            for="edit-shift-notes"
-                            :class="optionalLabelRowClass"
-                        >
-                            <span>Notes</span>
-                            <Badge variant="outline"> Optional </Badge>
-                            <Button
-                                v-if="(activeDraft.notes ?? '').trim() !== ''"
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                :class="clearFieldButtonClass"
-                                aria-label="Clear notes"
-                                @click="activeDraft.notes = ''"
-                            >
-                                <X class="size-3.5" />
-                            </Button>
-                        </Label>
-                        <Textarea
-                            id="edit-shift-notes"
-                            v-model="activeDraft.notes"
-                            rows="4"
-                            placeholder="Policy context, coverage, location…"
-                            class="resize-y"
-                        />
-                    </div>
-                </div>
-                    </TabsContent>
-
-                    <TabsContent value="attendance" class="mt-0">
-                        <WorkScheduleAttendanceRulesPanel
-                            v-model="attendanceRulesDraft"
-                            v-model:grace-minutes="
-                                activeDraft.grace_late_arrival_minutes
-                            "
-                            id-prefix="edit-att"
-                            :clock-pattern="activeDraft.clock_pattern"
-                            :scheduled-net-hours="draftScheduledNetHours"
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="overtime" class="mt-0">
-                        <WorkScheduleOvertimeRulesPanel
-                            v-model="overtimeRulesDraft"
-                            id-prefix="edit-ot"
-                            :clock-pattern="activeDraft.clock_pattern"
-                            :regular-schedule-overnight="regularScheduleOvernight"
-                            :scheduled-net-hours="draftScheduledNetHours"
-                        />
-                    </TabsContent>
-
-                    <p
-                        v-if="formError"
-                        class="mt-4 text-sm text-destructive"
-                    >
-                        {{ formError }}
-                    </p>
-                    </div>
                     </ScrollArea>
                 </Tabs>
             </div>

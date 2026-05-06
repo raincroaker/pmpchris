@@ -510,9 +510,7 @@ const columns = computed((): ColumnDef<TeamLeaveRow>[] => [
         header: () => h('span', { class: tablePlainHeadClass }, 'Duration'),
         cell: ({ row }) => {
             const r = row.original;
-            const unitsLabel = formatLeaveUnitsLabel(
-                resolveLeaveDaysForRow(r),
-            );
+            const unitsLabel = formatLeaveUnitsLabel(resolveLeaveDaysForRow(r));
 
             return h(
                 'span',
@@ -820,9 +818,7 @@ const table = useVueTable({
                                         >
                                             {{
                                                 formatLeaveUnitsLabel(
-                                                    resolveLeaveDaysForRow(
-                                                        row,
-                                                    ),
+                                                    resolveLeaveDaysForRow(row),
                                                 )
                                             }}
                                         </p>
@@ -904,9 +900,7 @@ const table = useVueTable({
                                         :title="`Span summary: ${row.duration_label}`"
                                         >{{
                                             formatLeaveUnitsLabel(
-                                                resolveLeaveDaysForRow(
-                                                    row,
-                                                ),
+                                                resolveLeaveDaysForRow(row),
                                             )
                                         }}</span
                                     >
@@ -984,276 +978,284 @@ const table = useVueTable({
                             v-if="viewTarget"
                             :class="dialogScrollAreaClass"
                         >
-                        <div class="grid gap-4 px-1 py-1 sm:grid-cols-2">
-                            <div class="grid gap-1.5 sm:col-span-2">
-                                <p
-                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                >
-                                    Leave type
-                                </p>
-                                <div
-                                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                                >
-                                    <span class="text-foreground">{{
-                                        viewTarget.leave_type_name
-                                    }}</span>
-                                    <span
-                                        class="font-mono text-xs text-muted-foreground tabular-nums"
-                                    >
-                                        {{ viewTarget.leave_type_code }}
-                                    </span>
-                                </div>
-                            </div>
-                            <HrisEmployeeDirectoryUnitAndPositions
-                                :unit-name="viewTarget.unit_name"
-                                :unit-code="viewTarget.unit_code"
-                                :unit-directory-type="
-                                    viewTarget.unit_type ??
-                                    'Organizational unit'
-                                "
-                                :unit-directory-color="
-                                    viewTarget.unit_type_color ?? null
-                                "
-                                :placement-is-primary="
-                                    viewTarget.unit_is_primary ?? false
-                                "
-                                :positions="viewTarget.positions ?? []"
-                            />
-                            <div class="grid gap-1.5">
-                                <p
-                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                >
-                                    Start
-                                </p>
-                                <p
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
-                                >
-                                    {{
-                                        dateLineWithHalf(
-                                            viewTarget.start_date,
-                                            viewTarget.is_half_day_start,
-                                            'start',
-                                        )
-                                    }}
-                                </p>
-                            </div>
-                            <div class="grid gap-1.5">
-                                <p
-                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                >
-                                    End
-                                </p>
-                                <p
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
-                                >
-                                    {{
-                                        dateLineWithHalf(
-                                            viewTarget.end_date,
-                                            viewTarget.is_half_day_end,
-                                            'end',
-                                        )
-                                    }}
-                                </p>
-                            </div>
-                            <div class="grid gap-1.5 sm:col-span-2">
-                                <div class="flex items-center gap-1.5">
+                            <div class="grid gap-4 px-1 py-1 sm:grid-cols-2">
+                                <div class="grid gap-1.5 sm:col-span-2">
                                     <p
                                         class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                     >
-                                        Leave units
+                                        Leave type
                                     </p>
-                                    <Tooltip>
-                                        <TooltipTrigger as-child>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
-                                                aria-label="How leave units are shown"
-                                            >
-                                                <Info
-                                                    class="size-3.5"
-                                                    aria-hidden="true"
-                                                />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent
-                                            side="top"
-                                            class="max-w-sm text-pretty"
+                                    <div
+                                        class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                                    >
+                                        <span class="text-foreground">{{
+                                            viewTarget.leave_type_name
+                                        }}</span>
+                                        <span
+                                            class="font-mono text-xs text-muted-foreground tabular-nums"
                                         >
-                                            <p>
-                                                <span class="font-medium">
-                                                    Span summary (saved):
-                                                </span>
-                                                {{ viewTarget.duration_label }}.
-                                            </p>
-                                            <p class="mt-2">
-                                                Units here are reconstructed from
-                                                the saved start and end (every
-                                                calendar day in range). When
-                                                per-day rows are stored and
-                                                returned by the API, this will
-                                                match exactly.
-                                            </p>
-                                        </TooltipContent>
-                                    </Tooltip>
+                                            {{ viewTarget.leave_type_code }}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                                >
-                                    <p class="font-medium text-foreground">
+                                <HrisEmployeeDirectoryUnitAndPositions
+                                    :unit-name="viewTarget.unit_name"
+                                    :unit-code="viewTarget.unit_code"
+                                    :unit-directory-type="
+                                        viewTarget.unit_type ??
+                                        'Organizational unit'
+                                    "
+                                    :unit-directory-color="
+                                        viewTarget.unit_type_color ?? null
+                                    "
+                                    :placement-is-primary="
+                                        viewTarget.unit_is_primary ?? false
+                                    "
+                                    :positions="viewTarget.positions ?? []"
+                                />
+                                <div class="grid gap-1.5">
+                                    <p
+                                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Start
+                                    </p>
+                                    <p
+                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                                    >
                                         {{
-                                            formatLeaveUnitsLabel(
-                                                viewTargetDerivedLeaveDays,
+                                            dateLineWithHalf(
+                                                viewTarget.start_date,
+                                                viewTarget.is_half_day_start,
+                                                'start',
                                             )
                                         }}
                                     </p>
                                 </div>
-                            </div>
-                            <div class="grid gap-1.5 sm:col-span-2">
-                                <p
-                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                >
-                                    Counted days
-                                </p>
-                                <div
-                                    class="flex flex-wrap gap-1.5 rounded-md border border-border/50 bg-muted/15 px-3 py-2.5"
-                                >
-                                    <Badge
-                                        v-for="row in viewTargetDerivedLeaveDays"
-                                        :key="`my-view-day-${row.date}`"
-                                        variant="secondary"
-                                        class="max-w-full gap-1 tabular-nums font-normal"
+                                <div class="grid gap-1.5">
+                                    <p
+                                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                     >
-                                        <span class="truncate">{{
-                                            formatCalendarTriggerFromIsoYmd(
-                                                row.date,
+                                        End
+                                    </p>
+                                    <p
+                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                                    >
+                                        {{
+                                            dateLineWithHalf(
+                                                viewTarget.end_date,
+                                                viewTarget.is_half_day_end,
+                                                'end',
                                             )
-                                        }}</span>
-                                        <span
-                                            v-if="row.is_half_day"
-                                            class="shrink-0 text-muted-foreground"
-                                            >· ½</span
-                                        >
-                                    </Badge>
+                                        }}
+                                    </p>
                                 </div>
-                            </div>
-                            <div class="grid gap-1.5 sm:col-span-2">
-                                <p
-                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                >
-                                    Decision maker
-                                </p>
-                                <div
-                                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
-                                >
-                                    <template
-                                        v-if="
-                                            viewTarget.approver_name ||
-                                            (
-                                                viewTarget.approver_id_number ??
-                                                ''
-                                            ).trim() !== ''
-                                        "
-                                    >
-                                        <span
-                                            v-if="viewTarget.approver_name"
-                                            class="text-foreground"
+                                <div class="grid gap-1.5 sm:col-span-2">
+                                    <div class="flex items-center gap-1.5">
+                                        <p
+                                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                         >
-                                            {{ viewTarget.approver_name }}
-                                        </span>
-                                        <span
+                                            Leave units
+                                        </p>
+                                        <Tooltip>
+                                            <TooltipTrigger as-child>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                                    aria-label="How leave units are shown"
+                                                >
+                                                    <Info
+                                                        class="size-3.5"
+                                                        aria-hidden="true"
+                                                    />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                                side="top"
+                                                class="max-w-sm text-pretty"
+                                            >
+                                                <p>
+                                                    <span class="font-medium">
+                                                        Span summary (saved):
+                                                    </span>
+                                                    {{
+                                                        viewTarget.duration_label
+                                                    }}.
+                                                </p>
+                                                <p class="mt-2">
+                                                    Units here are reconstructed
+                                                    from the saved start and end
+                                                    (every calendar day in
+                                                    range). When per-day rows
+                                                    are stored and returned by
+                                                    the API, this will match
+                                                    exactly.
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                    <div
+                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                                    >
+                                        <p class="font-medium text-foreground">
+                                            {{
+                                                formatLeaveUnitsLabel(
+                                                    viewTargetDerivedLeaveDays,
+                                                )
+                                            }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="grid gap-1.5 sm:col-span-2">
+                                    <p
+                                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Counted days
+                                    </p>
+                                    <div
+                                        class="flex flex-wrap gap-1.5 rounded-md border border-border/50 bg-muted/15 px-3 py-2.5"
+                                    >
+                                        <Badge
+                                            v-for="row in viewTargetDerivedLeaveDays"
+                                            :key="`my-view-day-${row.date}`"
+                                            variant="secondary"
+                                            class="max-w-full gap-1 font-normal tabular-nums"
+                                        >
+                                            <span class="truncate">{{
+                                                formatCalendarTriggerFromIsoYmd(
+                                                    row.date,
+                                                )
+                                            }}</span>
+                                            <span
+                                                v-if="row.is_half_day"
+                                                class="shrink-0 text-muted-foreground"
+                                                >· ½</span
+                                            >
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <div class="grid gap-1.5 sm:col-span-2">
+                                    <p
+                                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Decision maker
+                                    </p>
+                                    <div
+                                        class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
+                                    >
+                                        <template
                                             v-if="
+                                                viewTarget.approver_name ||
                                                 (
                                                     viewTarget.approver_id_number ??
                                                     ''
                                                 ).trim() !== ''
                                             "
-                                            class="font-mono text-xs text-muted-foreground tabular-nums"
+                                        >
+                                            <span
+                                                v-if="viewTarget.approver_name"
+                                                class="text-foreground"
+                                            >
+                                                {{ viewTarget.approver_name }}
+                                            </span>
+                                            <span
+                                                v-if="
+                                                    (
+                                                        viewTarget.approver_id_number ??
+                                                        ''
+                                                    ).trim() !== ''
+                                                "
+                                                class="font-mono text-xs text-muted-foreground tabular-nums"
+                                            >
+                                                {{
+                                                    (
+                                                        viewTarget.approver_id_number ??
+                                                        ''
+                                                    ).trim()
+                                                }}
+                                            </span>
+                                        </template>
+                                        <span
+                                            v-else
+                                            class="text-muted-foreground"
+                                        >
+                                            —
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="grid gap-1.5 sm:col-span-2">
+                                    <p
+                                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Status
+                                    </p>
+                                    <div
+                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                                    >
+                                        <Badge
+                                            variant="outline"
+                                            :class="
+                                                statusBadgeClass(
+                                                    viewTarget.status,
+                                                )
+                                            "
+                                        >
+                                            {{ statusLabel(viewTarget.status) }}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <div
+                                    class="grid gap-3 sm:col-span-2 sm:grid-cols-2"
+                                >
+                                    <div class="grid gap-1.5">
+                                        <p
+                                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                        >
+                                            Submitted
+                                        </p>
+                                        <p
+                                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
                                         >
                                             {{
-                                                (
-                                                    viewTarget.approver_id_number ??
-                                                    ''
-                                                ).trim()
+                                                formatIsoCalendarDate(
+                                                    viewTarget.submitted_at,
+                                                )
                                             }}
-                                        </span>
-                                    </template>
-                                    <span v-else class="text-muted-foreground">
-                                        —
-                                    </span>
+                                        </p>
+                                    </div>
+                                    <div class="grid gap-1.5">
+                                        <p
+                                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                        >
+                                            Approve date
+                                        </p>
+                                        <p
+                                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                                        >
+                                            {{
+                                                viewTarget.decided_at
+                                                    ? formatIsoCalendarDate(
+                                                          viewTarget.decided_at,
+                                                      )
+                                                    : '—'
+                                            }}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="grid gap-1.5 sm:col-span-2">
-                                <p
-                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                >
-                                    Status
-                                </p>
-                                <div
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                                >
-                                    <Badge
-                                        variant="outline"
-                                        :class="
-                                            statusBadgeClass(viewTarget.status)
-                                        "
-                                    >
-                                        {{ statusLabel(viewTarget.status) }}
-                                    </Badge>
-                                </div>
-                            </div>
-                            <div
-                                class="grid gap-3 sm:col-span-2 sm:grid-cols-2"
-                            >
-                                <div class="grid gap-1.5">
+                                <div class="grid gap-1.5 sm:col-span-2">
                                     <p
                                         class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                     >
-                                        Submitted
+                                        Reason
                                     </p>
                                     <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
                                     >
-                                        {{
-                                            formatIsoCalendarDate(
-                                                viewTarget.submitted_at,
-                                            )
-                                        }}
-                                    </p>
-                                </div>
-                                <div class="grid gap-1.5">
-                                    <p
-                                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        Approve date
-                                    </p>
-                                    <p
-                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
-                                    >
-                                        {{
-                                            viewTarget.decided_at
-                                                ? formatIsoCalendarDate(
-                                                      viewTarget.decided_at,
-                                                  )
-                                                : '—'
-                                        }}
+                                        {{ viewTarget.reason?.trim() || '—' }}
                                     </p>
                                 </div>
                             </div>
-                            <div class="grid gap-1.5 sm:col-span-2">
-                                <p
-                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                >
-                                    Reason
-                                </p>
-                                <p
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
-                                >
-                                    {{ viewTarget.reason?.trim() || '—' }}
-                                </p>
-                            </div>
-                        </div>
                         </ScrollArea>
                     </TooltipProvider>
                     <DialogFooter>

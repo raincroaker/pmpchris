@@ -1320,203 +1320,209 @@ const unitSelectValue = computed(() => unitFilter.value);
                         v-if="viewTarget"
                         class="grid gap-3 px-2 py-2 text-sm sm:grid-cols-2"
                     >
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Employee
-                        </p>
-                        <div
-                            class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                        >
-                            <span class="text-foreground">{{
-                                viewTarget.employee.display_name
-                            }}</span>
-                            <span
-                                class="font-mono text-xs text-muted-foreground tabular-nums"
+                        <div class="grid gap-1.5 sm:col-span-2">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                {{ viewTarget.employee.id_number }}
-                            </span>
-                        </div>
-                    </div>
-                    <HrisEmployeeDirectoryUnitAndPositions
-                        :unit-name="viewTarget.unit_name"
-                        :unit-code="viewTarget.unit_code"
-                        :unit-directory-type="
-                            viewTarget.unit_type ?? 'Organizational unit'
-                        "
-                        :unit-directory-color="
-                            viewTarget.unit_type_color ?? null
-                        "
-                        :placement-is-primary="
-                            viewTarget.unit_is_primary ?? false
-                        "
-                        :positions="viewTarget.positions ?? []"
-                    />
-                    <div class="grid gap-1.5">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            OT date
-                        </p>
-                        <p
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
-                        >
-                            {{
-                                new Date(
-                                    `${viewTarget.ot_date}T12:00:00`,
-                                ).toLocaleDateString(undefined, {
-                                    dateStyle: 'long',
-                                })
-                            }}
-                        </p>
-                    </div>
-                    <div class="grid gap-1.5">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Hours
-                        </p>
-                        <p
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 font-mono tabular-nums"
-                        >
-                            {{ viewTarget.hours }}
-                        </p>
-                    </div>
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Policy
-                        </p>
-                        <div
-                            class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                        >
-                            <span class="text-sm font-medium text-foreground">
-                                {{
-                                    policyByCode(viewTarget.policy_code)
-                                        ?.name ?? viewTarget.policy_code
-                                }}
-                            </span>
-                            <span
-                                class="font-mono text-xs text-muted-foreground tabular-nums"
+                                Employee
+                            </p>
+                            <div
+                                class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
                             >
-                                {{ viewTarget.policy_code }}
-                                ·
-                                {{
-                                    formatOvertimeRateMultiplier(
-                                        viewTarget.rate_multiplier,
-                                    )
-                                }}
-                            </span>
+                                <span class="text-foreground">{{
+                                    viewTarget.employee.display_name
+                                }}</span>
+                                <span
+                                    class="font-mono text-xs text-muted-foreground tabular-nums"
+                                >
+                                    {{ viewTarget.employee.id_number }}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Decision maker
-                        </p>
-                        <div
-                            class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
-                        >
-                            <template
-                                v-if="
-                                    viewTarget.approver_name ||
-                                    (
-                                        viewTarget.approver_id_number ?? ''
-                                    ).trim() !== ''
-                                "
+                        <HrisEmployeeDirectoryUnitAndPositions
+                            :unit-name="viewTarget.unit_name"
+                            :unit-code="viewTarget.unit_code"
+                            :unit-directory-type="
+                                viewTarget.unit_type ?? 'Organizational unit'
+                            "
+                            :unit-directory-color="
+                                viewTarget.unit_type_color ?? null
+                            "
+                            :placement-is-primary="
+                                viewTarget.unit_is_primary ?? false
+                            "
+                            :positions="viewTarget.positions ?? []"
+                        />
+                        <div class="grid gap-1.5">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                OT date
+                            </p>
+                            <p
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                            >
+                                {{
+                                    new Date(
+                                        `${viewTarget.ot_date}T12:00:00`,
+                                    ).toLocaleDateString(undefined, {
+                                        dateStyle: 'long',
+                                    })
+                                }}
+                            </p>
+                        </div>
+                        <div class="grid gap-1.5">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Hours
+                            </p>
+                            <p
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 font-mono tabular-nums"
+                            >
+                                {{ viewTarget.hours }}
+                            </p>
+                        </div>
+                        <div class="grid gap-1.5 sm:col-span-2">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Policy
+                            </p>
+                            <div
+                                class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
                             >
                                 <span
-                                    v-if="viewTarget.approver_name"
-                                    class="text-foreground"
+                                    class="text-sm font-medium text-foreground"
                                 >
-                                    {{ viewTarget.approver_name }}
+                                    {{
+                                        policyByCode(viewTarget.policy_code)
+                                            ?.name ?? viewTarget.policy_code
+                                    }}
                                 </span>
                                 <span
+                                    class="font-mono text-xs text-muted-foreground tabular-nums"
+                                >
+                                    {{ viewTarget.policy_code }}
+                                    ·
+                                    {{
+                                        formatOvertimeRateMultiplier(
+                                            viewTarget.rate_multiplier,
+                                        )
+                                    }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="grid gap-1.5 sm:col-span-2">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Decision maker
+                            </p>
+                            <div
+                                class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
+                            >
+                                <template
                                     v-if="
+                                        viewTarget.approver_name ||
                                         (
                                             viewTarget.approver_id_number ?? ''
                                         ).trim() !== ''
                                     "
-                                    class="font-mono text-xs text-muted-foreground tabular-nums"
+                                >
+                                    <span
+                                        v-if="viewTarget.approver_name"
+                                        class="text-foreground"
+                                    >
+                                        {{ viewTarget.approver_name }}
+                                    </span>
+                                    <span
+                                        v-if="
+                                            (
+                                                viewTarget.approver_id_number ??
+                                                ''
+                                            ).trim() !== ''
+                                        "
+                                        class="font-mono text-xs text-muted-foreground tabular-nums"
+                                    >
+                                        {{
+                                            (
+                                                viewTarget.approver_id_number ??
+                                                ''
+                                            ).trim()
+                                        }}
+                                    </span>
+                                </template>
+                                <span v-else class="text-muted-foreground"
+                                    >—</span
+                                >
+                            </div>
+                        </div>
+                        <div class="grid gap-1.5 sm:col-span-2">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Status
+                            </p>
+                            <div
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                            >
+                                <Badge
+                                    variant="outline"
+                                    :class="statusBadgeClass(viewTarget.status)"
+                                >
+                                    {{ statusLabel(viewTarget.status) }}
+                                </Badge>
+                            </div>
+                        </div>
+                        <div class="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+                            <div class="grid gap-1.5">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
+                                    Submitted
+                                </p>
+                                <p
+                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
                                 >
                                     {{
-                                        (
-                                            viewTarget.approver_id_number ?? ''
-                                        ).trim()
+                                        formatIsoCalendarDate(
+                                            viewTarget.submitted_at,
+                                        )
                                     }}
-                                </span>
-                            </template>
-                            <span v-else class="text-muted-foreground">—</span>
+                                </p>
+                            </div>
+                            <div class="grid gap-1.5">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
+                                    Approve date
+                                </p>
+                                <p
+                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                                >
+                                    {{
+                                        viewTarget.decided_at
+                                            ? formatIsoCalendarDate(
+                                                  viewTarget.decided_at,
+                                              )
+                                            : '—'
+                                    }}
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Status
-                        </p>
-                        <div
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                        >
-                            <Badge
-                                variant="outline"
-                                :class="statusBadgeClass(viewTarget.status)"
-                            >
-                                {{ statusLabel(viewTarget.status) }}
-                            </Badge>
-                        </div>
-                    </div>
-                    <div class="grid gap-3 sm:col-span-2 sm:grid-cols-2">
-                        <div class="grid gap-1.5">
+                        <div class="grid gap-1.5 sm:col-span-2">
                             <p
                                 class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                Submitted
+                                Reason
                             </p>
                             <p
-                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 whitespace-pre-wrap"
                             >
-                                {{
-                                    formatIsoCalendarDate(
-                                        viewTarget.submitted_at,
-                                    )
-                                }}
+                                {{ viewTarget.reason ?? '—' }}
                             </p>
                         </div>
-                        <div class="grid gap-1.5">
-                            <p
-                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                            >
-                                Approve date
-                            </p>
-                            <p
-                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
-                            >
-                                {{
-                                    viewTarget.decided_at
-                                        ? formatIsoCalendarDate(
-                                              viewTarget.decided_at,
-                                          )
-                                        : '—'
-                                }}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Reason
-                        </p>
-                        <p
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 whitespace-pre-wrap"
-                        >
-                            {{ viewTarget.reason ?? '—' }}
-                        </p>
-                    </div>
                     </div>
                 </ScrollArea>
             </TooltipProvider>
@@ -1546,290 +1552,301 @@ const unitSelectValue = computed(() => unitFilter.value);
             <TooltipProvider :delay-duration="200">
                 <ScrollArea v-if="activeDraft" :class="dialogScrollAreaClass">
                     <div class="grid gap-4 px-1 py-1">
-                    <p
-                        v-if="branchUnitsLoadError"
-                        class="text-xs text-amber-700 dark:text-amber-300"
-                    >
-                        {{ branchUnitsLoadError }}
-                    </p>
-                    <p
-                        v-if="chartBranchId === null"
-                        class="text-xs text-destructive"
-                    >
-                        Select a workspace branch (header) to load units and
-                        search employees.
-                    </p>
-                    <div class="grid gap-2">
-                        <Label for="ot-unit">Unit</Label>
-                        <TeamHrUnitCombobox
-                            id="ot-unit"
-                            :units="branchUnits"
-                            :model-value="activeDraft.organizational_unit_id"
-                            :loading="branchUnitsLoading"
-                            :disabled="
-                                chartBranchId === null ||
-                                branchUnits.length === 0
-                            "
-                            placeholder="Search or choose unit…"
-                            @update:model-value="onFormUnitChange"
-                        />
                         <p
-                            v-if="branchUnitsLoading"
-                            class="text-xs text-muted-foreground"
+                            v-if="branchUnitsLoadError"
+                            class="text-xs text-amber-700 dark:text-amber-300"
                         >
-                            Loading units…
-                        </p>
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="ot-emp">Employee</Label>
-                        <TeamHrEmployeeCombobox
-                            v-if="activeDraft !== null"
-                            id="ot-emp"
-                            v-model="selectedEmployeeHitModel"
-                            :chart-branch-id="chartBranchId"
-                            :unit-id="activeDraft.organizational_unit_id"
-                            :disabled="
-                                chartBranchId === null ||
-                                activeDraft.organizational_unit_id === null
-                            "
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="ot-pol">Overtime policy</Label>
-                        <Select
-                            :model-value="activeDraft.policy_code"
-                            @update:model-value="
-                                (v: AcceptableValue) => {
-                                    if (
-                                        !activeDraft ||
-                                        v == null ||
-                                        typeof v === 'object'
-                                    ) {
-                                        return;
-                                    }
-
-                                    activeDraft.policy_code = String(v);
-                                    syncPolicyFromCode(activeDraft);
-                                }
-                            "
-                        >
-                            <SelectTrigger id="ot-pol" class="h-9 w-full">
-                                <SelectValue placeholder="Select overtime policy" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="pol in policyCatalog"
-                                    :key="pol.code"
-                                    :value="pol.code"
-                                >
-                                    {{ pol.code }} — {{ pol.name }} ({{
-                                        formatOvertimeRateMultiplier(
-                                            pol.rateMultiplier,
-                                        )
-                                    }})
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <p
-                            v-if="inlineSummaryLoading"
-                            class="text-xs text-muted-foreground"
-                        >
-                            Loading approved usage…
+                            {{ branchUnitsLoadError }}
                         </p>
                         <p
-                            v-else-if="inlineSummaryError"
+                            v-if="chartBranchId === null"
                             class="text-xs text-destructive"
                         >
-                            {{ inlineSummaryError }}
+                            Select a workspace branch (header) to load units and
+                            search employees.
                         </p>
-                        <div
-                            v-else-if="inlineSummaryData && activeDraft.policy_code.trim() !== ''"
-                            class="grid gap-3 rounded-md border border-border/60 bg-muted/20 p-3 sm:grid-cols-3"
-                        >
-                            <div class="grid gap-1.5">
-                                <div
-                                    class="flex h-5 items-center gap-1"
-                                >
-                                    <p
-                                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        This Year
-                                    </p>
-                                    <span
-                                        aria-hidden="true"
-                                        class="inline-flex size-4 shrink-0 opacity-0"
-                                    />
-                                </div>
-                                <div
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium tabular-nums text-foreground"
-                                >
-                                    {{
-                                        inlineSummaryData.same_policy_code
-                                            .approved_hours_year
-                                    }}
-                                </div>
-                            </div>
-                            <div class="grid gap-1.5">
-                                <div
-                                    class="flex h-5 items-center gap-1"
-                                >
-                                    <p
-                                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        This Month
-                                    </p>
-                                    <span
-                                        aria-hidden="true"
-                                        class="inline-flex size-4 shrink-0 opacity-0"
-                                    />
-                                </div>
-                                <div
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium tabular-nums text-foreground"
-                                >
-                                    {{
-                                        inlineSummaryData.same_policy_code
-                                            .approved_hours_month
-                                    }}
-                                </div>
-                            </div>
-                            <div class="grid gap-1.5">
-                                <div
-                                    class="flex h-5 items-center gap-1"
-                                >
-                                    <p
-                                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        This Week
-                                    </p>
-                                    <span
-                                        aria-hidden="true"
-                                        class="inline-flex size-4 shrink-0 opacity-0"
-                                    />
-                                </div>
-                                <div
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium tabular-nums text-foreground"
-                                >
-                                    {{
-                                        inlineSummaryData.same_policy_code
-                                            .approved_hours_week
-                                    }}
-                                </div>
-                            </div>
-                        </div>
-                        <p class="text-xs text-muted-foreground">
-                            Context:
-                            {{ OVERTIME_CONTEXT_LABELS[activeDraft.context] }}
-                            · Rate applied:
-                            {{
-                                formatOvertimeRateMultiplier(
-                                    resolveRateForDraft(activeDraft),
-                                )
-                            }}
-                        </p>
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
                         <div class="grid gap-2">
-                            <Label for="ot-date">OT date</Label>
-                            <TeamFormIsoDatePicker
-                                v-model="activeDraft.ot_date"
-                                ariaLabel="Select overtime date"
+                            <Label for="ot-unit">Unit</Label>
+                            <TeamHrUnitCombobox
+                                id="ot-unit"
+                                :units="branchUnits"
+                                :model-value="
+                                    activeDraft.organizational_unit_id
+                                "
+                                :loading="branchUnitsLoading"
+                                :disabled="
+                                    chartBranchId === null ||
+                                    branchUnits.length === 0
+                                "
+                                placeholder="Search or choose unit…"
+                                @update:model-value="onFormUnitChange"
+                            />
+                            <p
+                                v-if="branchUnitsLoading"
+                                class="text-xs text-muted-foreground"
+                            >
+                                Loading units…
+                            </p>
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="ot-emp">Employee</Label>
+                            <TeamHrEmployeeCombobox
+                                v-if="activeDraft !== null"
+                                id="ot-emp"
+                                v-model="selectedEmployeeHitModel"
+                                :chart-branch-id="chartBranchId"
+                                :unit-id="activeDraft.organizational_unit_id"
+                                :disabled="
+                                    chartBranchId === null ||
+                                    activeDraft.organizational_unit_id === null
+                                "
                             />
                         </div>
                         <div class="grid gap-2">
-                            <Label for="ot-hours">Hours</Label>
-                            <Input
-                                id="ot-hours"
-                                v-model.number="activeDraft.hours"
-                                class="h-9 font-mono tabular-nums"
-                                min="0.25"
-                                step="0.25"
-                                type="number"
-                            />
-                        </div>
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <div class="grid gap-2">
-                            <Label for="ot-submitted">Submitted</Label>
-                            <TeamFormIsoDatePicker
-                                id="ot-submitted"
-                                v-model="activeDraft.submitted_at"
-                                ariaLabel="Submitted date"
-                            />
-                        </div>
-                        <div class="grid gap-2">
-                            <Label for="ot-approve">Approve date</Label>
-                            <TeamFormIsoDatePicker
-                                id="ot-approve"
-                                v-model="activeDraft.decided_at"
-                                ariaLabel="Approve date"
-                            />
-                        </div>
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="ot-decision-maker">Decision maker</Label>
-                        <TeamHrDecisionMakerCombobox
-                            id="ot-decision-maker"
-                            v-model="selectedDecisionMakerModel"
-                            :chart-branch-id="chartBranchId"
-                            :disabled="chartBranchId === null"
-                            placeholder="Search by name or employee ID…"
-                        />
-                        <p class="text-xs text-muted-foreground">
-                            Type at least 2 letters to search active employees
-                            in this branch.
-                        </p>
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="ot-status">Status</Label>
-                        <Select
-                            :model-value="activeDraft.status"
-                            @update:model-value="
-                                (v: unknown) => {
-                                    if (!activeDraft) {
-                                        return;
-                                    }
+                            <Label for="ot-pol">Overtime policy</Label>
+                            <Select
+                                :model-value="activeDraft.policy_code"
+                                @update:model-value="
+                                    (v: AcceptableValue) => {
+                                        if (
+                                            !activeDraft ||
+                                            v == null ||
+                                            typeof v === 'object'
+                                        ) {
+                                            return;
+                                        }
 
-                                    activeDraft.status =
-                                        v as TeamOvertimeRow['status'];
-                                }
-                            "
-                        >
-                            <SelectTrigger id="ot-status" class="h-9 w-full">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="approved"
-                                    >Approved</SelectItem
-                                >
-                                <SelectItem value="rejected"
-                                    >Rejected</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="ot-reason" :class="optionalLabelRowClass">
-                            Reason
-                            <Badge variant="outline">Optional</Badge>
-                        </Label>
-                        <Textarea
-                            id="ot-reason"
-                            :model-value="activeDraft.reason ?? ''"
-                            rows="3"
-                            class="resize-y"
-                            @update:model-value="
-                                (v: string | number) => {
-                                    if (!activeDraft) {
-                                        return;
+                                        activeDraft.policy_code = String(v);
+                                        syncPolicyFromCode(activeDraft);
                                     }
+                                "
+                            >
+                                <SelectTrigger id="ot-pol" class="h-9 w-full">
+                                    <SelectValue
+                                        placeholder="Select overtime policy"
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem
+                                        v-for="pol in policyCatalog"
+                                        :key="pol.code"
+                                        :value="pol.code"
+                                    >
+                                        {{ pol.code }} — {{ pol.name }} ({{
+                                            formatOvertimeRateMultiplier(
+                                                pol.rateMultiplier,
+                                            )
+                                        }})
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p
+                                v-if="inlineSummaryLoading"
+                                class="text-xs text-muted-foreground"
+                            >
+                                Loading approved usage…
+                            </p>
+                            <p
+                                v-else-if="inlineSummaryError"
+                                class="text-xs text-destructive"
+                            >
+                                {{ inlineSummaryError }}
+                            </p>
+                            <div
+                                v-else-if="
+                                    inlineSummaryData &&
+                                    activeDraft.policy_code.trim() !== ''
+                                "
+                                class="grid gap-3 rounded-md border border-border/60 bg-muted/20 p-3 sm:grid-cols-3"
+                            >
+                                <div class="grid gap-1.5">
+                                    <div class="flex h-5 items-center gap-1">
+                                        <p
+                                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                        >
+                                            This Year
+                                        </p>
+                                        <span
+                                            aria-hidden="true"
+                                            class="inline-flex size-4 shrink-0 opacity-0"
+                                        />
+                                    </div>
+                                    <div
+                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium text-foreground tabular-nums"
+                                    >
+                                        {{
+                                            inlineSummaryData.same_policy_code
+                                                .approved_hours_year
+                                        }}
+                                    </div>
+                                </div>
+                                <div class="grid gap-1.5">
+                                    <div class="flex h-5 items-center gap-1">
+                                        <p
+                                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                        >
+                                            This Month
+                                        </p>
+                                        <span
+                                            aria-hidden="true"
+                                            class="inline-flex size-4 shrink-0 opacity-0"
+                                        />
+                                    </div>
+                                    <div
+                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium text-foreground tabular-nums"
+                                    >
+                                        {{
+                                            inlineSummaryData.same_policy_code
+                                                .approved_hours_month
+                                        }}
+                                    </div>
+                                </div>
+                                <div class="grid gap-1.5">
+                                    <div class="flex h-5 items-center gap-1">
+                                        <p
+                                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                        >
+                                            This Week
+                                        </p>
+                                        <span
+                                            aria-hidden="true"
+                                            class="inline-flex size-4 shrink-0 opacity-0"
+                                        />
+                                    </div>
+                                    <div
+                                        class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium text-foreground tabular-nums"
+                                    >
+                                        {{
+                                            inlineSummaryData.same_policy_code
+                                                .approved_hours_week
+                                        }}
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-xs text-muted-foreground">
+                                Context:
+                                {{
+                                    OVERTIME_CONTEXT_LABELS[activeDraft.context]
+                                }}
+                                · Rate applied:
+                                {{
+                                    formatOvertimeRateMultiplier(
+                                        resolveRateForDraft(activeDraft),
+                                    )
+                                }}
+                            </p>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="ot-date">OT date</Label>
+                                <TeamFormIsoDatePicker
+                                    v-model="activeDraft.ot_date"
+                                    ariaLabel="Select overtime date"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="ot-hours">Hours</Label>
+                                <Input
+                                    id="ot-hours"
+                                    v-model.number="activeDraft.hours"
+                                    class="h-9 font-mono tabular-nums"
+                                    min="0.25"
+                                    step="0.25"
+                                    type="number"
+                                />
+                            </div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="ot-submitted">Submitted</Label>
+                                <TeamFormIsoDatePicker
+                                    id="ot-submitted"
+                                    v-model="activeDraft.submitted_at"
+                                    ariaLabel="Submitted date"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="ot-approve">Approve date</Label>
+                                <TeamFormIsoDatePicker
+                                    id="ot-approve"
+                                    v-model="activeDraft.decided_at"
+                                    ariaLabel="Approve date"
+                                />
+                            </div>
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="ot-decision-maker"
+                                >Decision maker</Label
+                            >
+                            <TeamHrDecisionMakerCombobox
+                                id="ot-decision-maker"
+                                v-model="selectedDecisionMakerModel"
+                                :chart-branch-id="chartBranchId"
+                                :disabled="chartBranchId === null"
+                                placeholder="Search by name or employee ID…"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                Type at least 2 letters to search active
+                                employees in this branch.
+                            </p>
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="ot-status">Status</Label>
+                            <Select
+                                :model-value="activeDraft.status"
+                                @update:model-value="
+                                    (v: unknown) => {
+                                        if (!activeDraft) {
+                                            return;
+                                        }
 
-                                    const s = String(v);
-                                    activeDraft.reason =
-                                        s.trim() === '' ? null : s;
-                                }
-                            "
-                        />
-                    </div>
+                                        activeDraft.status =
+                                            v as TeamOvertimeRow['status'];
+                                    }
+                                "
+                            >
+                                <SelectTrigger
+                                    id="ot-status"
+                                    class="h-9 w-full"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="approved"
+                                        >Approved</SelectItem
+                                    >
+                                    <SelectItem value="rejected"
+                                        >Rejected</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div class="grid gap-2">
+                            <Label
+                                for="ot-reason"
+                                :class="optionalLabelRowClass"
+                            >
+                                Reason
+                                <Badge variant="outline">Optional</Badge>
+                            </Label>
+                            <Textarea
+                                id="ot-reason"
+                                :model-value="activeDraft.reason ?? ''"
+                                rows="3"
+                                class="resize-y"
+                                @update:model-value="
+                                    (v: string | number) => {
+                                        if (!activeDraft) {
+                                            return;
+                                        }
+
+                                        const s = String(v);
+                                        activeDraft.reason =
+                                            s.trim() === '' ? null : s;
+                                    }
+                                "
+                            />
+                        </div>
                         <p v-if="formError" class="text-sm text-destructive">
                             {{ formError }}
                         </p>

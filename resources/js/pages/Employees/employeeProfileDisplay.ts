@@ -157,7 +157,11 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
 
     return {
         employee_id: 90_001,
-        display_name: formatEmployeeDisplayName(first_name, middle_name, last_name),
+        display_name: formatEmployeeDisplayName(
+            first_name,
+            middle_name,
+            last_name,
+        ),
         first_name,
         middle_name,
         last_name,
@@ -170,14 +174,7 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
         org_scope_label: 'Branch-scoped',
         schedule_label: 'Standard weekday · Mon–Sat · 08:00–17:00',
         schedule_template_code: 'STD-WD-08',
-        schedule_day_tokens: [
-            'mon',
-            'tue',
-            'wed',
-            'thu',
-            'fri',
-            'sat',
-        ],
+        schedule_day_tokens: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
         schedule_working_days: 'Mon, Tue, Wed, Thu, Fri, Sat',
         stats: [
             { label: 'Hire date', value: 'Mar 4, 2022' },
@@ -385,7 +382,11 @@ export function mockEmployeeShowProfile(
 
     return {
         employee_id: employeeId,
-        display_name: formatEmployeeDisplayName(first_name, middle_name, last_name),
+        display_name: formatEmployeeDisplayName(
+            first_name,
+            middle_name,
+            last_name,
+        ),
         first_name,
         middle_name,
         last_name,

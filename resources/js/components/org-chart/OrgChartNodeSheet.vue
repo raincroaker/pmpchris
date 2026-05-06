@@ -56,9 +56,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-    ScrollArea
-} from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -1084,157 +1082,172 @@ onUnmounted(() => {
                                     </div>
                                     <ScrollArea class="min-h-0 flex-1">
                                         <div class="space-y-1">
-                                        <button
-                                            v-for="emp in filteredSheetEmployees"
-                                            :key="`${emp.employee_id}-${emp.full_name}`"
-                                            type="button"
-                                            :class="employeeSheetRowButtonClass"
-                                            :title="`Open ${emp.full_name} details`"
-                                            :aria-label="`Open ${emp.full_name} details`"
-                                            @click.stop="
-                                                openEmployeeDialog(emp)
-                                            "
-                                        >
-                                            <Avatar
-                                                class="size-9 shrink-0 border border-border/70 bg-muted/30"
+                                            <button
+                                                v-for="emp in filteredSheetEmployees"
+                                                :key="`${emp.employee_id}-${emp.full_name}`"
+                                                type="button"
+                                                :class="
+                                                    employeeSheetRowButtonClass
+                                                "
+                                                :title="`Open ${emp.full_name} details`"
+                                                :aria-label="`Open ${emp.full_name} details`"
+                                                @click.stop="
+                                                    openEmployeeDialog(emp)
+                                                "
                                             >
-                                                <AvatarImage
-                                                    :src="emp.avatar_url ?? ''"
-                                                    :alt="emp.full_name"
-                                                />
-                                                <AvatarFallback
-                                                    class="text-[11px] font-medium text-muted-foreground"
+                                                <Avatar
+                                                    class="size-9 shrink-0 border border-border/70 bg-muted/30"
                                                 >
-                                                    {{
-                                                        employeeInitials(
-                                                            emp.full_name,
-                                                        )
-                                                    }}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div class="min-w-0 flex-1">
-                                                <div
-                                                    class="flex w-full min-w-0 items-center gap-2"
-                                                >
-                                                    <span
-                                                        class="min-w-0 shrink truncate text-sm font-medium text-foreground"
-                                                        :title="emp.full_name"
+                                                    <AvatarImage
+                                                        :src="
+                                                            emp.avatar_url ?? ''
+                                                        "
+                                                        :alt="emp.full_name"
+                                                    />
+                                                    <AvatarFallback
+                                                        class="text-[11px] font-medium text-muted-foreground"
                                                     >
-                                                        {{ emp.full_name }}
-                                                    </span>
-                                                    <Badge
-                                                        v-if="emp.is_head"
-                                                        variant="outline"
-                                                        class="h-5 shrink-0 border-foreground/50 px-1.5 text-[10px] dark:border-foreground/60"
-                                                    >
-                                                        Head
-                                                    </Badge>
-                                                </div>
-                                                <p
-                                                    v-if="emp.position_title"
-                                                    class="mt-0.5 text-xs text-muted-foreground"
-                                                >
-                                                    {{ emp.position_title }}
-                                                </p>
-                                                <p
-                                                    v-else
-                                                    class="mt-0.5 text-xs text-muted-foreground/80 italic"
-                                                >
-                                                    No position linked
-                                                </p>
-                                            </div>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger
-                                                    :as-child="true"
-                                                >
-                                                    <button
-                                                        type="button"
-                                                        class="nodrag nopan inline-flex size-7 shrink-0 items-center justify-center self-center rounded-sm text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none focus-visible:ring-inset"
-                                                        :aria-label="`Open actions for ${emp.full_name}`"
-                                                        @click.stop
-                                                        @pointerdown.stop
-                                                    >
-                                                        <EllipsisVertical
-                                                            class="size-4"
-                                                        />
-                                                    </button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent
-                                                    align="end"
-                                                    class="min-w-44"
-                                                >
-                                                    <DropdownMenuItem
-                                                        class="nodrag nopan"
-                                                        @select="
-                                                            openEmployeeDialog(
-                                                                emp,
+                                                        {{
+                                                            employeeInitials(
+                                                                emp.full_name,
                                                             )
-                                                        "
+                                                        }}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div class="min-w-0 flex-1">
+                                                    <div
+                                                        class="flex w-full min-w-0 items-center gap-2"
                                                     >
-                                                        <Eye class="size-4" />
-                                                        View Details
-                                                    </DropdownMenuItem>
-                                                    <template
+                                                        <span
+                                                            class="min-w-0 shrink truncate text-sm font-medium text-foreground"
+                                                            :title="
+                                                                emp.full_name
+                                                            "
+                                                        >
+                                                            {{ emp.full_name }}
+                                                        </span>
+                                                        <Badge
+                                                            v-if="emp.is_head"
+                                                            variant="outline"
+                                                            class="h-5 shrink-0 border-foreground/50 px-1.5 text-[10px] dark:border-foreground/60"
+                                                        >
+                                                            Head
+                                                        </Badge>
+                                                    </div>
+                                                    <p
                                                         v-if="
-                                                            canManageActiveNode
+                                                            emp.position_title
                                                         "
+                                                        class="mt-0.5 text-xs text-muted-foreground"
                                                     >
-                                                        <DropdownMenuSeparator
-                                                            class="bg-border/80"
-                                                        />
+                                                        {{ emp.position_title }}
+                                                    </p>
+                                                    <p
+                                                        v-else
+                                                        class="mt-0.5 text-xs text-muted-foreground/80 italic"
+                                                    >
+                                                        No position linked
+                                                    </p>
+                                                </div>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger
+                                                        :as-child="true"
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            class="nodrag nopan inline-flex size-7 shrink-0 items-center justify-center self-center rounded-sm text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none focus-visible:ring-inset"
+                                                            :aria-label="`Open actions for ${emp.full_name}`"
+                                                            @click.stop
+                                                            @pointerdown.stop
+                                                        >
+                                                            <EllipsisVertical
+                                                                class="size-4"
+                                                            />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent
+                                                        align="end"
+                                                        class="min-w-44"
+                                                    >
                                                         <DropdownMenuItem
                                                             class="nodrag nopan"
                                                             @select="
-                                                                openEmployeeDialogForEdit(
+                                                                openEmployeeDialog(
                                                                     emp,
                                                                 )
                                                             "
                                                         >
-                                                            <Pencil
+                                                            <Eye
                                                                 class="size-4"
                                                             />
-                                                            Edit
+                                                            View Details
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            class="nodrag nopan text-destructive focus:text-destructive"
-                                                            @select="
-                                                                openEmployeeDialogForRemove(
-                                                                    emp,
-                                                                )
+                                                        <template
+                                                            v-if="
+                                                                canManageActiveNode
                                                             "
                                                         >
-                                                            <Trash2
-                                                                class="size-4"
+                                                            <DropdownMenuSeparator
+                                                                class="bg-border/80"
                                                             />
-                                                            Remove
-                                                        </DropdownMenuItem>
-                                                    </template>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </button>
-                                        <div
-                                            v-if="employeeSearchHasNoMatches"
-                                            class="rounded-md border border-dashed border-border/70 bg-muted/30 p-4"
-                                        >
-                                            <div class="flex items-start gap-3">
-                                                <SearchX
-                                                    class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                />
-                                                <div class="min-w-0">
-                                                    <p
-                                                        class="text-sm font-medium text-foreground"
-                                                    >
-                                                        No matching employees
-                                                    </p>
-                                                    <p
-                                                        class="mt-1 text-xs text-muted-foreground"
-                                                    >
-                                                        Try another name, ID, or
-                                                        position.
-                                                    </p>
+                                                            <DropdownMenuItem
+                                                                class="nodrag nopan"
+                                                                @select="
+                                                                    openEmployeeDialogForEdit(
+                                                                        emp,
+                                                                    )
+                                                                "
+                                                            >
+                                                                <Pencil
+                                                                    class="size-4"
+                                                                />
+                                                                Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                class="nodrag nopan text-destructive focus:text-destructive"
+                                                                @select="
+                                                                    openEmployeeDialogForRemove(
+                                                                        emp,
+                                                                    )
+                                                                "
+                                                            >
+                                                                <Trash2
+                                                                    class="size-4"
+                                                                />
+                                                                Remove
+                                                            </DropdownMenuItem>
+                                                        </template>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    employeeSearchHasNoMatches
+                                                "
+                                                class="rounded-md border border-dashed border-border/70 bg-muted/30 p-4"
+                                            >
+                                                <div
+                                                    class="flex items-start gap-3"
+                                                >
+                                                    <SearchX
+                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                    />
+                                                    <div class="min-w-0">
+                                                        <p
+                                                            class="text-sm font-medium text-foreground"
+                                                        >
+                                                            No matching
+                                                            employees
+                                                        </p>
+                                                        <p
+                                                            class="mt-1 text-xs text-muted-foreground"
+                                                        >
+                                                            Try another name,
+                                                            ID, or position.
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
                                         </div>
                                     </ScrollArea>
                                 </div>

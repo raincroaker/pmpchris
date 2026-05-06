@@ -5,7 +5,11 @@ import { deriveTeamAttendancePunctuality } from '@/pages/Attendance/teamAttendan
 
 type TeamAttendanceRowSeed = Omit<
     TeamAttendanceRow,
-    'punctuality' | 'created_at' | 'created_by' | 'ingest_key' | 'work_schedule_template_id'
+    | 'punctuality'
+    | 'created_at'
+    | 'created_by'
+    | 'ingest_key'
+    | 'work_schedule_template_id'
 > & {
     created_at?: string;
     created_by?: string | null;
@@ -452,7 +456,8 @@ export function seedTeamAttendanceRows(): TeamAttendanceRow[] {
                 punctuality: deriveTeamAttendancePunctuality(r.segments),
                 ingest_key: r.ingest_key ?? null,
                 created_at:
-                    augmented.created_at ?? `${augmented.work_date}T12:00:00.000Z`,
+                    augmented.created_at ??
+                    `${augmented.work_date}T12:00:00.000Z`,
                 created_by: augmented.created_by ?? null,
             };
         },

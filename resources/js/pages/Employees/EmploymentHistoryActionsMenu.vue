@@ -27,15 +27,14 @@ const employmentActionsEnabled = computed(
 );
 
 const page = usePage();
-const canRecordEmploymentSeparation = computed(
-    (): boolean =>
-        Boolean(
-            (
-                page.props as {
-                    can?: { canRecordEmploymentSeparation?: boolean };
-                }
-            ).can?.canRecordEmploymentSeparation,
-        ),
+const canRecordEmploymentSeparation = computed((): boolean =>
+    Boolean(
+        (
+            page.props as {
+                can?: { canRecordEmploymentSeparation?: boolean };
+            }
+        ).can?.canRecordEmploymentSeparation,
+    ),
 );
 
 const employmentDialogOpen = ref(false);
@@ -80,8 +79,7 @@ function openRecordSeparationDialog(): void {
                     :disabled="!employmentActionsEnabled"
                     :class="
                         cn(
-                            employmentActionsEnabled &&
-                                'text-foreground',
+                            employmentActionsEnabled && 'text-foreground',
                             !employmentActionsEnabled &&
                                 'text-muted-foreground',
                         )

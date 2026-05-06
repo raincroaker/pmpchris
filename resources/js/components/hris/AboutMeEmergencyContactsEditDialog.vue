@@ -75,7 +75,6 @@ function cloneFromProfile(): void {
     ensureOnePrimaryIfNeeded();
 }
 
-
 function ensureOnePrimaryIfNeeded(): void {
     const anyPrimary = rows.value.some((r) => r.is_primary);
     if (!anyPrimary && rows.value.length > 0) {
@@ -128,10 +127,7 @@ function setPrimary(index: number, checked: unknown): void {
     rows.value.forEach((r, i) => {
         r.is_primary = on && i === index;
     });
-    if (
-        rows.value.every((r) => !r.is_primary) &&
-        rows.value.length > 0
-    ) {
+    if (rows.value.every((r) => !r.is_primary) && rows.value.length > 0) {
         rows.value[index].is_primary = true;
     }
 }
@@ -215,12 +211,9 @@ function onSave(): void {
                 channel_label: r.channel_label,
                 contact_person: r.contact_person.trim(),
                 relationship:
-                    r.relationship.trim() !== ''
-                        ? r.relationship.trim()
-                        : null,
+                    r.relationship.trim() !== '' ? r.relationship.trim() : null,
                 contact_number: r.contact_number.trim(),
-                email:
-                    r.email.trim() !== '' ? r.email.trim() : null,
+                email: r.email.trim() !== '' ? r.email.trim() : null,
                 is_primary: r.is_primary,
             })),
         },
@@ -263,8 +256,8 @@ function onOpenChange(value: boolean): void {
             <DialogHeader>
                 <DialogTitle>Edit emergency contacts</DialogTitle>
                 <DialogDescription>
-                    Matches duty-of-care escalation fields from Add Employee step
-                    2. Changes save to HR records immediately.
+                    Matches duty-of-care escalation fields from Add Employee
+                    step 2. Changes save to HR records immediately.
                 </DialogDescription>
             </DialogHeader>
 
@@ -306,9 +299,7 @@ function onOpenChange(value: boolean): void {
                                 class="shrink-0"
                                 :model-value="row.is_primary"
                                 :aria-labelledby="`em-primary-lbl-${index}`"
-                                @update:model-value="
-                                    setPrimary(index, $event)
-                                "
+                                @update:model-value="setPrimary(index, $event)"
                             />
                             <label
                                 :id="`em-primary-lbl-${index}`"
@@ -451,10 +442,7 @@ function onOpenChange(value: boolean): void {
                                 : 'Add emergency contact'
                         }}
                     </Button>
-                    <p
-                        v-if="formError !== ''"
-                        class="text-sm text-destructive"
-                    >
+                    <p v-if="formError !== ''" class="text-sm text-destructive">
                         {{ formError }}
                     </p>
                 </div>

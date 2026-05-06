@@ -119,15 +119,14 @@ function setPrimary(index: number, checked: unknown): void {
     rows.value.forEach((r, i) => {
         r.is_primary = on && i === index;
     });
-    if (
-        rows.value.every((r) => !r.is_primary) &&
-        rows.value.length > 0
-    ) {
+    if (rows.value.every((r) => !r.is_primary) && rows.value.length > 0) {
         rows.value[index].is_primary = true;
     }
 }
 
-function normalizePrimaries(validRows: PersonalContactDraft[]): PersonalContactDraft[] {
+function normalizePrimaries(
+    validRows: PersonalContactDraft[],
+): PersonalContactDraft[] {
     const draft = validRows.map((r) => ({ ...r }));
     const primaryIdx = draft.findIndex((r) => r.is_primary);
     if (primaryIdx >= 0) {
@@ -146,8 +145,7 @@ function normalizePrimaries(validRows: PersonalContactDraft[]): PersonalContactD
 function onSave(): void {
     attemptedSave.value = true;
     const nonempty = rows.value.filter(
-        (r) =>
-            r.contact_number.trim() !== '' || r.email.trim() !== '',
+        (r) => r.contact_number.trim() !== '' || r.email.trim() !== '',
     );
 
     if (nonempty.length === 0) {
@@ -192,8 +190,7 @@ function onSave(): void {
             personal: primed.map((r) => ({
                 channel_label: r.channel_label,
                 contact_number: r.contact_number.trim(),
-                email:
-                    r.email.trim() !== '' ? r.email.trim() : null,
+                email: r.email.trim() !== '' ? r.email.trim() : null,
                 is_primary: r.is_primary,
             })),
             emergency: emergencyPayload,
@@ -237,8 +234,8 @@ function onOpenChange(value: boolean): void {
             <DialogHeader>
                 <DialogTitle>Edit contact numbers &amp; email</DialogTitle>
                 <DialogDescription>
-                    Same shape as HR personal contacts — add rows like Add Employee
-                    step 2. Changes save to HR records immediately.
+                    Same shape as HR personal contacts — add rows like Add
+                    Employee step 2. Changes save to HR records immediately.
                 </DialogDescription>
             </DialogHeader>
 
@@ -280,9 +277,7 @@ function onOpenChange(value: boolean): void {
                                 class="shrink-0"
                                 :model-value="row.is_primary"
                                 :aria-labelledby="`pct-primary-lbl-${index}`"
-                                @update:model-value="
-                                    setPrimary(index, $event)
-                                "
+                                @update:model-value="setPrimary(index, $event)"
                             />
                             <label
                                 :id="`pct-primary-lbl-${index}`"

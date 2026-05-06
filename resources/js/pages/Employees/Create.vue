@@ -2026,50 +2026,47 @@ watch(employmentAttendanceId, (value) => {
     }, 350);
 });
 
-watch(
-    [createUserAccount, () => userAccount.email],
-    ([enabled, emailValue]) => {
-        if (emailCheckTimer !== null) {
-            clearTimeout(emailCheckTimer);
-            emailCheckTimer = null;
-        }
+watch([createUserAccount, () => userAccount.email], ([enabled, emailValue]) => {
+    if (emailCheckTimer !== null) {
+        clearTimeout(emailCheckTimer);
+        emailCheckTimer = null;
+    }
 
-        if (!enabled) {
-            emailAbortController?.abort();
-            emailAvailability.value = { status: 'idle', message: '' };
+    if (!enabled) {
+        emailAbortController?.abort();
+        emailAvailability.value = { status: 'idle', message: '' };
 
-            return;
-        }
+        return;
+    }
 
-        const trimmed = emailValue.trim();
-        if (trimmed === '') {
-            emailAbortController?.abort();
-            emailAvailability.value = { status: 'idle', message: '' };
+    const trimmed = emailValue.trim();
+    if (trimmed === '') {
+        emailAbortController?.abort();
+        emailAvailability.value = { status: 'idle', message: '' };
 
-            return;
-        }
-        if (!stepFourEmailPattern.test(trimmed)) {
-            emailAbortController?.abort();
-            emailAvailability.value = {
-                status: 'invalid',
-                message: 'Enter a valid email address.',
-            };
+        return;
+    }
+    if (!stepFourEmailPattern.test(trimmed)) {
+        emailAbortController?.abort();
+        emailAvailability.value = {
+            status: 'invalid',
+            message: 'Enter a valid email address.',
+        };
 
-            return;
-        }
+        return;
+    }
 
-        emailCheckTimer = setTimeout(() => {
-            void checkFieldAvailability(
-                { email: trimmed },
-                emailAvailability,
-                () => emailAbortController,
-                (controller) => {
-                    emailAbortController = controller;
-                },
-            );
-        }, 350);
-    },
-);
+    emailCheckTimer = setTimeout(() => {
+        void checkFieldAvailability(
+            { email: trimmed },
+            emailAvailability,
+            () => emailAbortController,
+            (controller) => {
+                emailAbortController = controller;
+            },
+        );
+    }, 350);
+});
 
 watch(createUserAccount, (enabled) => {
     if (enabled) {
@@ -2298,8 +2295,7 @@ function onWizardCompleteClick(): void {
         },
         {
             forceFormData:
-                createUserAccount.value &&
-                stepFourAvatarFile.value !== null,
+                createUserAccount.value && stepFourAvatarFile.value !== null,
             onError: () =>
                 appToast.error(
                     'Could not save employee. Please review highlighted fields.',
@@ -5583,7 +5579,9 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                             <div class="grid gap-3">
                                                 <Label
                                                     for="employment_separation_reason"
-                                                    :class="stepOneLabelRowClass"
+                                                    :class="
+                                                        stepOneLabelRowClass
+                                                    "
                                                 >
                                                     <span
                                                         >Separation reason</span
@@ -5625,7 +5623,9 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                             <div class="grid gap-3">
                                                 <Label
                                                     for="employment_notes"
-                                                    :class="stepOneLabelRowClass"
+                                                    :class="
+                                                        stepOneLabelRowClass
+                                                    "
                                                 >
                                                     <span>Notes</span>
                                                     <Badge variant="secondary">
@@ -7227,487 +7227,500 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                             </div>
                                         </div>
                                         <template v-if="createUserAccount">
-                                        <p
-                                            v-if="userAccountDisplayName !== ''"
-                                            class="text-sm text-muted-foreground"
-                                            :class="maxSmOneLineTruncateClass"
-                                        >
-                                            <span
-                                                class="font-medium text-foreground"
-                                                >Account name</span
+                                            <p
+                                                v-if="
+                                                    userAccountDisplayName !==
+                                                    ''
+                                                "
+                                                class="text-sm text-muted-foreground"
+                                                :class="
+                                                    maxSmOneLineTruncateClass
+                                                "
                                             >
-                                            (from step 1):
-                                            {{ userAccountDisplayName }}
-                                        </p>
-                                        <div
-                                            class="grid min-w-0 gap-6 lg:grid-cols-2"
-                                        >
-                                            <div class="min-w-0 space-y-6">
-                                                <div class="grid gap-3">
-                                                    <div
-                                                        class="flex items-start gap-4"
-                                                    >
+                                                <span
+                                                    class="font-medium text-foreground"
+                                                    >Account name</span
+                                                >
+                                                (from step 1):
+                                                {{ userAccountDisplayName }}
+                                            </p>
+                                            <div
+                                                class="grid min-w-0 gap-6 lg:grid-cols-2"
+                                            >
+                                                <div class="min-w-0 space-y-6">
+                                                    <div class="grid gap-3">
                                                         <div
-                                                            class="overflow-hidden rounded-xl border border-border/70 bg-muted/30 shadow-sm"
+                                                            class="flex items-start gap-4"
                                                         >
-                                                            <Avatar
-                                                                class="size-40 rounded-none"
+                                                            <div
+                                                                class="overflow-hidden rounded-xl border border-border/70 bg-muted/30 shadow-sm"
                                                             >
-                                                                <AvatarImage
-                                                                    v-if="
-                                                                        stepFourAvatarPreviewUrl
+                                                                <Avatar
+                                                                    class="size-40 rounded-none"
+                                                                >
+                                                                    <AvatarImage
+                                                                        v-if="
+                                                                            stepFourAvatarPreviewUrl
+                                                                        "
+                                                                        :src="
+                                                                            stepFourAvatarPreviewUrl
+                                                                        "
+                                                                        alt="Selected profile photo preview"
+                                                                        class="h-full w-full object-cover object-center"
+                                                                    />
+                                                                    <AvatarFallback
+                                                                        class="rounded-none bg-muted text-base font-semibold text-foreground"
+                                                                    >
+                                                                        {{
+                                                                            getInitials(
+                                                                                userAccountDisplayName,
+                                                                            )
+                                                                        }}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                            </div>
+                                                            <div
+                                                                class="min-w-0 flex-1 space-y-3"
+                                                            >
+                                                                <Label
+                                                                    for="user_account_avatar"
+                                                                    :class="
+                                                                        stepOneLabelRowClass
                                                                     "
-                                                                    :src="
-                                                                        stepFourAvatarPreviewUrl
+                                                                >
+                                                                    <span
+                                                                        >Profile
+                                                                        photo</span
+                                                                    >
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                    >
+                                                                        Optional
+                                                                    </Badge>
+                                                                    <Button
+                                                                        v-if="
+                                                                            stepFourAvatarFile !==
+                                                                            null
+                                                                        "
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        :class="
+                                                                            clearFieldButtonClass
+                                                                        "
+                                                                        aria-label="Clear selected profile photo"
+                                                                        @click="
+                                                                            clearStepFourAvatarSelection
+                                                                        "
+                                                                    >
+                                                                        <X
+                                                                            class="size-3.5"
+                                                                        />
+                                                                    </Button>
+                                                                </Label>
+                                                                <input
+                                                                    id="user_account_avatar"
+                                                                    ref="stepFourAvatarInputRef"
+                                                                    type="file"
+                                                                    accept=".jpg,.jpeg,.png,.webp"
+                                                                    autocomplete="off"
+                                                                    class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30"
+                                                                    @change="
+                                                                        onStepFourAvatarChange
                                                                     "
-                                                                    alt="Selected profile photo preview"
-                                                                    class="h-full w-full object-cover object-center"
                                                                 />
-                                                                <AvatarFallback
-                                                                    class="rounded-none bg-muted text-base font-semibold text-foreground"
+                                                                <p
+                                                                    class="text-xs text-muted-foreground"
                                                                 >
                                                                     {{
-                                                                        getInitials(
-                                                                            userAccountDisplayName,
-                                                                        )
+                                                                        stepFourAvatarHintText
                                                                     }}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                        </div>
-                                                        <div
-                                                            class="min-w-0 flex-1 space-y-3"
-                                                        >
-                                                            <Label
-                                                                for="user_account_avatar"
-                                                                :class="
-                                                                    stepOneLabelRowClass
-                                                                "
-                                                            >
-                                                                <span
-                                                                    >Profile
-                                                                    photo</span
+                                                                </p>
+                                                                <p
+                                                                    class="text-xs text-muted-foreground"
                                                                 >
-                                                                <Badge
-                                                                    variant="outline"
-                                                                >
-                                                                    Optional
-                                                                </Badge>
-                                                                <Button
+                                                                    Preview will
+                                                                    appear on
+                                                                    the left.
+                                                                </p>
+                                                                <p
                                                                     v-if="
-                                                                        stepFourAvatarFile !==
-                                                                        null
+                                                                        stepFourAvatarError !==
+                                                                        ''
                                                                     "
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    :class="
-                                                                        clearFieldButtonClass
-                                                                    "
-                                                                    aria-label="Clear selected profile photo"
-                                                                    @click="
-                                                                        clearStepFourAvatarSelection
-                                                                    "
+                                                                    class="text-xs text-destructive"
                                                                 >
-                                                                    <X
-                                                                        class="size-3.5"
-                                                                    />
-                                                                </Button>
-                                                            </Label>
-                                                            <input
-                                                                id="user_account_avatar"
-                                                                ref="stepFourAvatarInputRef"
-                                                                type="file"
-                                                                accept=".jpg,.jpeg,.png,.webp"
-                                                                autocomplete="off"
-                                                                class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30"
-                                                                @change="
-                                                                    onStepFourAvatarChange
-                                                                "
-                                                            />
-                                                            <p
-                                                                class="text-xs text-muted-foreground"
-                                                            >
-                                                                {{
-                                                                    stepFourAvatarHintText
-                                                                }}
-                                                            </p>
-                                                            <p
-                                                                class="text-xs text-muted-foreground"
-                                                            >
-                                                                Preview will
-                                                                appear on the
-                                                                left.
-                                                            </p>
-                                                            <p
-                                                                v-if="
-                                                                    stepFourAvatarError !==
-                                                                    ''
-                                                                "
-                                                                class="text-xs text-destructive"
-                                                            >
-                                                                {{
-                                                                    stepFourAvatarError
-                                                                }}
-                                                            </p>
+                                                                    {{
+                                                                        stepFourAvatarError
+                                                                    }}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div class="grid gap-3">
-                                                    <Label
-                                                        for="user_account_email"
-                                                        :class="
-                                                            stepOneLabelRowClass
-                                                        "
-                                                    >
-                                                        <span
-                                                            >Email address</span
-                                                        >
-                                                        <Badge
-                                                            v-if="
-                                                                stepFourFieldInvalid.email
-                                                            "
-                                                            variant="destructive"
-                                                        >
-                                                            Invalid
-                                                        </Badge>
-                                                        <Badge
-                                                            v-else-if="
-                                                                emailAvailability.status ===
-                                                                'checking'
-                                                            "
-                                                            variant="secondary"
-                                                        >
-                                                            Checking
-                                                        </Badge>
-                                                        <Badge
-                                                            v-else-if="
-                                                                emailAvailability.status ===
-                                                                'taken'
-                                                            "
-                                                            variant="destructive"
-                                                        >
-                                                            Already used
-                                                        </Badge>
-                                                        <Badge
-                                                            v-else-if="
-                                                                emailAvailability.status ===
-                                                                'available'
-                                                            "
-                                                            class="bg-green-600/15 text-green-700 dark:text-green-300"
-                                                        >
-                                                            Available
-                                                        </Badge>
-                                                        <Button
-                                                            v-if="
-                                                                userAccount.email !==
-                                                                ''
-                                                            "
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
+                                                    <div class="grid gap-3">
+                                                        <Label
+                                                            for="user_account_email"
                                                             :class="
-                                                                clearFieldButtonClass
+                                                                stepOneLabelRowClass
                                                             "
-                                                            aria-label="Clear email address"
-                                                            @click="
-                                                                userAccount.email =
+                                                        >
+                                                            <span
+                                                                >Email
+                                                                address</span
+                                                            >
+                                                            <Badge
+                                                                v-if="
+                                                                    stepFourFieldInvalid.email
+                                                                "
+                                                                variant="destructive"
+                                                            >
+                                                                Invalid
+                                                            </Badge>
+                                                            <Badge
+                                                                v-else-if="
+                                                                    emailAvailability.status ===
+                                                                    'checking'
+                                                                "
+                                                                variant="secondary"
+                                                            >
+                                                                Checking
+                                                            </Badge>
+                                                            <Badge
+                                                                v-else-if="
+                                                                    emailAvailability.status ===
+                                                                    'taken'
+                                                                "
+                                                                variant="destructive"
+                                                            >
+                                                                Already used
+                                                            </Badge>
+                                                            <Badge
+                                                                v-else-if="
+                                                                    emailAvailability.status ===
+                                                                    'available'
+                                                                "
+                                                                class="bg-green-600/15 text-green-700 dark:text-green-300"
+                                                            >
+                                                                Available
+                                                            </Badge>
+                                                            <Button
+                                                                v-if="
+                                                                    userAccount.email !==
                                                                     ''
-                                                            "
-                                                        >
-                                                            <X
-                                                                class="size-3.5"
-                                                            />
-                                                        </Button>
-                                                    </Label>
-                                                    <Input
-                                                        id="user_account_email"
-                                                        v-model="
-                                                            userAccount.email
-                                                        "
-                                                        class="w-full"
-                                                        type="email"
-                                                        autocomplete="email"
-                                                        placeholder="name@example.com"
-                                                        :aria-invalid="
-                                                            stepFourFieldInvalid.email ||
-                                                            emailAvailability.status ===
-                                                                'taken' ||
-                                                            emailAvailability.status ===
-                                                                'invalid'
-                                                        "
-                                                    />
-                                                    <p
-                                                        v-if="
-                                                            emailAvailability.status !==
-                                                            'idle'
-                                                        "
-                                                        class="text-sm"
-                                                        :class="
-                                                            availabilityStatusClass(
-                                                                emailAvailability.status,
-                                                            )
-                                                        "
-                                                    >
-                                                        {{
-                                                            emailAvailability.message
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        v-else
-                                                        class="text-sm opacity-0"
-                                                        aria-hidden="true"
-                                                    >
-                                                        Passwords match.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div class="min-w-0 space-y-6">
-                                                <div class="grid gap-3">
-                                                    <Label
-                                                        for="user_account_password"
-                                                        :class="
-                                                            stepOneLabelRowClass
-                                                        "
-                                                    >
-                                                        <span>Password</span>
-                                                        <Badge
-                                                            v-if="
-                                                                stepFourFieldInvalid.password
-                                                            "
-                                                            variant="destructive"
-                                                        >
-                                                            Requirements not met
-                                                        </Badge>
-                                                    </Label>
-                                                    <div class="relative">
+                                                                "
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                :class="
+                                                                    clearFieldButtonClass
+                                                                "
+                                                                aria-label="Clear email address"
+                                                                @click="
+                                                                    userAccount.email =
+                                                                        ''
+                                                                "
+                                                            >
+                                                                <X
+                                                                    class="size-3.5"
+                                                                />
+                                                            </Button>
+                                                        </Label>
                                                         <Input
-                                                            id="user_account_password"
+                                                            id="user_account_email"
                                                             v-model="
-                                                                userAccount.password
+                                                                userAccount.email
                                                             "
-                                                            class="w-full pr-10"
-                                                            :type="
-                                                                showStepFourPassword
-                                                                    ? 'text'
-                                                                    : 'password'
-                                                            "
-                                                            autocomplete="new-password"
-                                                            placeholder="At least 8 characters"
-                                                            aria-describedby="user_account_password_requirements"
+                                                            class="w-full"
+                                                            type="email"
+                                                            autocomplete="email"
+                                                            placeholder="name@example.com"
                                                             :aria-invalid="
-                                                                stepFourFieldInvalid.password
+                                                                stepFourFieldInvalid.email ||
+                                                                emailAvailability.status ===
+                                                                    'taken' ||
+                                                                emailAvailability.status ===
+                                                                    'invalid'
                                                             "
                                                         />
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            class="absolute top-1/2 right-0 mr-1 size-8 shrink-0 -translate-y-1/2 cursor-pointer rounded-md text-muted-foreground hover:bg-transparent hover:text-foreground"
-                                                            aria-label="Toggle password visibility"
-                                                            @click="
-                                                                showStepFourPassword =
-                                                                    !showStepFourPassword
-                                                            "
-                                                        >
-                                                            <Eye
-                                                                v-if="
-                                                                    !showStepFourPassword
-                                                                "
-                                                                class="size-4"
-                                                            />
-                                                            <EyeOff
-                                                                v-else
-                                                                class="size-4"
-                                                            />
-                                                        </Button>
-                                                    </div>
-                                                    <ul
-                                                        id="user_account_password_requirements"
-                                                        class="list-none space-y-1.5 pl-0 text-sm"
-                                                        aria-label="Password requirements"
-                                                    >
-                                                        <li
-                                                            class="flex items-center gap-2"
-                                                            :class="
-                                                                stepFourPasswordPolicyChecks.minLength
-                                                                    ? 'text-green-600 dark:text-green-400'
-                                                                    : 'text-muted-foreground'
-                                                            "
-                                                        >
-                                                            <Check
-                                                                class="size-3.5 shrink-0"
-                                                                aria-hidden="true"
-                                                            />
-                                                            <span
-                                                                >At least 8
-                                                                characters</span
-                                                            >
-                                                        </li>
-                                                        <li
-                                                            class="flex items-center gap-2"
-                                                            :class="
-                                                                stepFourPasswordPolicyChecks.hasUpper
-                                                                    ? 'text-green-600 dark:text-green-400'
-                                                                    : 'text-muted-foreground'
-                                                            "
-                                                        >
-                                                            <Check
-                                                                class="size-3.5 shrink-0"
-                                                                aria-hidden="true"
-                                                            />
-                                                            <span
-                                                                >One uppercase
-                                                                letter</span
-                                                            >
-                                                        </li>
-                                                        <li
-                                                            class="flex items-center gap-2"
-                                                            :class="
-                                                                stepFourPasswordPolicyChecks.hasLower
-                                                                    ? 'text-green-600 dark:text-green-400'
-                                                                    : 'text-muted-foreground'
-                                                            "
-                                                        >
-                                                            <Check
-                                                                class="size-3.5 shrink-0"
-                                                                aria-hidden="true"
-                                                            />
-                                                            <span
-                                                                >One lowercase
-                                                                letter</span
-                                                            >
-                                                        </li>
-                                                        <li
-                                                            class="flex items-center gap-2"
-                                                            :class="
-                                                                stepFourPasswordPolicyChecks.hasDigit
-                                                                    ? 'text-green-600 dark:text-green-400'
-                                                                    : 'text-muted-foreground'
-                                                            "
-                                                        >
-                                                            <Check
-                                                                class="size-3.5 shrink-0"
-                                                                aria-hidden="true"
-                                                            />
-                                                            <span
-                                                                >One
-                                                                number</span
-                                                            >
-                                                        </li>
-                                                    </ul>
-                                                    <p
-                                                        v-if="
-                                                            stepFourPasswordMeetsPolicy
-                                                        "
-                                                        class="sr-only"
-                                                        aria-live="polite"
-                                                    >
-                                                        All password
-                                                        requirements are met.
-                                                    </p>
-                                                </div>
-                                                <div class="grid gap-3">
-                                                    <Label
-                                                        for="user_account_password_confirmation"
-                                                        :class="
-                                                            stepOneLabelRowClass
-                                                        "
-                                                    >
-                                                        <span
-                                                            >Confirm
-                                                            password</span
-                                                        >
-                                                        <Badge
+                                                        <p
                                                             v-if="
-                                                                stepFourPasswordConfirmationInvalid
+                                                                emailAvailability.status !==
+                                                                'idle'
                                                             "
-                                                            variant="destructive"
-                                                        >
-                                                            Must match
-                                                        </Badge>
-                                                    </Label>
-                                                    <div class="relative">
-                                                        <Input
-                                                            id="user_account_password_confirmation"
-                                                            v-model="
-                                                                userAccount.passwordConfirmation
-                                                            "
-                                                            class="w-full pr-10"
+                                                            class="text-sm"
                                                             :class="
-                                                                stepFourPasswordConfirmationInputClass
+                                                                availabilityStatusClass(
+                                                                    emailAvailability.status,
+                                                                )
                                                             "
-                                                            :type="
-                                                                showStepFourPasswordConfirmation
-                                                                    ? 'text'
-                                                                    : 'password'
+                                                        >
+                                                            {{
+                                                                emailAvailability.message
+                                                            }}
+                                                        </p>
+                                                        <p
+                                                            v-else
+                                                            class="text-sm opacity-0"
+                                                            aria-hidden="true"
+                                                        >
+                                                            Passwords match.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div class="min-w-0 space-y-6">
+                                                    <div class="grid gap-3">
+                                                        <Label
+                                                            for="user_account_password"
+                                                            :class="
+                                                                stepOneLabelRowClass
                                                             "
-                                                            autocomplete="new-password"
-                                                            placeholder="Re-enter password"
-                                                            :aria-describedby="
+                                                        >
+                                                            <span
+                                                                >Password</span
+                                                            >
+                                                            <Badge
+                                                                v-if="
+                                                                    stepFourFieldInvalid.password
+                                                                "
+                                                                variant="destructive"
+                                                            >
+                                                                Requirements not
+                                                                met
+                                                            </Badge>
+                                                        </Label>
+                                                        <div class="relative">
+                                                            <Input
+                                                                id="user_account_password"
+                                                                v-model="
+                                                                    userAccount.password
+                                                                "
+                                                                class="w-full pr-10"
+                                                                :type="
+                                                                    showStepFourPassword
+                                                                        ? 'text'
+                                                                        : 'password'
+                                                                "
+                                                                autocomplete="new-password"
+                                                                placeholder="At least 8 characters"
+                                                                aria-describedby="user_account_password_requirements"
+                                                                :aria-invalid="
+                                                                    stepFourFieldInvalid.password
+                                                                "
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                class="absolute top-1/2 right-0 mr-1 size-8 shrink-0 -translate-y-1/2 cursor-pointer rounded-md text-muted-foreground hover:bg-transparent hover:text-foreground"
+                                                                aria-label="Toggle password visibility"
+                                                                @click="
+                                                                    showStepFourPassword =
+                                                                        !showStepFourPassword
+                                                                "
+                                                            >
+                                                                <Eye
+                                                                    v-if="
+                                                                        !showStepFourPassword
+                                                                    "
+                                                                    class="size-4"
+                                                                />
+                                                                <EyeOff
+                                                                    v-else
+                                                                    class="size-4"
+                                                                />
+                                                            </Button>
+                                                        </div>
+                                                        <ul
+                                                            id="user_account_password_requirements"
+                                                            class="list-none space-y-1.5 pl-0 text-sm"
+                                                            aria-label="Password requirements"
+                                                        >
+                                                            <li
+                                                                class="flex items-center gap-2"
+                                                                :class="
+                                                                    stepFourPasswordPolicyChecks.minLength
+                                                                        ? 'text-green-600 dark:text-green-400'
+                                                                        : 'text-muted-foreground'
+                                                                "
+                                                            >
+                                                                <Check
+                                                                    class="size-3.5 shrink-0"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                <span
+                                                                    >At least 8
+                                                                    characters</span
+                                                                >
+                                                            </li>
+                                                            <li
+                                                                class="flex items-center gap-2"
+                                                                :class="
+                                                                    stepFourPasswordPolicyChecks.hasUpper
+                                                                        ? 'text-green-600 dark:text-green-400'
+                                                                        : 'text-muted-foreground'
+                                                                "
+                                                            >
+                                                                <Check
+                                                                    class="size-3.5 shrink-0"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                <span
+                                                                    >One
+                                                                    uppercase
+                                                                    letter</span
+                                                                >
+                                                            </li>
+                                                            <li
+                                                                class="flex items-center gap-2"
+                                                                :class="
+                                                                    stepFourPasswordPolicyChecks.hasLower
+                                                                        ? 'text-green-600 dark:text-green-400'
+                                                                        : 'text-muted-foreground'
+                                                                "
+                                                            >
+                                                                <Check
+                                                                    class="size-3.5 shrink-0"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                <span
+                                                                    >One
+                                                                    lowercase
+                                                                    letter</span
+                                                                >
+                                                            </li>
+                                                            <li
+                                                                class="flex items-center gap-2"
+                                                                :class="
+                                                                    stepFourPasswordPolicyChecks.hasDigit
+                                                                        ? 'text-green-600 dark:text-green-400'
+                                                                        : 'text-muted-foreground'
+                                                                "
+                                                            >
+                                                                <Check
+                                                                    class="size-3.5 shrink-0"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                <span
+                                                                    >One
+                                                                    number</span
+                                                                >
+                                                            </li>
+                                                        </ul>
+                                                        <p
+                                                            v-if="
+                                                                stepFourPasswordMeetsPolicy
+                                                            "
+                                                            class="sr-only"
+                                                            aria-live="polite"
+                                                        >
+                                                            All password
+                                                            requirements are
+                                                            met.
+                                                        </p>
+                                                    </div>
+                                                    <div class="grid gap-3">
+                                                        <Label
+                                                            for="user_account_password_confirmation"
+                                                            :class="
+                                                                stepOneLabelRowClass
+                                                            "
+                                                        >
+                                                            <span
+                                                                >Confirm
+                                                                password</span
+                                                            >
+                                                            <Badge
+                                                                v-if="
+                                                                    stepFourPasswordConfirmationInvalid
+                                                                "
+                                                                variant="destructive"
+                                                            >
+                                                                Must match
+                                                            </Badge>
+                                                        </Label>
+                                                        <div class="relative">
+                                                            <Input
+                                                                id="user_account_password_confirmation"
+                                                                v-model="
+                                                                    userAccount.passwordConfirmation
+                                                                "
+                                                                class="w-full pr-10"
+                                                                :class="
+                                                                    stepFourPasswordConfirmationInputClass
+                                                                "
+                                                                :type="
+                                                                    showStepFourPasswordConfirmation
+                                                                        ? 'text'
+                                                                        : 'password'
+                                                                "
+                                                                autocomplete="new-password"
+                                                                placeholder="Re-enter password"
+                                                                :aria-describedby="
+                                                                    stepFourPasswordsMatch
+                                                                        ? 'user_account_password_match'
+                                                                        : stepFourPasswordConfirmationInvalid
+                                                                          ? 'user_account_password_mismatch'
+                                                                          : undefined
+                                                                "
+                                                                :aria-invalid="
+                                                                    stepFourPasswordConfirmationInvalid
+                                                                "
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                class="absolute top-1/2 right-0 mr-1 size-8 shrink-0 -translate-y-1/2 cursor-pointer rounded-md text-muted-foreground hover:bg-transparent hover:text-foreground"
+                                                                aria-label="Toggle confirm password visibility"
+                                                                @click="
+                                                                    showStepFourPasswordConfirmation =
+                                                                        !showStepFourPasswordConfirmation
+                                                                "
+                                                            >
+                                                                <Eye
+                                                                    v-if="
+                                                                        !showStepFourPasswordConfirmation
+                                                                    "
+                                                                    class="size-4"
+                                                                />
+                                                                <EyeOff
+                                                                    v-else
+                                                                    class="size-4"
+                                                                />
+                                                            </Button>
+                                                        </div>
+                                                        <p
+                                                            v-if="
+                                                                stepFourPasswordConfirmationInvalid &&
+                                                                !stepFourPasswordsMatch
+                                                            "
+                                                            id="user_account_password_mismatch"
+                                                            class="text-sm text-destructive"
+                                                        >
+                                                            Passwords do not
+                                                            match.
+                                                        </p>
+                                                        <p
+                                                            v-if="
                                                                 stepFourPasswordsMatch
-                                                                    ? 'user_account_password_match'
-                                                                    : stepFourPasswordConfirmationInvalid
-                                                                      ? 'user_account_password_mismatch'
-                                                                      : undefined
                                                             "
-                                                            :aria-invalid="
-                                                                stepFourPasswordConfirmationInvalid
-                                                            "
-                                                        />
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            class="absolute top-1/2 right-0 mr-1 size-8 shrink-0 -translate-y-1/2 cursor-pointer rounded-md text-muted-foreground hover:bg-transparent hover:text-foreground"
-                                                            aria-label="Toggle confirm password visibility"
-                                                            @click="
-                                                                showStepFourPasswordConfirmation =
-                                                                    !showStepFourPasswordConfirmation
-                                                            "
+                                                            id="user_account_password_match"
+                                                            class="text-sm text-green-600 dark:text-green-400"
                                                         >
-                                                            <Eye
-                                                                v-if="
-                                                                    !showStepFourPasswordConfirmation
-                                                                "
-                                                                class="size-4"
-                                                            />
-                                                            <EyeOff
-                                                                v-else
-                                                                class="size-4"
-                                                            />
-                                                        </Button>
+                                                            Passwords match.
+                                                        </p>
                                                     </div>
-                                                    <p
-                                                        v-if="
-                                                            stepFourPasswordConfirmationInvalid &&
-                                                            !stepFourPasswordsMatch
-                                                        "
-                                                        id="user_account_password_mismatch"
-                                                        class="text-sm text-destructive"
-                                                    >
-                                                        Passwords do not match.
-                                                    </p>
-                                                    <p
-                                                        v-if="
-                                                            stepFourPasswordsMatch
-                                                        "
-                                                        id="user_account_password_match"
-                                                        class="text-sm text-green-600 dark:text-green-400"
-                                                    >
-                                                        Passwords match.
-                                                    </p>
                                                 </div>
                                             </div>
-                                        </div>
                                         </template>
                                         <p
                                             v-else
                                             class="rounded-lg border border-dashed border-border/70 bg-muted/20 p-4 text-sm leading-relaxed text-muted-foreground dark:bg-muted/15"
                                         >
-                                            You are saving this employee
-                                            without app sign-in. You can add a
-                                            user account later from admin if
-                                            your process allows it.
+                                            You are saving this employee without
+                                            app sign-in. You can add a user
+                                            account later from admin if your
+                                            process allows it.
                                         </p>
                                     </section>
                                 </CardContent>

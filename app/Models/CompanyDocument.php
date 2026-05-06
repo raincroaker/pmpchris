@@ -37,6 +37,7 @@ class CompanyDocument extends Model
         'decision_note',
         'tags',
         'notes',
+        'extracted_text',
     ];
 
     /**

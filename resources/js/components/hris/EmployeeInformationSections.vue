@@ -29,10 +29,7 @@ import EmployeeInformationSectionCard from '@/components/hris/EmployeeInformatio
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -77,9 +74,8 @@ const emergencyContactsEditOpen = ref(false);
 const addressesEditOpen = ref(false);
 const page = usePage();
 const aboutMeAdjustEmploymentOpen = ref(false);
-const aboutMeEmploymentDialogMode = ref<EmploymentHistoryDialogMode>(
-    'adjust_dates',
-);
+const aboutMeEmploymentDialogMode =
+    ref<EmploymentHistoryDialogMode>('adjust_dates');
 const aboutMeWorkPositionsOpen = ref(false);
 const aboutMeWorkAffiliationsOpen = ref(false);
 
@@ -144,7 +140,8 @@ const selfAboutMeEmploymentRow = computed((): EmploymentHistoryRow | null => {
             display_name: props.profile.display_name,
             id_number: props.profile.id_number,
             avatar_url: props.profile.avatar_url,
-            is_org_wide: props.profile.org_scope_label.includes('Organization-wide'),
+            is_org_wide:
+                props.profile.org_scope_label.includes('Organization-wide'),
         },
     };
 });
@@ -210,7 +207,10 @@ const statusBadgeClass = computed((): string => {
     if (normalizedStatus === 'active') {
         return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300';
     }
-    if (normalizedStatus === 'resigned' || normalizedStatus === 'contract ended') {
+    if (
+        normalizedStatus === 'resigned' ||
+        normalizedStatus === 'contract ended'
+    ) {
         return 'bg-amber-500/15 text-amber-700 dark:text-amber-300';
     }
     if (normalizedStatus === 'terminated') {
@@ -247,7 +247,7 @@ function quickStatIcon(label: string) {
                 class="relative flex flex-col gap-6 overflow-hidden rounded-2xl border border-border/80 bg-card p-6 shadow-sm"
             >
                 <div
-                    class="pointer-events-none absolute -left-16 top-1/2 size-48 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl"
+                    class="pointer-events-none absolute top-1/2 -left-16 size-48 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl"
                     aria-hidden="true"
                 />
                 <div
@@ -260,7 +260,9 @@ function quickStatIcon(label: string) {
                     >
                         About Me
                     </h1>
-                    <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    <div
+                        class="flex shrink-0 flex-wrap items-center justify-end gap-2"
+                    >
                         <Tooltip v-if="isSelf && canEditAboutMe">
                             <TooltipTrigger as-child>
                                 <Button
@@ -301,7 +303,9 @@ function quickStatIcon(label: string) {
                                         type="button"
                                         variant="destructive"
                                         class="rounded-lg"
-                                        @click="openAboutMeRecordSeparationDialog"
+                                        @click="
+                                            openAboutMeRecordSeparationDialog
+                                        "
                                     >
                                         End employment
                                     </Button>
@@ -315,7 +319,9 @@ function quickStatIcon(label: string) {
                     </div>
                 </div>
 
-                <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_1px_minmax(0,1.2fr)]">
+                <div
+                    class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_1px_minmax(0,1.2fr)]"
+                >
                     <div class="flex min-w-0 items-center gap-5">
                         <div class="relative shrink-0">
                             <Avatar
@@ -326,7 +332,9 @@ function quickStatIcon(label: string) {
                                     :src="profile.avatar_url"
                                     :alt="profile.display_name"
                                 />
-                                <AvatarFallback class="text-xl font-semibold text-muted-foreground sm:text-2xl">
+                                <AvatarFallback
+                                    class="text-xl font-semibold text-muted-foreground sm:text-2xl"
+                                >
                                     {{ profileInitials }}
                                 </AvatarFallback>
                             </Avatar>
@@ -435,7 +443,9 @@ function quickStatIcon(label: string) {
                             >
                                 {{ scheduleTimeRange }}
                             </p>
-                            <p class="text-xs leading-relaxed text-muted-foreground pt-0.5">
+                            <p
+                                class="pt-0.5 text-xs leading-relaxed text-muted-foreground"
+                            >
                                 {{ scheduleWorkingDaysDisplay }}
                             </p>
                         </div>
@@ -492,19 +502,19 @@ function quickStatIcon(label: string) {
                     >
                         <TabsTrigger
                             value="profile"
-                            class="relative flex-none! w-auto! justify-start! cursor-pointer rounded-none border-0 border-b-2 border-transparent bg-transparent px-2 py-2 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:absolute data-[state=active]:after:-bottom-0.5 data-[state=active]:after:left-1/2 data-[state=active]:after:h-0.5 data-[state=active]:after:w-4/5 data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:rounded-full data-[state=active]:after:bg-primary/60 data-[state=active]:after:blur-[1px] data-[state=active]:after:content-[''] sm:text-base"
+                            class="relative w-auto! flex-none! cursor-pointer justify-start! rounded-none border-0 border-b-2 border-transparent bg-transparent px-2 py-2 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:absolute data-[state=active]:after:-bottom-0.5 data-[state=active]:after:left-1/2 data-[state=active]:after:h-0.5 data-[state=active]:after:w-4/5 data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:rounded-full data-[state=active]:after:bg-primary/60 data-[state=active]:after:blur-[1px] data-[state=active]:after:content-[''] sm:text-base"
                         >
                             Profile
                         </TabsTrigger>
                         <TabsTrigger
                             value="work"
-                            class="relative flex-none! w-auto! justify-start! cursor-pointer rounded-none border-0 border-b-2 border-transparent bg-transparent px-2 py-2 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:absolute data-[state=active]:after:-bottom-0.5 data-[state=active]:after:left-1/2 data-[state=active]:after:h-0.5 data-[state=active]:after:w-4/5 data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:rounded-full data-[state=active]:after:bg-primary/60 data-[state=active]:after:blur-[1px] data-[state=active]:after:content-[''] sm:text-base"
+                            class="relative w-auto! flex-none! cursor-pointer justify-start! rounded-none border-0 border-b-2 border-transparent bg-transparent px-2 py-2 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:absolute data-[state=active]:after:-bottom-0.5 data-[state=active]:after:left-1/2 data-[state=active]:after:h-0.5 data-[state=active]:after:w-4/5 data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:rounded-full data-[state=active]:after:bg-primary/60 data-[state=active]:after:blur-[1px] data-[state=active]:after:content-[''] sm:text-base"
                         >
                             Work
                         </TabsTrigger>
                         <TabsTrigger
                             value="comp-time"
-                            class="relative flex-none! w-auto! justify-start! cursor-pointer rounded-none border-0 border-b-2 border-transparent bg-transparent px-2 py-2 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:absolute data-[state=active]:after:-bottom-0.5 data-[state=active]:after:left-1/2 data-[state=active]:after:h-0.5 data-[state=active]:after:w-4/5 data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:rounded-full data-[state=active]:after:bg-primary/60 data-[state=active]:after:blur-[1px] data-[state=active]:after:content-[''] sm:text-base"
+                            class="relative w-auto! flex-none! cursor-pointer justify-start! rounded-none border-0 border-b-2 border-transparent bg-transparent px-2 py-2 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:absolute data-[state=active]:after:-bottom-0.5 data-[state=active]:after:left-1/2 data-[state=active]:after:h-0.5 data-[state=active]:after:w-4/5 data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:rounded-full data-[state=active]:after:bg-primary/60 data-[state=active]:after:blur-[1px] data-[state=active]:after:content-[''] sm:text-base"
                         >
                             Schedule
                         </TabsTrigger>
@@ -519,10 +529,14 @@ function quickStatIcon(label: string) {
                     <!-- Demographics -->
                     <Card class="overflow-hidden border-border/70 shadow-sm">
                         <div
-                            class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 dark:bg-muted/25 sm:mx-6"
+                            class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 sm:mx-6 dark:bg-muted/25"
                         >
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="flex min-w-0 flex-row items-start gap-4">
+                            <div
+                                class="flex items-center justify-between gap-3"
+                            >
+                                <div
+                                    class="flex min-w-0 flex-row items-start gap-4"
+                                >
                                     <span
                                         class="inline-flex shrink-0 rounded-full bg-primary/10 p-3 text-primary"
                                     >
@@ -566,17 +580,21 @@ function quickStatIcon(label: string) {
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        Edit identity fields in a dialog (local draft
-                                        until APIs are wired).
+                                        Edit identity fields in a dialog (local
+                                        draft until APIs are wired).
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
                         </div>
-                        <CardContent class="grid gap-4 px-5 pb-4 pt-4 sm:px-6 lg:px-7 sm:pb-6">
+                        <CardContent
+                            class="grid gap-4 px-5 pt-4 pb-4 sm:px-6 sm:pb-6 lg:px-7"
+                        >
                             <dl
                                 class="grid grid-cols-1 gap-x-4 gap-y-5 md:grid-cols-2 lg:grid-cols-3"
                             >
-                                <div class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3">
+                                <div
+                                    class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3"
+                                >
                                     <dt
                                         class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                                     >
@@ -591,7 +609,9 @@ function quickStatIcon(label: string) {
                                         }}
                                     </dd>
                                 </div>
-                                <div class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3">
+                                <div
+                                    class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3"
+                                >
                                     <dt
                                         class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                                     >
@@ -603,7 +623,9 @@ function quickStatIcon(label: string) {
                                         {{ profile.demographics.sex }}
                                     </dd>
                                 </div>
-                                <div class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3">
+                                <div
+                                    class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3"
+                                >
                                     <dt
                                         class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                                     >
@@ -615,7 +637,9 @@ function quickStatIcon(label: string) {
                                         {{ profile.demographics.civil_status }}
                                     </dd>
                                 </div>
-                                <div class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3">
+                                <div
+                                    class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3"
+                                >
                                     <dt
                                         class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                                     >
@@ -627,7 +651,9 @@ function quickStatIcon(label: string) {
                                         {{ profile.demographics.nationality }}
                                     </dd>
                                 </div>
-                                <div class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3">
+                                <div
+                                    class="grid gap-1.5 border-l-2 border-primary/20 py-1 pl-3"
+                                >
                                     <dt
                                         class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                                     >
@@ -655,10 +681,14 @@ function quickStatIcon(label: string) {
                     <div class="grid gap-6 lg:grid-cols-2">
                         <Card class="border-border/70 shadow-sm">
                             <div
-                                class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 dark:bg-muted/25 sm:mx-6"
+                                class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 sm:mx-6 dark:bg-muted/25"
                             >
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex min-w-0 flex-row items-start gap-4">
+                                <div
+                                    class="flex items-center justify-between gap-3"
+                                >
+                                    <div
+                                        class="flex min-w-0 flex-row items-start gap-4"
+                                    >
                                         <span
                                             class="inline-flex shrink-0 rounded-full bg-primary/10 p-3 text-primary"
                                         >
@@ -705,13 +735,15 @@ function quickStatIcon(label: string) {
                                     </Tooltip>
                                 </div>
                             </div>
-                            <CardContent class="space-y-3 px-5 pb-4 pt-4 sm:px-6 lg:px-7 sm:pb-6">
+                            <CardContent
+                                class="space-y-3 px-5 pt-4 pb-4 sm:px-6 sm:pb-6 lg:px-7"
+                            >
                                 <div
                                     v-for="(
                                         c, idx
                                     ) in profile.personal_contacts"
                                     :key="`p-${idx}`"
-                                    class="flex flex-col gap-2 rounded-lg border border-border/60 border-l-2 border-l-primary/20 bg-muted/10 px-4 py-3"
+                                    class="flex flex-col gap-2 rounded-lg border border-l-2 border-border/60 border-l-primary/20 bg-muted/10 px-4 py-3"
                                 >
                                     <div
                                         class="flex flex-wrap items-center gap-2"
@@ -729,9 +761,7 @@ function quickStatIcon(label: string) {
                                             Primary
                                         </Badge>
                                     </div>
-                                    <div
-                                        class="text-left text-sm"
-                                    >
+                                    <div class="text-left text-sm">
                                         <p
                                             class="font-mono text-sm text-foreground tabular-nums"
                                         >
@@ -750,10 +780,14 @@ function quickStatIcon(label: string) {
 
                         <Card class="border-border/70 shadow-sm">
                             <div
-                                class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 dark:bg-muted/25 sm:mx-6"
+                                class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 sm:mx-6 dark:bg-muted/25"
                             >
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex min-w-0 flex-row items-start gap-4">
+                                <div
+                                    class="flex items-center justify-between gap-3"
+                                >
+                                    <div
+                                        class="flex min-w-0 flex-row items-start gap-4"
+                                    >
                                         <span
                                             class="inline-flex shrink-0 rounded-full bg-primary/10 p-3 text-primary"
                                         >
@@ -800,13 +834,15 @@ function quickStatIcon(label: string) {
                                     </Tooltip>
                                 </div>
                             </div>
-                            <CardContent class="space-y-3 px-5 pb-4 pt-4 sm:px-6 lg:px-7 sm:pb-6">
+                            <CardContent
+                                class="space-y-3 px-5 pt-4 pb-4 sm:px-6 sm:pb-6 lg:px-7"
+                            >
                                 <div
                                     v-for="(
                                         c, idx
                                     ) in profile.emergency_contacts"
                                     :key="`e-${idx}`"
-                                    class="rounded-lg border border-border/60 border-l-2 border-l-primary/20 bg-muted/10 px-4 py-3"
+                                    class="rounded-lg border border-l-2 border-border/60 border-l-primary/20 bg-muted/10 px-4 py-3"
                                 >
                                     <div
                                         class="flex flex-wrap items-center gap-2"
@@ -824,7 +860,9 @@ function quickStatIcon(label: string) {
                                             Primary
                                         </Badge>
                                     </div>
-                                    <div class="flex flex-wrap items-center gap-1.5">
+                                    <div
+                                        class="flex flex-wrap items-center gap-1.5"
+                                    >
                                         <Badge
                                             variant="outline"
                                             class="text-[10px] font-normal"
@@ -851,14 +889,21 @@ function quickStatIcon(label: string) {
                     <!-- Addresses -->
                     <Card class="border-border/70 shadow-sm">
                         <div
-                            class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 dark:bg-muted/25 sm:mx-6"
+                            class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 sm:mx-6 dark:bg-muted/25"
                         >
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="flex min-w-0 flex-row items-start gap-4">
+                            <div
+                                class="flex items-center justify-between gap-3"
+                            >
+                                <div
+                                    class="flex min-w-0 flex-row items-start gap-4"
+                                >
                                     <span
                                         class="inline-flex shrink-0 rounded-full bg-primary/10 p-3 text-primary"
                                     >
-                                        <Home class="size-6" aria-hidden="true" />
+                                        <Home
+                                            class="size-6"
+                                            aria-hidden="true"
+                                        />
                                     </span>
                                     <div class="min-w-0 flex-1">
                                         <h3
@@ -866,7 +911,9 @@ function quickStatIcon(label: string) {
                                         >
                                             Addresses
                                         </h3>
-                                        <p class="text-sm text-muted-foreground">
+                                        <p
+                                            class="text-sm text-muted-foreground"
+                                        >
                                             Current residence and permanent
                                             address on file (PSGC-ready in the
                                             create flow).
@@ -896,7 +943,9 @@ function quickStatIcon(label: string) {
                                 </Tooltip>
                             </div>
                         </div>
-                        <CardContent class="grid gap-6 px-5 pb-4 pt-4 sm:px-6 lg:px-7 sm:pb-6 md:grid-cols-2">
+                        <CardContent
+                            class="grid gap-6 px-5 pt-4 pb-4 sm:px-6 sm:pb-6 md:grid-cols-2 lg:px-7"
+                        >
                             <div
                                 v-if="profile.current_address"
                                 class="flex flex-col gap-2 border-l-2 border-primary/20 py-1 pl-3"
@@ -1005,9 +1054,14 @@ function quickStatIcon(label: string) {
                                         variant="outline"
                                         size="sm"
                                         class="hidden shrink-0 border-amber-200 bg-amber-50 text-xs text-amber-900 hover:bg-amber-100 sm:inline-flex dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/70"
-                                        @click="openAboutMeRecordSeparationDialog"
+                                        @click="
+                                            openAboutMeRecordSeparationDialog
+                                        "
                                     >
-                                        <UserX class="mr-1.5 size-3.5" aria-hidden="true" />
+                                        <UserX
+                                            class="mr-1.5 size-3.5"
+                                            aria-hidden="true"
+                                        />
                                         Record separation
                                     </Button>
                                 </TooltipTrigger>
@@ -1024,9 +1078,14 @@ function quickStatIcon(label: string) {
                                         size="icon"
                                         class="inline-flex shrink-0 border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 sm:hidden dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/70"
                                         aria-label="Record separation"
-                                        @click="openAboutMeRecordSeparationDialog"
+                                        @click="
+                                            openAboutMeRecordSeparationDialog
+                                        "
                                     >
-                                        <UserX class="size-4" aria-hidden="true" />
+                                        <UserX
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -1034,7 +1093,9 @@ function quickStatIcon(label: string) {
                                 </TooltipContent>
                             </Tooltip>
                         </template>
-                        <dl class="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                        <dl
+                            class="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3"
+                        >
                             <div
                                 v-for="row in profile.employment_rows"
                                 :key="row.label"
@@ -1104,9 +1165,11 @@ function quickStatIcon(label: string) {
                             No assignment history.
                         </div>
                         <div
-                            v-for="(row, idx) in profile.unit_assignment_history"
+                            v-for="(
+                                row, idx
+                            ) in profile.unit_assignment_history"
                             :key="`assign-${idx}`"
-                            class="flex flex-col gap-2 rounded-lg border border-border/60 border-l-2 border-l-primary/20 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                            class="flex flex-col gap-2 rounded-lg border border-l-2 border-border/60 border-l-primary/20 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                         >
                             <div class="min-w-0 space-y-1">
                                 <span
@@ -1118,8 +1181,13 @@ function quickStatIcon(label: string) {
                                     />
                                     {{ row.unit }}
                                 </span>
-                                <div class="flex flex-wrap items-center gap-1.5">
-                                    <Badge variant="outline" class="text-[10px] font-normal">
+                                <div
+                                    class="flex flex-wrap items-center gap-1.5"
+                                >
+                                    <Badge
+                                        variant="outline"
+                                        class="text-[10px] font-normal"
+                                    >
                                         {{ row.unit_type }}
                                     </Badge>
                                     <Badge
@@ -1165,7 +1233,7 @@ function quickStatIcon(label: string) {
                         <div
                             v-for="(pos, idx) in profile.positions"
                             :key="idx"
-                            class="flex flex-col gap-2 rounded-lg border border-border/60 border-l-2 border-l-primary/20 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                            class="flex flex-col gap-2 rounded-lg border border-l-2 border-border/60 border-l-primary/20 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                         >
                             <div class="min-w-0">
                                 <p
@@ -1175,7 +1243,9 @@ function quickStatIcon(label: string) {
                                         class="size-4 shrink-0 text-muted-foreground"
                                         aria-hidden="true"
                                     />
-                                    <span class="truncate">{{ pos.title }}</span>
+                                    <span class="truncate">{{
+                                        pos.title
+                                    }}</span>
                                     <Badge
                                         v-if="pos.is_primary"
                                         variant="secondary"
@@ -1244,7 +1314,7 @@ function quickStatIcon(label: string) {
                             </Tooltip>
                         </template>
                         <div
-                            class="space-y-3 rounded-lg border border-border/60 border-l-2 border-l-primary/20 bg-muted/10 px-4 py-3 text-sm"
+                            class="space-y-3 rounded-lg border border-l-2 border-border/60 border-l-primary/20 bg-muted/10 px-4 py-3 text-sm"
                         >
                             <div
                                 class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
@@ -1268,12 +1338,14 @@ function quickStatIcon(label: string) {
                                     Code {{ profile.schedule_template_code }}
                                 </Badge>
                             </div>
-                            <p class="text-xs leading-relaxed text-muted-foreground">
+                            <p
+                                class="text-xs leading-relaxed text-muted-foreground"
+                            >
                                 {{ scheduleWorkingDaysDisplay }}
                             </p>
                             <p class="text-xs text-muted-foreground">
-                                Rotations, overnight flags, and grace rules
-                                live on the template definition.
+                                Rotations, overnight flags, and grace rules live
+                                on the template definition.
                             </p>
                         </div>
                     </EmployeeInformationSectionCard>
@@ -1310,13 +1382,15 @@ function quickStatIcon(label: string) {
                         <div
                             v-for="(row, idx) in profile.affiliation_history"
                             :key="`aff-${idx}`"
-                            class="flex flex-col gap-2 rounded-lg border border-border/60 border-l-2 border-l-primary/20 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                            class="flex flex-col gap-2 rounded-lg border border-l-2 border-border/60 border-l-primary/20 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                         >
                             <div class="space-y-1.5">
                                 <p class="font-medium text-foreground">
                                     {{ row.unit }}
                                 </p>
-                                <div class="flex flex-wrap items-center gap-1.5">
+                                <div
+                                    class="flex flex-wrap items-center gap-1.5"
+                                >
                                     <Badge
                                         variant="outline"
                                         class="text-[10px] font-normal"

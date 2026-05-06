@@ -6,7 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 
 const open = defineModel<boolean>('open', { default: false });
 
@@ -50,9 +56,14 @@ function initials(name: string): string {
 
 <template>
     <Sheet v-model:open="open">
-        <SheetContent side="right" class="flex h-dvh w-full flex-col gap-0 sm:max-w-md">
+        <SheetContent
+            side="right"
+            class="flex h-dvh w-full flex-col gap-0 sm:max-w-md"
+        >
             <template v-if="room">
-                <SheetHeader class="border-b border-sidebar-border/70 px-4 py-4 text-left">
+                <SheetHeader
+                    class="border-b border-sidebar-border/70 px-4 py-4 text-left"
+                >
                     <SheetTitle class="pr-8">Unit members</SheetTitle>
                     <SheetDescription>
                         Membership is fixed from organization chart assignments.
@@ -60,8 +71,14 @@ function initials(name: string): string {
                 </SheetHeader>
                 <div class="border-b border-sidebar-border/70 px-4 py-3">
                     <div class="relative">
-                        <Search class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input v-model="memberSearch" placeholder="Search members" class="h-9 pl-9" />
+                        <Search
+                            class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                        />
+                        <Input
+                            v-model="memberSearch"
+                            placeholder="Search members"
+                            class="h-9 pl-9"
+                        />
                     </div>
                 </div>
 
@@ -73,20 +90,33 @@ function initials(name: string): string {
                             class="flex items-center gap-2 rounded-md border border-sidebar-border/70 bg-muted/20 px-2 py-2"
                         >
                             <Avatar class="size-8 shrink-0">
-                                <AvatarImage v-if="member.avatarUrl" :src="member.avatarUrl" :alt="member.name" />
+                                <AvatarImage
+                                    v-if="member.avatarUrl"
+                                    :src="member.avatarUrl"
+                                    :alt="member.name"
+                                />
                                 <AvatarFallback class="text-[11px]">
                                     {{ initials(member.name) }}
                                 </AvatarFallback>
                             </Avatar>
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-medium text-foreground">
+                                <p
+                                    class="truncate text-sm font-medium text-foreground"
+                                >
                                     {{ member.name }}
                                 </p>
-                                <p class="truncate text-xs text-muted-foreground">
-                                    {{ member.employeeCode }} · {{ member.statusLine }}
+                                <p
+                                    class="truncate text-xs text-muted-foreground"
+                                >
+                                    {{ member.employeeCode }} ·
+                                    {{ member.statusLine }}
                                 </p>
                             </div>
-                            <Badge v-if="member.role === 'admin'" variant="outline">Head</Badge>
+                            <Badge
+                                v-if="member.role === 'admin'"
+                                variant="outline"
+                                >Head</Badge
+                            >
                         </div>
 
                         <div

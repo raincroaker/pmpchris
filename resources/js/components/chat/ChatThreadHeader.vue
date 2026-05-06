@@ -27,7 +27,9 @@ function initials(name: string): string {
 </script>
 
 <template>
-    <div class="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/70 bg-background px-4">
+    <div
+        class="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/70 bg-background px-4"
+    >
         <Button
             type="button"
             variant="ghost"
@@ -39,7 +41,11 @@ function initials(name: string): string {
             <ArrowLeft class="size-5" />
         </Button>
         <Avatar class="size-10 shrink-0">
-            <AvatarImage v-if="room.avatarUrl" :src="room.avatarUrl" :alt="room.name" />
+            <AvatarImage
+                v-if="room.avatarUrl"
+                :src="room.avatarUrl"
+                :alt="room.name"
+            />
             <AvatarFallback>
                 {{ initials(room.name) }}
             </AvatarFallback>
@@ -50,7 +56,9 @@ function initials(name: string): string {
             aria-label="Open unit details"
             @click="$emit('open-info')"
         >
-            <p class="truncate text-sm font-semibold text-foreground md:text-base">
+            <p
+                class="truncate text-sm font-semibold text-foreground md:text-base"
+            >
                 {{ room.name }}
             </p>
             <p class="truncate text-xs text-muted-foreground">

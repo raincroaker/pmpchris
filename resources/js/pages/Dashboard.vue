@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { InertiaLinkProps } from '@inertiajs/vue3';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     AlertTriangle,
@@ -11,6 +12,7 @@ import {
     Timer,
     Users,
 } from 'lucide-vue-next';
+import type { Component } from 'vue';
 import { computed } from 'vue';
 import HrisKpiCard from '@/components/hris/HrisKpiCard.vue';
 import { Button } from '@/components/ui/button';
@@ -26,7 +28,10 @@ import {
 import { chat } from '@/routes';
 import { dashboard } from '@/routes';
 import { my as attendanceMy } from '@/routes/attendance';
-import { company as calendarCompany, team as calendarTeam } from '@/routes/calendar';
+import {
+    company as calendarCompany,
+    team as calendarTeam,
+} from '@/routes/calendar';
 import { my as leaveMy } from '@/routes/leave';
 import { my as overtimeMy } from '@/routes/overtime';
 import type { BreadcrumbItem } from '@/types';
@@ -122,9 +127,24 @@ type MockChatRoom = {
 };
 
 const mockChatRooms: MockChatRoom[] = [
-    { id: 'c-1', title: '—', subtitle: 'Loading chats…', unreadCount: undefined },
-    { id: 'c-2', title: '—', subtitle: 'Loading chats…', unreadCount: undefined },
-    { id: 'c-3', title: '—', subtitle: 'Loading chats…', unreadCount: undefined },
+    {
+        id: 'c-1',
+        title: '—',
+        subtitle: 'Loading chats…',
+        unreadCount: undefined,
+    },
+    {
+        id: 'c-2',
+        title: '—',
+        subtitle: 'Loading chats…',
+        unreadCount: undefined,
+    },
+    {
+        id: 'c-3',
+        title: '—',
+        subtitle: 'Loading chats…',
+        unreadCount: undefined,
+    },
 ];
 
 type DashboardAttendanceRow = TeamAttendanceRow;
@@ -159,8 +179,8 @@ const kpiCards = computed(
         title: string;
         value: string;
         hint: string;
-        href: string;
-        icon: unknown;
+        href: NonNullable<InertiaLinkProps['href']>;
+        icon: Component;
         tone: 'amber' | 'violet' | 'emerald' | 'sky';
     }> => [
         {
@@ -203,7 +223,7 @@ const attendanceStatCards = computed(
         key: string;
         label: string;
         value: string;
-        icon: unknown;
+        icon: Component;
         tone: 'neutral' | 'emerald' | 'amber' | 'rose' | 'violet' | 'sky';
     }> => [
         {
@@ -251,7 +271,9 @@ const attendanceStatCards = computed(
     ],
 );
 
-function openDashboardTarget(href: string): void {
+function openDashboardTarget(
+    href: NonNullable<InertiaLinkProps['href']>,
+): void {
     router.visit(href);
 }
 </script>
@@ -262,21 +284,31 @@ function openDashboardTarget(href: string): void {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full min-h-0 flex-1 flex-col gap-4 p-4 lg:px-16">
             <div class="rounded-xl border border-border/70 bg-card p-4">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div
+                    class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                >
                     <div class="min-w-0">
-                    <h1 class="text-xl font-semibold text-foreground">
-                        Welcome, <span class="tabular-nums">{{ displayName }}</span>
-                    </h1>
-                    <p class="mt-1 text-sm text-muted-foreground">
-                        Workspace branch:
-                        <span class="font-medium text-foreground">{{ branchName }}</span>
-                        <span class="font-mono text-xs text-muted-foreground">
-                            ({{ branchCode }})
-                        </span>
-                    </p>
-                    <p class="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-                        Overview of your month-to-date activity and quick actions.
-                    </p>
+                        <h1 class="text-xl font-semibold text-foreground">
+                            Welcome,
+                            <span class="tabular-nums">{{ displayName }}</span>
+                        </h1>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            Workspace branch:
+                            <span class="font-medium text-foreground">{{
+                                branchName
+                            }}</span>
+                            <span
+                                class="font-mono text-xs text-muted-foreground"
+                            >
+                                ({{ branchCode }})
+                            </span>
+                        </p>
+                        <p
+                            class="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground"
+                        >
+                            Overview of your month-to-date activity and quick
+                            actions.
+                        </p>
                     </div>
 
                     <div class="flex flex-wrap gap-2">
@@ -288,13 +320,19 @@ function openDashboardTarget(href: string): void {
                         </Button>
                         <Button as-child variant="outline" class="h-9">
                             <Link :href="calendarTeam()">
-                                <CalendarDays class="size-4" aria-hidden="true" />
+                                <CalendarDays
+                                    class="size-4"
+                                    aria-hidden="true"
+                                />
                                 <span class="ml-1">Team Calendar</span>
                             </Link>
                         </Button>
                         <Button as-child variant="outline" class="h-9">
                             <Link :href="chat()">
-                                <MessageSquareText class="size-4" aria-hidden="true" />
+                                <MessageSquareText
+                                    class="size-4"
+                                    aria-hidden="true"
+                                />
                                 <span class="ml-1">Chats</span>
                             </Link>
                         </Button>
@@ -316,8 +354,12 @@ function openDashboardTarget(href: string): void {
                 />
             </div>
 
-            <section class="min-h-64 overflow-hidden rounded-xl border border-border/70 bg-card lg:min-h-50">
-                <div class="flex flex-col gap-2 border-b border-border/60 bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <section
+                class="min-h-64 overflow-hidden rounded-xl border border-border/70 bg-card lg:min-h-50"
+            >
+                <div
+                    class="flex flex-col gap-2 border-b border-border/60 bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
                     <div class="min-w-0">
                         <h2 class="text-sm font-semibold text-foreground">
                             Today focus
@@ -328,29 +370,54 @@ function openDashboardTarget(href: string): void {
                     </div>
                     <p class="text-xs text-muted-foreground">
                         Attendance:
-                        <span class="font-medium" :class="todayFocusStatusClass">
+                        <span
+                            class="font-medium"
+                            :class="todayFocusStatusClass"
+                        >
                             {{ todayFocus.attendance_status }}
                         </span>
                     </p>
                 </div>
                 <div class="grid gap-3 p-4 sm:grid-cols-3">
-                    <div class="rounded-lg border border-border/70 bg-muted/20 p-3">
+                    <div
+                        class="rounded-lg border border-border/70 bg-muted/20 p-3"
+                    >
                         <p class="text-xs text-muted-foreground">Clock in</p>
-                        <p class="mt-1 font-mono text-base text-foreground tabular-nums">{{ todayFocus.clock_in }}</p>
+                        <p
+                            class="mt-1 font-mono text-base text-foreground tabular-nums"
+                        >
+                            {{ todayFocus.clock_in }}
+                        </p>
                     </div>
-                    <div class="rounded-lg border border-border/70 bg-muted/20 p-3">
+                    <div
+                        class="rounded-lg border border-border/70 bg-muted/20 p-3"
+                    >
                         <p class="text-xs text-muted-foreground">Clock out</p>
-                        <p class="mt-1 font-mono text-base text-foreground tabular-nums">{{ todayFocus.clock_out }}</p>
+                        <p
+                            class="mt-1 font-mono text-base text-foreground tabular-nums"
+                        >
+                            {{ todayFocus.clock_out }}
+                        </p>
                     </div>
-                    <div class="rounded-lg border border-border/70 bg-muted/20 p-3">
+                    <div
+                        class="rounded-lg border border-border/70 bg-muted/20 p-3"
+                    >
                         <p class="text-xs text-muted-foreground">Next event</p>
-                        <p class="mt-1 truncate text-sm font-medium text-foreground">{{ todayFocus.next_event }}</p>
+                        <p
+                            class="mt-1 truncate text-sm font-medium text-foreground"
+                        >
+                            {{ todayFocus.next_event }}
+                        </p>
                     </div>
                 </div>
             </section>
 
-            <section class="min-h-120 overflow-hidden rounded-xl border border-border/70 bg-card lg:min-h-144">
-                <div class="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/30 p-4">
+            <section
+                class="min-h-120 overflow-hidden rounded-xl border border-border/70 bg-card lg:min-h-144"
+            >
+                <div
+                    class="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/30 p-4"
+                >
                     <div class="min-w-0">
                         <h2 class="text-sm font-semibold text-foreground">
                             Attendance Overview
@@ -364,7 +431,9 @@ function openDashboardTarget(href: string): void {
                     </Button>
                 </div>
 
-                <div class="grid gap-3 border-b border-border/60 p-4 sm:grid-cols-2 lg:grid-cols-6">
+                <div
+                    class="grid gap-3 border-b border-border/60 p-4 sm:grid-cols-2 lg:grid-cols-6"
+                >
                     <HrisKpiCard
                         v-for="stat in attendanceStatCards"
                         :key="stat.key"
@@ -396,22 +465,39 @@ function openDashboardTarget(href: string): void {
                                 :key="row.id"
                                 class="border-b border-border/40 last:border-0"
                             >
-                                <td class="py-2 pr-4 font-mono text-foreground tabular-nums">
+                                <td
+                                    class="py-2 pr-4 font-mono text-foreground tabular-nums"
+                                >
                                     {{ row.work_date }}
                                 </td>
-                                <td class="py-2 pr-4 font-mono text-xs text-muted-foreground">
+                                <td
+                                    class="py-2 pr-4 font-mono text-xs text-muted-foreground"
+                                >
                                     {{ row.attendance_id ?? '—' }}
                                 </td>
-                                <td class="py-2 pr-4 font-mono text-foreground tabular-nums whitespace-pre-line">
-                                    {{ clockInOutDisplay(row.clock_pattern, row.segments) }}
+                                <td
+                                    class="py-2 pr-4 font-mono whitespace-pre-line text-foreground tabular-nums"
+                                >
+                                    {{
+                                        clockInOutDisplay(
+                                            row.clock_pattern,
+                                            row.segments,
+                                        )
+                                    }}
                                 </td>
-                                <td class="py-2 pr-4 text-foreground tabular-nums">
+                                <td
+                                    class="py-2 pr-4 text-foreground tabular-nums"
+                                >
                                     {{ row.net_hours.toFixed(2) }}
                                 </td>
                                 <td class="py-2 pr-4">
                                     <span
                                         class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium"
-                                        :class="attendanceStatusBadgeClass(row.status)"
+                                        :class="
+                                            attendanceStatusBadgeClass(
+                                                row.status,
+                                            )
+                                        "
                                     >
                                         {{ attendanceStatusLabel(row.status) }}
                                     </span>
@@ -419,7 +505,11 @@ function openDashboardTarget(href: string): void {
                                 <td class="py-2 pr-0">
                                     <span
                                         class="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium"
-                                        :class="punctualityBadgeClass(row.punctuality)"
+                                        :class="
+                                            punctualityBadgeClass(
+                                                row.punctuality,
+                                            )
+                                        "
                                     >
                                         {{ punctualityLabel(row.punctuality) }}
                                     </span>
@@ -431,13 +521,26 @@ function openDashboardTarget(href: string): void {
             </section>
 
             <div class="grid min-h-0 gap-4 lg:grid-cols-2">
-                <section class="min-h-88 overflow-hidden rounded-xl border border-border/70 bg-card lg:min-h-104">
-                    <div class="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/30 p-4">
+                <section
+                    class="min-h-88 overflow-hidden rounded-xl border border-border/70 bg-card lg:min-h-104"
+                >
+                    <div
+                        class="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/30 p-4"
+                    >
                         <div class="min-w-0">
-                            <h2 class="text-sm font-semibold text-foreground">Upcoming events</h2>
-                            <p class="mt-0.5 text-xs text-muted-foreground">Next 7 days</p>
+                            <h2 class="text-sm font-semibold text-foreground">
+                                Upcoming events
+                            </h2>
+                            <p class="mt-0.5 text-xs text-muted-foreground">
+                                Next 7 days
+                            </p>
                         </div>
-                        <Button as-child variant="outline" size="sm" class="h-8">
+                        <Button
+                            as-child
+                            variant="outline"
+                            size="sm"
+                            class="h-8"
+                        >
                             <Link :href="calendarCompany()">View calendar</Link>
                         </Button>
                     </div>
@@ -454,13 +557,20 @@ function openDashboardTarget(href: string): void {
                             <div
                                 class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground"
                             >
-                                <CalendarDays class="size-4" aria-hidden="true" />
+                                <CalendarDays
+                                    class="size-4"
+                                    aria-hidden="true"
+                                />
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-medium text-foreground">
+                                <p
+                                    class="truncate text-sm font-medium text-foreground"
+                                >
                                     {{ event.title }}
                                 </p>
-                                <p class="mt-1 truncate text-xs text-muted-foreground">
+                                <p
+                                    class="mt-1 truncate text-xs text-muted-foreground"
+                                >
                                     {{ event.subtitle }}
                                 </p>
                             </div>
@@ -471,18 +581,33 @@ function openDashboardTarget(href: string): void {
                     </div>
                 </section>
 
-                <section class="min-h-88 overflow-hidden rounded-xl border border-border/70 bg-card lg:min-h-104">
-                    <div class="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/30 p-4">
+                <section
+                    class="min-h-88 overflow-hidden rounded-xl border border-border/70 bg-card lg:min-h-104"
+                >
+                    <div
+                        class="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/30 p-4"
+                    >
                         <div class="min-w-0">
-                            <h2 class="text-sm font-semibold text-foreground">Chats</h2>
-                            <p class="mt-0.5 text-xs text-muted-foreground">Pinned / recent rooms · placeholder list</p>
+                            <h2 class="text-sm font-semibold text-foreground">
+                                Chats
+                            </h2>
+                            <p class="mt-0.5 text-xs text-muted-foreground">
+                                Pinned / recent rooms · placeholder list
+                            </p>
                         </div>
-                        <Button as-child variant="outline" size="sm" class="h-8">
+                        <Button
+                            as-child
+                            variant="outline"
+                            size="sm"
+                            class="h-8"
+                        >
                             <Link :href="chat()">Open chats</Link>
                         </Button>
                     </div>
 
-                    <ul class="max-h-64 divide-y divide-border/60 overflow-y-auto lg:max-h-80">
+                    <ul
+                        class="max-h-64 divide-y divide-border/60 overflow-y-auto lg:max-h-80"
+                    >
                         <li
                             v-for="room in mockChatRooms"
                             :key="room.id"
@@ -491,14 +616,25 @@ function openDashboardTarget(href: string): void {
                             <div
                                 class="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
                             >
-                                <MessageSquareText class="size-4" aria-hidden="true" />
+                                <MessageSquareText
+                                    class="size-4"
+                                    aria-hidden="true"
+                                />
                             </div>
                             <div class="min-w-0 flex-1">
-                                <div class="flex items-center justify-between gap-3">
-                                    <span class="h-4 w-32 animate-pulse rounded bg-muted/60"></span>
-                                    <span class="h-5 w-8 animate-pulse rounded-full bg-muted/60"></span>
+                                <div
+                                    class="flex items-center justify-between gap-3"
+                                >
+                                    <span
+                                        class="h-4 w-32 animate-pulse rounded bg-muted/60"
+                                    ></span>
+                                    <span
+                                        class="h-5 w-8 animate-pulse rounded-full bg-muted/60"
+                                    ></span>
                                 </div>
-                                <p class="mt-2 h-4 w-4/5 animate-pulse rounded bg-muted/60"></p>
+                                <p
+                                    class="mt-2 h-4 w-4/5 animate-pulse rounded bg-muted/60"
+                                ></p>
                             </div>
                         </li>
                     </ul>

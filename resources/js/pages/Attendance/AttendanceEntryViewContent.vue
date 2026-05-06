@@ -102,10 +102,7 @@ defineProps<{
                                 />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent
-                            side="top"
-                            class="max-w-xs text-pretty"
-                        >
+                        <TooltipContent side="top" class="max-w-xs text-pretty">
                             {{ ATTENDANCE_VIEW_PROFILE_ATTENDANCE_ID_TOOLTIP }}
                         </TooltipContent>
                     </Tooltip>
@@ -143,10 +140,7 @@ defineProps<{
                                 />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent
-                            side="top"
-                            class="max-w-xs text-pretty"
-                        >
+                        <TooltipContent side="top" class="max-w-xs text-pretty">
                             {{ ATTENDANCE_VIEW_INGEST_KEY_TOOLTIP }}
                         </TooltipContent>
                     </Tooltip>
@@ -615,16 +609,12 @@ defineProps<{
                             "
                         >
                             {{
-                                attendanceSourceLabel(
-                                    row.last_modified_source,
-                                )
+                                attendanceSourceLabel(row.last_modified_source)
                             }}
                         </Badge>
                     </div>
                     <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium text-muted-foreground"
-                        >
+                        <p class="text-xs font-medium text-muted-foreground">
                             Recorded
                         </p>
                         <p
@@ -651,9 +641,7 @@ defineProps<{
                         </p>
                     </div>
                     <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium text-muted-foreground"
-                        >
+                        <p class="text-xs font-medium text-muted-foreground">
                             Last updated
                         </p>
                         <p

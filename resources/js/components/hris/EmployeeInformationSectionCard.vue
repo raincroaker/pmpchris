@@ -60,11 +60,11 @@ function onEditClick(): void {
             aria-hidden="true"
         />
         <div
-            class="pointer-events-none absolute -right-14 top-1/2 size-28 -translate-y-1/2 rounded-full bg-primary/6 blur-2xl"
+            class="pointer-events-none absolute top-1/2 -right-14 size-28 -translate-y-1/2 rounded-full bg-primary/6 blur-2xl"
             aria-hidden="true"
         />
         <div
-            class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 dark:bg-muted/25 sm:mx-6"
+            class="mx-4 mt-0 mb-0 rounded-lg border border-primary/30 bg-muted/30 p-4 sm:mx-6 dark:bg-muted/25"
         >
             <div class="flex items-center justify-between gap-3">
                 <div class="flex min-w-0 flex-row items-start gap-4">
@@ -81,7 +81,9 @@ function onEditClick(): void {
                         <h3 class="text-base font-semibold text-foreground">
                             {{ title }}
                         </h3>
-                        <p class="text-sm leading-relaxed text-muted-foreground">
+                        <p
+                            class="text-sm leading-relaxed text-muted-foreground"
+                        >
                             {{ description }}
                         </p>
                     </div>
@@ -100,9 +102,7 @@ function onEditClick(): void {
                                 :disabled="disabled"
                                 @click="onEditClick"
                                 :aria-label="
-                                    isSelf
-                                        ? editAriaLabelSelf
-                                        : editAriaLabelHr
+                                    isSelf ? editAriaLabelSelf : editAriaLabelHr
                                 "
                             >
                                 <component
@@ -125,4 +125,3 @@ function onEditClick(): void {
         </CardContent>
     </Card>
 </template>
-

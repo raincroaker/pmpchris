@@ -81,7 +81,9 @@ export async function fetchTeamHrLeaveUsageSummary(args: {
 }): Promise<TeamHrLeaveUsageSummaryPayload> {
     const dates =
         Array.isArray(args.draftDates) && args.draftDates.length > 0
-            ? [...new Set(args.draftDates.map((d) => d.trim().slice(0, 10)))].sort()
+            ? [
+                  ...new Set(args.draftDates.map((d) => d.trim().slice(0, 10))),
+              ].sort()
             : [];
 
     const query: Record<string, string | number | (string | number)[]> = {
@@ -91,7 +93,10 @@ export async function fetchTeamHrLeaveUsageSummary(args: {
         leave_type_code: args.leaveTypeCode.trim(),
     };
 
-    if (args.excludeEmployeeLeaveId != null && args.excludeEmployeeLeaveId > 0) {
+    if (
+        args.excludeEmployeeLeaveId != null &&
+        args.excludeEmployeeLeaveId > 0
+    ) {
         query.exclude_employee_leave_id = args.excludeEmployeeLeaveId;
     }
 
@@ -121,9 +126,10 @@ export async function fetchTeamHrLeaveUsageSummary(args: {
                 ? payload.message
                 : 'Unable to load leave usage summary.';
 
-        const firstError = payload.errors && Object.keys(payload.errors).length > 0
-            ? Object.values(payload.errors)[0]?.[0]
-            : undefined;
+        const firstError =
+            payload.errors && Object.keys(payload.errors).length > 0
+                ? Object.values(payload.errors)[0]?.[0]
+                : undefined;
         if (typeof firstError === 'string' && firstError !== '') {
             message = firstError;
         }
@@ -296,7 +302,10 @@ export async function fetchTeamHrLeavePeriodExpansion(args: {
     }
 
     const payload = payloadUnknown as {
-        data?: { counted?: TeamLeaveDayDraft[]; skipped?: SkippedCalendarDay[] };
+        data?: {
+            counted?: TeamLeaveDayDraft[];
+            skipped?: SkippedCalendarDay[];
+        };
     };
 
     const counted = Array.isArray(payload.data?.counted)

@@ -900,10 +900,12 @@ function buildTeamLeavePayload(d: TeamLeaveDraft): Record<string, unknown> {
         decided_at: decided === '' ? null : decided,
         approver_employee_id: d.approver_employee_id,
         reason: d.reason?.trim() === '' ? null : (d.reason?.trim() ?? null),
-        leave_days: sortLeaveDays(d.leave_days).map(({ date, is_half_day }) => ({
-            date,
-            is_half_day,
-        })),
+        leave_days: sortLeaveDays(d.leave_days).map(
+            ({ date, is_half_day }) => ({
+                date,
+                is_half_day,
+            }),
+        ),
     };
 }
 
@@ -1011,8 +1013,7 @@ async function applyLeavePeriodRange(): Promise<void> {
     const from = leaveExpandStart.value.trim().slice(0, 10);
     const to = leaveExpandEnd.value.trim().slice(0, 10);
     if (from === '' || to === '') {
-        formError.value =
-            'Choose both period start and end, then click Apply.';
+        formError.value = 'Choose both period start and end, then click Apply.';
 
         return;
     }
@@ -1024,14 +1025,14 @@ async function applyLeavePeriodRange(): Promise<void> {
     }
 
     if (d.organizational_unit_id === null || d.organizational_unit_id < 1) {
-        formError.value = 'Choose a unit placement before expanding a leave period.';
+        formError.value =
+            'Choose a unit placement before expanding a leave period.';
 
         return;
     }
 
     if (d.employee_id === null) {
-        formError.value =
-            'Choose an employee before expanding a leave period.';
+        formError.value = 'Choose an employee before expanding a leave period.';
 
         return;
     }
@@ -1075,7 +1076,9 @@ async function applyLeavePeriodRange(): Promise<void> {
         }
     } catch (e) {
         const msg =
-            e instanceof Error ? e.message : 'Unable to expand the leave period.';
+            e instanceof Error
+                ? e.message
+                : 'Unable to expand the leave period.';
         formError.value = msg;
         appToast.error(msg);
     } finally {
@@ -1120,9 +1123,7 @@ function toggleHalfDayForLeaveDate(dateIso: string): void {
         return;
     }
 
-    const cur = activeDraft.value.leave_days.find(
-        (d) => d.date === dateIso,
-    );
+    const cur = activeDraft.value.leave_days.find((d) => d.date === dateIso);
     if (cur) {
         cur.is_half_day = !cur.is_half_day;
         syncDraftLeaveDerivedFields(activeDraft.value);
@@ -1200,10 +1201,8 @@ const confirmUsageProjection = computed(() => {
     return {
         unitsMonth: snapshot.approved_leave_units_month + draftUnits,
         unitsYear: snapshot.approved_leave_units_year + draftUnits,
-        recordsMonth:
-            snapshot.approved_records_distinct_month + recordBump,
-        recordsYear:
-            snapshot.approved_records_distinct_year + recordBump,
+        recordsMonth: snapshot.approved_records_distinct_month + recordBump,
+        recordsYear: snapshot.approved_records_distinct_year + recordBump,
         draftUnitsLabel: formatLeaveUnitsLabel(d.leave_days),
     };
 });
@@ -1252,9 +1251,7 @@ async function loadConfirmLeaveSummary(): Promise<void> {
             leaveTypeCode: d.leave_type_code,
             draftDates,
             excludeEmployeeLeaveId:
-                isEditing.value && editId.value !== null
-                    ? editId.value
-                    : null,
+                isEditing.value && editId.value !== null ? editId.value : null,
         });
     } catch (e) {
         confirmSummaryData.value = null;
@@ -1579,9 +1576,7 @@ const columns: ColumnDef<TeamLeaveRow>[] = [
         header: () => h('span', { class: tablePlainHeadClass }, 'Duration'),
         cell: ({ row }) => {
             const r = row.original;
-            const unitsLabel = formatLeaveUnitsLabel(
-                resolveLeaveDaysForRow(r),
-            );
+            const unitsLabel = formatLeaveUnitsLabel(resolveLeaveDaysForRow(r));
 
             return h(
                 'span',
@@ -1813,10 +1808,10 @@ const table = useVueTable({
                                     ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
                                     : ''
                             "
-                            :aria-pressed="leaveTeamFilters.status === opt.value"
-                            @click="
-                                applyQuery({ status: opt.value, page: 1 })
+                            :aria-pressed="
+                                leaveTeamFilters.status === opt.value
                             "
+                            @click="applyQuery({ status: opt.value, page: 1 })"
                         >
                             {{ opt.label }}
                         </Button>
@@ -1866,285 +1861,291 @@ const table = useVueTable({
             </DialogHeader>
             <TooltipProvider :delay-duration="200">
                 <ScrollArea :class="dialogViewScrollAreaClass">
-                <div
-                    v-if="viewTarget"
-                    class="grid gap-3 px-2 py-2 text-sm sm:grid-cols-2"
-                >
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Employee
-                        </p>
-                        <div
-                            class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                        >
-                            <span class="text-foreground">{{
-                                viewTarget.employee.display_name
-                            }}</span>
-                            <span
-                                class="font-mono text-xs text-muted-foreground tabular-nums"
-                            >
-                                {{ viewTarget.employee.id_number }}
-                            </span>
-                        </div>
-                    </div>
-                    <HrisEmployeeDirectoryUnitAndPositions
-                        :unit-name="viewTarget.unit_name"
-                        :unit-code="viewTarget.unit_code"
-                        :unit-directory-type="
-                            viewTarget.unit_type ?? 'Organizational unit'
-                        "
-                        :unit-directory-color="
-                            viewTarget.unit_type_color ?? null
-                        "
-                        :placement-is-primary="
-                            viewTarget.unit_is_primary ?? false
-                        "
-                        :positions="viewTarget.positions ?? []"
-                    />
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Leave type
-                        </p>
-                        <div
-                            class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                        >
-                            <span class="text-foreground">{{
-                                viewTarget.leave_type_name
-                            }}</span>
-                            <span
-                                class="font-mono text-xs text-muted-foreground tabular-nums"
-                            >
-                                {{ viewTarget.leave_type_code }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="grid gap-1.5">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Start
-                        </p>
-                        <p
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
-                        >
-                            {{
-                                dateLineWithHalf(
-                                    viewTarget.start_date,
-                                    viewTarget.is_half_day_start,
-                                    'start',
-                                )
-                            }}
-                        </p>
-                    </div>
-                    <div class="grid gap-1.5">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            End
-                        </p>
-                        <p
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
-                        >
-                            {{
-                                dateLineWithHalf(
-                                    viewTarget.end_date,
-                                    viewTarget.is_half_day_end,
-                                    'end',
-                                )
-                            }}
-                        </p>
-                    </div>
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <div class="flex items-center gap-1.5">
+                    <div
+                        v-if="viewTarget"
+                        class="grid gap-3 px-2 py-2 text-sm sm:grid-cols-2"
+                    >
+                        <div class="grid gap-1.5 sm:col-span-2">
                             <p
                                 class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                Leave units
+                                Employee
                             </p>
-                            <Tooltip>
-                                <TooltipTrigger as-child>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
-                                        aria-label="How leave units are shown"
-                                    >
-                                        <Info
-                                            class="size-3.5"
-                                            aria-hidden="true"
-                                        />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent
-                                    side="top"
-                                    class="max-w-sm text-pretty"
+                            <div
+                                class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                            >
+                                <span class="text-foreground">{{
+                                    viewTarget.employee.display_name
+                                }}</span>
+                                <span
+                                    class="font-mono text-xs text-muted-foreground tabular-nums"
                                 >
-                                    <p>
-                                        <span class="font-medium">
-                                            Span summary (saved):
-                                        </span>
-                                        {{ viewTarget.duration_label }}.
-                                    </p>
-                                    <p class="mt-2">
-                                        Units here are reconstructed from the
-                                        saved start and end (every calendar day
-                                        in range). When per-day rows are stored
-                                        and returned by the API, this will match
-                                        exactly.
-                                    </p>
-                                </TooltipContent>
-                            </Tooltip>
+                                    {{ viewTarget.employee.id_number }}
+                                </span>
+                            </div>
                         </div>
-                        <div
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                        >
-                            <p class="font-medium text-foreground">
+                        <HrisEmployeeDirectoryUnitAndPositions
+                            :unit-name="viewTarget.unit_name"
+                            :unit-code="viewTarget.unit_code"
+                            :unit-directory-type="
+                                viewTarget.unit_type ?? 'Organizational unit'
+                            "
+                            :unit-directory-color="
+                                viewTarget.unit_type_color ?? null
+                            "
+                            :placement-is-primary="
+                                viewTarget.unit_is_primary ?? false
+                            "
+                            :positions="viewTarget.positions ?? []"
+                        />
+                        <div class="grid gap-1.5 sm:col-span-2">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Leave type
+                            </p>
+                            <div
+                                class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                            >
+                                <span class="text-foreground">{{
+                                    viewTarget.leave_type_name
+                                }}</span>
+                                <span
+                                    class="font-mono text-xs text-muted-foreground tabular-nums"
+                                >
+                                    {{ viewTarget.leave_type_code }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="grid gap-1.5">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Start
+                            </p>
+                            <p
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                            >
                                 {{
-                                    formatLeaveUnitsLabel(
-                                        viewTargetDerivedLeaveDays,
+                                    dateLineWithHalf(
+                                        viewTarget.start_date,
+                                        viewTarget.is_half_day_start,
+                                        'start',
                                     )
                                 }}
                             </p>
                         </div>
-                    </div>
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Counted days
-                        </p>
-                        <div
-                            class="flex flex-wrap gap-1.5 rounded-md border border-border/50 bg-muted/15 px-3 py-2.5"
-                        >
-                            <Badge
-                                v-for="row in viewTargetDerivedLeaveDays"
-                                :key="`view-day-${row.date}`"
-                                variant="secondary"
-                                class="max-w-full gap-1 tabular-nums font-normal"
+                        <div class="grid gap-1.5">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                <span class="truncate">{{
-                                    formatCalendarTriggerFromIsoYmd(row.date)
-                                }}</span>
-                                <span
-                                    v-if="row.is_half_day"
-                                    class="shrink-0 text-muted-foreground"
-                                    >· ½</span
-                                >
-                            </Badge>
+                                End
+                            </p>
+                            <p
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                            >
+                                {{
+                                    dateLineWithHalf(
+                                        viewTarget.end_date,
+                                        viewTarget.is_half_day_end,
+                                        'end',
+                                    )
+                                }}
+                            </p>
                         </div>
-                    </div>
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Decision maker
-                        </p>
-                        <div
-                            class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
-                        >
-                            <template
-                                v-if="
-                                    viewTarget.approver_name ||
-                                    (
-                                        viewTarget.approver_id_number ?? ''
-                                    ).trim() !== ''
-                                "
-                            >
-                                <span
-                                    v-if="viewTarget.approver_name"
-                                    class="text-foreground"
+                        <div class="grid gap-1.5 sm:col-span-2">
+                            <div class="flex items-center gap-1.5">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                 >
-                                    {{ viewTarget.approver_name }}
-                                </span>
-                                <span
+                                    Leave units
+                                </p>
+                                <Tooltip>
+                                    <TooltipTrigger as-child>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                            aria-label="How leave units are shown"
+                                        >
+                                            <Info
+                                                class="size-3.5"
+                                                aria-hidden="true"
+                                            />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                        side="top"
+                                        class="max-w-sm text-pretty"
+                                    >
+                                        <p>
+                                            <span class="font-medium">
+                                                Span summary (saved):
+                                            </span>
+                                            {{ viewTarget.duration_label }}.
+                                        </p>
+                                        <p class="mt-2">
+                                            Units here are reconstructed from
+                                            the saved start and end (every
+                                            calendar day in range). When per-day
+                                            rows are stored and returned by the
+                                            API, this will match exactly.
+                                        </p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                            <div
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                            >
+                                <p class="font-medium text-foreground">
+                                    {{
+                                        formatLeaveUnitsLabel(
+                                            viewTargetDerivedLeaveDays,
+                                        )
+                                    }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="grid gap-1.5 sm:col-span-2">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Counted days
+                            </p>
+                            <div
+                                class="flex flex-wrap gap-1.5 rounded-md border border-border/50 bg-muted/15 px-3 py-2.5"
+                            >
+                                <Badge
+                                    v-for="row in viewTargetDerivedLeaveDays"
+                                    :key="`view-day-${row.date}`"
+                                    variant="secondary"
+                                    class="max-w-full gap-1 font-normal tabular-nums"
+                                >
+                                    <span class="truncate">{{
+                                        formatCalendarTriggerFromIsoYmd(
+                                            row.date,
+                                        )
+                                    }}</span>
+                                    <span
+                                        v-if="row.is_half_day"
+                                        class="shrink-0 text-muted-foreground"
+                                        >· ½</span
+                                    >
+                                </Badge>
+                            </div>
+                        </div>
+                        <div class="grid gap-1.5 sm:col-span-2">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Decision maker
+                            </p>
+                            <div
+                                class="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
+                            >
+                                <template
                                     v-if="
+                                        viewTarget.approver_name ||
                                         (
                                             viewTarget.approver_id_number ?? ''
                                         ).trim() !== ''
                                     "
-                                    class="font-mono text-xs text-muted-foreground tabular-nums"
+                                >
+                                    <span
+                                        v-if="viewTarget.approver_name"
+                                        class="text-foreground"
+                                    >
+                                        {{ viewTarget.approver_name }}
+                                    </span>
+                                    <span
+                                        v-if="
+                                            (
+                                                viewTarget.approver_id_number ??
+                                                ''
+                                            ).trim() !== ''
+                                        "
+                                        class="font-mono text-xs text-muted-foreground tabular-nums"
+                                    >
+                                        {{
+                                            (
+                                                viewTarget.approver_id_number ??
+                                                ''
+                                            ).trim()
+                                        }}
+                                    </span>
+                                </template>
+                                <span v-else class="text-muted-foreground"
+                                    >—</span
+                                >
+                            </div>
+                        </div>
+                        <div class="grid gap-1.5 sm:col-span-2">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
+                                Status
+                            </p>
+                            <div
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                            >
+                                <Badge
+                                    variant="outline"
+                                    :class="statusBadgeClass(viewTarget.status)"
+                                >
+                                    {{ statusLabel(viewTarget.status) }}
+                                </Badge>
+                            </div>
+                        </div>
+                        <div class="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+                            <div class="grid gap-1.5">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
+                                    Submitted
+                                </p>
+                                <p
+                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
                                 >
                                     {{
-                                        (
-                                            viewTarget.approver_id_number ?? ''
-                                        ).trim()
+                                        formatIsoCalendarDate(
+                                            viewTarget.submitted_at,
+                                        )
                                     }}
-                                </span>
-                            </template>
-                            <span v-else class="text-muted-foreground">—</span>
+                                </p>
+                            </div>
+                            <div class="grid gap-1.5">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
+                                    Approve date
+                                </p>
+                                <p
+                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                                >
+                                    {{
+                                        viewTarget.decided_at
+                                            ? formatIsoCalendarDate(
+                                                  viewTarget.decided_at,
+                                              )
+                                            : '—'
+                                    }}
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Status
-                        </p>
-                        <div
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2"
-                        >
-                            <Badge
-                                variant="outline"
-                                :class="statusBadgeClass(viewTarget.status)"
-                            >
-                                {{ statusLabel(viewTarget.status) }}
-                            </Badge>
-                        </div>
-                    </div>
-                    <div class="grid gap-3 sm:col-span-2 sm:grid-cols-2">
-                        <div class="grid gap-1.5">
+                        <div class="grid gap-1.5 sm:col-span-2">
                             <p
                                 class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                Submitted
+                                Reason
                             </p>
                             <p
-                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 whitespace-pre-wrap"
                             >
-                                {{
-                                    formatIsoCalendarDate(
-                                        viewTarget.submitted_at,
-                                    )
-                                }}
-                            </p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <p
-                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                            >
-                                Approve date
-                            </p>
-                            <p
-                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 tabular-nums"
-                            >
-                                {{
-                                    viewTarget.decided_at
-                                        ? formatIsoCalendarDate(
-                                              viewTarget.decided_at,
-                                          )
-                                        : '—'
-                                }}
+                                {{ viewTarget.reason ?? '—' }}
                             </p>
                         </div>
                     </div>
-                    <div class="grid gap-1.5 sm:col-span-2">
-                        <p
-                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Reason
-                        </p>
-                        <p
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 whitespace-pre-wrap"
-                        >
-                            {{ viewTarget.reason ?? '—' }}
-                        </p>
-                    </div>
-                </div>
                 </ScrollArea>
             </TooltipProvider>
             <DialogFooter>
@@ -2168,7 +2169,8 @@ const table = useVueTable({
                 <DialogDescription>
                     Pick explicit leave days (with optional half-days). Expand a
                     date range using weekends off and your organization&apos;s
-                    holiday calendar—skipped days appear under Not counted below.
+                    holiday calendar—skipped days appear under Not counted
+                    below.
                 </DialogDescription>
             </DialogHeader>
             <ScrollArea v-if="activeDraft" :class="dialogScrollAreaClass">
@@ -2192,7 +2194,8 @@ const table = useVueTable({
                     >
                         Days below are filled from the saved start/end range
                         (every calendar day). Adjust with
-                        <span class="font-medium text-foreground">Apply</span> or
+                        <span class="font-medium text-foreground">Apply</span>
+                        or
                         <span class="font-medium text-foreground">Add date</span
                         >.
                     </p>
@@ -2278,13 +2281,14 @@ const table = useVueTable({
                             {{ inlineSummaryError }}
                         </p>
                         <div
-                            v-else-if="inlineSummaryData && activeDraft.leave_type_code.trim() !== ''"
+                            v-else-if="
+                                inlineSummaryData &&
+                                activeDraft.leave_type_code.trim() !== ''
+                            "
                             class="grid gap-3 rounded-md border border-border/60 bg-muted/20 p-3 sm:grid-cols-3"
                         >
                             <div class="grid gap-1.5">
-                                <div
-                                    class="flex h-5 items-center gap-1"
-                                >
+                                <div class="flex h-5 items-center gap-1">
                                     <p
                                         class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                     >
@@ -2317,7 +2321,7 @@ const table = useVueTable({
                                     </TooltipProvider>
                                 </div>
                                 <div
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium tabular-nums text-foreground"
+                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium text-foreground tabular-nums"
                                 >
                                     {{
                                         formatStoredDecimalHuman(
@@ -2328,16 +2332,15 @@ const table = useVueTable({
                                     &gt;
                                     {{
                                         formatLeaveUnitsHuman(
-                                            inlineSummaryData.same_leave_type_code
+                                            inlineSummaryData
+                                                .same_leave_type_code
                                                 .approved_leave_units_year,
                                         )
                                     }}
                                 </div>
                             </div>
                             <div class="grid gap-1.5">
-                                <div
-                                    class="flex h-5 items-center gap-1"
-                                >
+                                <div class="flex h-5 items-center gap-1">
                                     <p
                                         class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                     >
@@ -2349,20 +2352,19 @@ const table = useVueTable({
                                     />
                                 </div>
                                 <div
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium tabular-nums text-foreground"
+                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium text-foreground tabular-nums"
                                 >
                                     {{
                                         formatLeaveUnitsHuman(
-                                            inlineSummaryData.same_leave_type_code
+                                            inlineSummaryData
+                                                .same_leave_type_code
                                                 .approved_leave_units_month,
                                         )
                                     }}
                                 </div>
                             </div>
                             <div class="grid gap-1.5">
-                                <div
-                                    class="flex h-5 items-center gap-1"
-                                >
+                                <div class="flex h-5 items-center gap-1">
                                     <p
                                         class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                     >
@@ -2374,11 +2376,12 @@ const table = useVueTable({
                                     />
                                 </div>
                                 <div
-                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium tabular-nums text-foreground"
+                                    class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium text-foreground tabular-nums"
                                 >
                                     {{
                                         formatLeaveUnitsHuman(
-                                            inlineSummaryData.same_leave_type_code
+                                            inlineSummaryData
+                                                .same_leave_type_code
                                                 .approved_leave_units_week,
                                         )
                                     }}
@@ -2421,8 +2424,8 @@ const table = useVueTable({
                                         }})
                                     </template>
                                     <template v-else>
-                                        Choose a period and Apply or add dates
-                                        - min/max dates appear here.
+                                        Choose a period and Apply or add dates -
+                                        min/max dates appear here.
                                     </template></span
                                 >
                             </p>
@@ -2509,7 +2512,7 @@ const table = useVueTable({
                                         v-for="sk in lastExpandSkipped"
                                         :key="sk.date"
                                         variant="outline"
-                                        class="h-auto w-full min-w-0 max-w-full items-start justify-start gap-2 overflow-visible whitespace-normal rounded-md border-border/60 bg-background/80 py-2 pl-2.5 pr-2.5 text-left text-sm font-normal text-foreground text-pretty shadow-xs dark:bg-input/20"
+                                        class="h-auto w-full max-w-full min-w-0 items-start justify-start gap-2 overflow-visible rounded-md border-border/60 bg-background/80 py-2 pr-2.5 pl-2.5 text-left text-sm font-normal text-pretty whitespace-normal text-foreground shadow-xs dark:bg-input/20"
                                     >
                                         <CalendarDays
                                             class="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
@@ -2517,7 +2520,7 @@ const table = useVueTable({
                                         />
                                         <span class="min-w-0 leading-snug">
                                             <span
-                                                class="font-medium tabular-nums text-foreground"
+                                                class="font-medium text-foreground tabular-nums"
                                             >
                                                 {{
                                                     formatCalendarTriggerFromIsoYmd(
@@ -2567,7 +2570,9 @@ const table = useVueTable({
                                                     : `Show ${leaveDaysCollapsedMoreCount} more`
                                             }}
                                         </Button>
-                                        <Popover v-model:open="addAnotherDayOpen">
+                                        <Popover
+                                            v-model:open="addAnotherDayOpen"
+                                        >
                                             <PopoverTrigger as-child>
                                                 <Button
                                                     type="button"
@@ -2637,7 +2642,7 @@ const table = useVueTable({
                                             aria-hidden="true"
                                         />
                                         <span
-                                            class="min-w-0 flex-1 truncate text-sm tabular-nums text-foreground"
+                                            class="min-w-0 flex-1 truncate text-sm text-foreground tabular-nums"
                                         >
                                             {{
                                                 formatCalendarTriggerFromIsoYmd(
@@ -2794,8 +2799,8 @@ const table = useVueTable({
                 <DialogTitle>Confirm leave record</DialogTitle>
                 <DialogDescription class="text-sm leading-relaxed">
                     <span>
-                        Quick check before saving. Totals below use approved leave
-                        counted by half or full working days only.
+                        Quick check before saving. Totals below use approved
+                        leave counted by half or full working days only.
                         &nbsp;<TooltipProvider
                             v-if="confirmSummaryData"
                             :delay-duration="200"
@@ -2804,7 +2809,7 @@ const table = useVueTable({
                                 <TooltipTrigger as-child>
                                     <button
                                         type="button"
-                                        class="inline-block align-middle text-muted-foreground [-webkit-tap-highlight-color:transparent] hover:text-foreground focus-visible:ring-ring rounded-sm p-0.5 leading-none focus-visible:ring-2 focus-visible:outline-none"
+                                        class="inline-block rounded-sm p-0.5 align-middle leading-none text-muted-foreground [-webkit-tap-highlight-color:transparent] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                         aria-label="Snapshot details"
                                     >
                                         <Info
@@ -2822,9 +2827,10 @@ const table = useVueTable({
                                         Snapshot date
                                         {{ confirmSummaryData.reference.as_of }}
                                         ({{ confirmSummaryData.reference.tz }}).
-                                        This draft is excluded from the “approved”
-                                        totals until you save; “after save”
-                                        appears only when status is Approved.
+                                        This draft is excluded from the
+                                        “approved” totals until you save; “after
+                                        save” appears only when status is
+                                        Approved.
                                     </p>
                                 </TooltipContent>
                             </Tooltip>
@@ -2846,13 +2852,13 @@ const table = useVueTable({
             </Alert>
             <ScrollArea
                 v-if="activeDraft && !confirmSummaryLoading"
-                class="max-h-[min(68vh,440px)] pr-3 **:data-[slot=scroll-area-viewport]:focus-visible:outline-none **:data-[slot=scroll-area-viewport]:focus-visible:ring-0"
+                class="max-h-[min(68vh,440px)] pr-3 **:data-[slot=scroll-area-viewport]:focus-visible:ring-0 **:data-[slot=scroll-area-viewport]:focus-visible:outline-none"
             >
                 <div class="grid gap-5 pb-1 text-sm leading-relaxed">
                     <Alert
                         v-if="
                             confirmSummaryData &&
-                                confirmSummaryData.overlaps.length > 0
+                            confirmSummaryData.overlaps.length > 0
                         "
                         variant="destructive"
                     >
@@ -2864,15 +2870,20 @@ const table = useVueTable({
                         <AlertDescription class="space-y-2">
                             <p>
                                 Some dates already have approved counted leave.
-                                Fix the days or resolve the conflict before saving.
+                                Fix the days or resolve the conflict before
+                                saving.
                             </p>
-                            <ul class="max-h-32 list-disc gap-1 overflow-y-auto ps-4 text-xs">
+                            <ul
+                                class="max-h-32 list-disc gap-1 overflow-y-auto ps-4 text-xs"
+                            >
                                 <li
                                     v-for="hit in confirmSummaryData.overlaps"
                                     :key="`${hit.date}-${hit.employee_leave_id}`"
                                     class="tabular-nums"
                                 >
-                                    <span class="font-medium">{{ hit.date }}</span>
+                                    <span class="font-medium">{{
+                                        hit.date
+                                    }}</span>
                                     — {{ formatIsoCalendarDate(hit.date) }} ·
                                     {{ hit.leave_type_code }} ({{
                                         hit.leave_type_name
@@ -2893,9 +2904,10 @@ const table = useVueTable({
                                 {{ activeDraft.employee_name || '—' }}
                                 <span
                                     v-if="
-                                        activeDraft.employee_id_number.trim() !== ''
+                                        activeDraft.employee_id_number.trim() !==
+                                        ''
                                     "
-                                    class="mt-0.5 block text-xs font-normal tabular-nums text-muted-foreground"
+                                    class="mt-0.5 block text-xs font-normal text-muted-foreground tabular-nums"
                                     >{{ activeDraft.employee_id_number }}</span
                                 >
                             </dd>
@@ -2926,15 +2938,15 @@ const table = useVueTable({
                         </div>
                         <div class="flex justify-between gap-3 px-4 py-3">
                             <dt class="text-muted-foreground">This filing</dt>
-                            <dd class="font-semibold tabular-nums text-end">
+                            <dd class="text-end font-semibold tabular-nums">
                                 {{
-                                    formatLeaveUnitsLabel(activeDraft.leave_days)
+                                    formatLeaveUnitsLabel(
+                                        activeDraft.leave_days,
+                                    )
                                 }}
                             </dd>
                         </div>
-                        <div
-                            class="px-4 py-3 text-xs text-muted-foreground"
-                        >
+                        <div class="px-4 py-3 text-xs text-muted-foreground">
                             <span class="text-foreground">{{
                                 confirmSubmissionDayCounts.wholeDays
                             }}</span>
@@ -2955,7 +2967,7 @@ const table = useVueTable({
                         class="space-y-3 rounded-lg border border-border/70 bg-muted/20 px-4 py-4"
                         aria-label="Approved usage snapshot"
                     >
-                        <h3 class="text-foreground font-medium leading-snug">
+                        <h3 class="leading-snug font-medium text-foreground">
                             Approved usage
                             {{
                                 confirmSummaryData.leave_policy?.code ??
@@ -2971,7 +2983,7 @@ const table = useVueTable({
                                     }}
                                 </dt>
                                 <dd class="text-foreground">
-                                    <span class="tabular-nums font-medium">{{
+                                    <span class="font-medium tabular-nums">{{
                                         formatLeaveUnitsHuman(
                                             confirmSummaryData
                                                 .same_leave_type_code
@@ -2986,11 +2998,14 @@ const table = useVueTable({
                                         class="text-muted-foreground"
                                     >
                                         →
-                                        <span class="text-foreground font-medium">{{
-                                            formatLeaveUnitsHuman(
-                                                confirmUsageProjection.unitsMonth,
-                                            )
-                                        }}</span>
+                                        <span
+                                            class="font-medium text-foreground"
+                                            >{{
+                                                formatLeaveUnitsHuman(
+                                                    confirmUsageProjection.unitsMonth,
+                                                )
+                                            }}</span
+                                        >
                                         after save
                                     </span>
                                 </dd>
@@ -3001,7 +3016,7 @@ const table = useVueTable({
                                     {{ confirmSummaryData.reference.year }}
                                 </dt>
                                 <dd class="text-foreground">
-                                    <span class="tabular-nums font-medium">{{
+                                    <span class="font-medium tabular-nums">{{
                                         formatLeaveUnitsHuman(
                                             confirmSummaryData
                                                 .same_leave_type_code
@@ -3016,11 +3031,14 @@ const table = useVueTable({
                                         class="text-muted-foreground"
                                     >
                                         →
-                                        <span class="text-foreground font-medium">{{
-                                            formatLeaveUnitsHuman(
-                                                confirmUsageProjection.unitsYear,
-                                            )
-                                        }}</span>
+                                        <span
+                                            class="font-medium text-foreground"
+                                            >{{
+                                                formatLeaveUnitsHuman(
+                                                    confirmUsageProjection.unitsYear,
+                                                )
+                                            }}</span
+                                        >
                                         after save
                                     </span>
                                 </dd>
@@ -3039,7 +3057,7 @@ const table = useVueTable({
                                 this year (distinct approvals).
                                 <template v-if="confirmUsageProjection">
                                     This filing adds
-                                    <span class="text-foreground font-medium">{{
+                                    <span class="font-medium text-foreground">{{
                                         confirmUsageProjection.draftUnitsLabel
                                     }}</span
                                     >.
@@ -3047,32 +3065,37 @@ const table = useVueTable({
                             </p>
                             <template v-if="confirmSummaryData.leave_policy">
                                 <div
-                                    class="border-border/60 border-t pt-3 text-xs text-muted-foreground"
+                                    class="border-t border-border/60 pt-3 text-xs text-muted-foreground"
                                 >
-                                    <span class="text-foreground font-medium">{{
+                                    <span class="font-medium text-foreground">{{
                                         confirmSummaryData.leave_policy.name
                                     }}</span>
-                                    ({{
-                                        confirmSummaryData.leave_policy.code
-                                    }})
+                                    ({{ confirmSummaryData.leave_policy.code }})
                                     <template
-                                        v-if="confirmPolicyEntitlementPhrase !== null"
+                                        v-if="
+                                            confirmPolicyEntitlementPhrase !==
+                                            null
+                                        "
                                     >
                                         · Annual entitlement (reference):
-                                        <span class="text-foreground font-medium">{{
-                                            confirmPolicyEntitlementPhrase
-                                        }}</span>.
+                                        <span
+                                            class="font-medium text-foreground"
+                                            >{{
+                                                confirmPolicyEntitlementPhrase
+                                            }}</span
+                                        >.
                                     </template>
                                     <template v-else>
                                         · No annual entitlement on policy for
                                         reference balances.
                                     </template>
-                                    Accruals and live balances are not shown here.
+                                    Accruals and live balances are not shown
+                                    here.
                                 </div>
                             </template>
                             <p
                                 v-if="activeDraft.status !== 'approved'"
-                                class="border-border/60 text-muted-foreground border-t pt-3 text-xs"
+                                class="border-t border-border/60 pt-3 text-xs text-muted-foreground"
                             >
                                 Status is not Approved: “after save” figures
                                 won’t apply until you choose Approved.
@@ -3081,7 +3104,9 @@ const table = useVueTable({
                     </section>
 
                     <div>
-                        <p class="text-muted-foreground mb-2 text-xs font-medium">
+                        <p
+                            class="mb-2 text-xs font-medium text-muted-foreground"
+                        >
                             Counted dates
                         </p>
                         <div
@@ -3091,14 +3116,14 @@ const table = useVueTable({
                                 v-for="row in leaveDaysSorted"
                                 :key="`confirm-${row.date}`"
                                 variant="secondary"
-                                class="max-w-full gap-1 tabular-nums font-normal"
+                                class="max-w-full gap-1 font-normal tabular-nums"
                             >
                                 <span class="truncate">{{
                                     formatIsoCalendarDate(row.date)
                                 }}</span>
                                 <span
                                     v-if="row.is_half_day"
-                                    class="text-muted-foreground shrink-0"
+                                    class="shrink-0 text-muted-foreground"
                                     >· ½</span
                                 >
                             </Badge>
@@ -3108,38 +3133,54 @@ const table = useVueTable({
                     <div
                         v-if="
                             confirmSummaryData &&
-                                confirmSummaryData.approved_by_type.length >
-                                    1
+                            confirmSummaryData.approved_by_type.length > 1
                         "
                         class="space-y-2"
                     >
-                        <p class="text-muted-foreground text-xs font-medium">
+                        <p class="text-xs font-medium text-muted-foreground">
                             All approved types,
-                            {{ confirmSummaryData.reference.year }} (counted days)
+                            {{ confirmSummaryData.reference.year }} (counted
+                            days)
                         </p>
                         <div
                             class="max-h-36 overflow-y-auto rounded-lg border border-border/70 bg-card px-3 py-2 text-xs"
                         >
                             <table class="w-full border-collapse tabular-nums">
                                 <thead>
-                                    <tr class="border-b border-border text-left text-muted-foreground">
-                                        <th class="py-2 pe-2 font-normal">Code</th>
+                                    <tr
+                                        class="border-b border-border text-left text-muted-foreground"
+                                    >
                                         <th class="py-2 pe-2 font-normal">
-                                            {{ confirmSummaryData.reference.month_label }}
+                                            Code
                                         </th>
                                         <th class="py-2 pe-2 font-normal">
-                                            {{ confirmSummaryData.reference.year }}
+                                            {{
+                                                confirmSummaryData.reference
+                                                    .month_label
+                                            }}
                                         </th>
-                                        <th class="py-2 font-normal">Filings</th>
+                                        <th class="py-2 pe-2 font-normal">
+                                            {{
+                                                confirmSummaryData.reference
+                                                    .year
+                                            }}
+                                        </th>
+                                        <th class="py-2 font-normal">
+                                            Filings
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr
                                         v-for="row in confirmSummaryData.approved_by_type"
                                         :key="row.code"
-                                        class="border-border/70 border-t"
+                                        class="border-t border-border/70"
                                     >
-                                        <td class="py-1.5 pe-2 align-top font-medium">{{ row.code }}</td>
+                                        <td
+                                            class="py-1.5 pe-2 align-top font-medium"
+                                        >
+                                            {{ row.code }}
+                                        </td>
                                         <td class="py-1.5 pe-2 align-top">
                                             {{
                                                 formatLeaveUnitsHuman(
@@ -3154,7 +3195,9 @@ const table = useVueTable({
                                                 )
                                             }}
                                         </td>
-                                        <td class="py-1.5 align-top">{{ row.records_year }}</td>
+                                        <td class="py-1.5 align-top">
+                                            {{ row.records_year }}
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -3173,7 +3216,9 @@ const table = useVueTable({
                     v-if="canAddTeamLeaveOvertimeRecords"
                     type="button"
                     @click="executeMutateSubmit"
-                    >{{ isEditing ? 'Save changes' : 'Add leave record' }}</Button
+                    >{{
+                        isEditing ? 'Save changes' : 'Add leave record'
+                    }}</Button
                 >
             </DialogFooter>
         </DialogContent>

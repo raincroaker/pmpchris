@@ -1,4 +1,7 @@
-import type { TeamLeaveDayDraft, TeamLeaveRow } from '@/pages/Leave/teamLeaveTypes';
+import type {
+    TeamLeaveDayDraft,
+    TeamLeaveRow,
+} from '@/pages/Leave/teamLeaveTypes';
 
 export type SkippedCalendarDay = {
     date: string;
@@ -13,9 +16,7 @@ function formatLocalYmd(d: Date): string {
     return `${y}-${m}-${day}`;
 }
 
-export function sortLeaveDays(
-    days: TeamLeaveDayDraft[],
-): TeamLeaveDayDraft[] {
+export function sortLeaveDays(days: TeamLeaveDayDraft[]): TeamLeaveDayDraft[] {
     return [...days].sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -110,7 +111,9 @@ export function resolveLeaveDaysForRow(row: TeamLeaveRow): TeamLeaveDayDraft[] {
     return expandLegacyRowToLeaveDays(row);
 }
 
-export function expandLegacyRowToLeaveDays(row: TeamLeaveRow): TeamLeaveDayDraft[] {
+export function expandLegacyRowToLeaveDays(
+    row: TeamLeaveRow,
+): TeamLeaveDayDraft[] {
     if (row.start_date === row.end_date) {
         return [
             {

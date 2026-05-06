@@ -968,9 +968,7 @@ export function attendanceSourceBadgeClass(
     return 'border-slate-500/30 bg-slate-500/10 text-slate-800 dark:border-slate-400/30 dark:bg-slate-500/15 dark:text-slate-100';
 }
 
-export function attendanceSourceLabel(
-    source: TeamAttendanceSource,
-): string {
+export function attendanceSourceLabel(source: TeamAttendanceSource): string {
     switch (source) {
         case 'device':
             return 'Device';

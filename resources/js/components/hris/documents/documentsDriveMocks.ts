@@ -1,7 +1,4 @@
-import type {
-    DocumentsScope,
-    DriveItem,
-} from './documentsDriveTypes';
+import type { DocumentsScope, DriveItem } from './documentsDriveTypes';
 
 /**
  * Deterministic mock tree per HR document scope (flat list, parentId-linked).

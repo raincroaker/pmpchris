@@ -131,7 +131,9 @@ const separationCalendarMaxValue = computed((): DateValue | undefined => {
 });
 
 const dialogTitle = computed((): string => {
-    return isRecordSeparation.value ? 'Record separation' : 'Adjust employment dates';
+    return isRecordSeparation.value
+        ? 'Record separation'
+        : 'Adjust employment dates';
 });
 
 const dialogDescription = computed((): string => {
@@ -213,9 +215,7 @@ function onEmploymentStatusSelect(value: unknown): void {
         return;
     }
 
-    employmentStatus.value = String(
-        value,
-    ) as EmploymentSeparationStatusApi;
+    employmentStatus.value = String(value) as EmploymentSeparationStatusApi;
 }
 
 function onSeparationSelect(value: unknown, close: () => void): void {
@@ -314,9 +314,10 @@ function submit(): void {
     const employmentId = props.row.id;
     fieldErrors.value = {};
 
-    if (! isRecordSeparation.value && hireDateIso.value.trim() !== '') {
+    if (!isRecordSeparation.value && hireDateIso.value.trim() !== '') {
         const hireIso = hireDateIso.value.trim().slice(0, 10);
-        const maxRaw = props.row.hire_adjustment_max_date?.trim().slice(0, 10) ?? '';
+        const maxRaw =
+            props.row.hire_adjustment_max_date?.trim().slice(0, 10) ?? '';
         if (maxRaw.length === 10 && hireIso > maxRaw) {
             fieldErrors.value = {
                 hire_date:
@@ -361,9 +362,7 @@ function submit(): void {
                     typeof pageErrors === 'object' &&
                     Object.keys(pageErrors).length === 0
                 ) {
-                    appToast.error(
-                        'Could not save changes. Please try again.',
-                    );
+                    appToast.error('Could not save changes. Please try again.');
                 }
             },
         },
@@ -410,12 +409,13 @@ function submit(): void {
                         <Label>Hire date</Label>
                         <template v-if="isRecordSeparation">
                             <div
-                                class="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm tabular-nums text-foreground"
+                                class="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm text-foreground tabular-nums"
                             >
                                 {{ isoTriggerLabel(hireDateIso) }}
                             </div>
                             <p class="text-xs text-muted-foreground">
-                                Hire date is unchanged when recording separation.
+                                Hire date is unchanged when recording
+                                separation.
                             </p>
                         </template>
                         <template v-else>
@@ -434,7 +434,10 @@ function submit(): void {
                                         "
                                     >
                                         <span
-                                            v-if="isoTriggerLabel(hireDateIso) !== ''"
+                                            v-if="
+                                                isoTriggerLabel(hireDateIso) !==
+                                                ''
+                                            "
                                             >{{
                                                 isoTriggerLabel(hireDateIso)
                                             }}</span
@@ -537,7 +540,9 @@ function submit(): void {
                                                     )
                                                 "
                                                 :min-value="
-                                                    isoToCalendarValue(hireDateIso)
+                                                    isoToCalendarValue(
+                                                        hireDateIso,
+                                                    )
                                                 "
                                                 :max-value="
                                                     separationCalendarMaxValue
@@ -569,7 +574,9 @@ function submit(): void {
                                                 ? undefined
                                                 : employmentStatus
                                         "
-                                        @update:model-value="onEmploymentStatusSelect"
+                                        @update:model-value="
+                                            onEmploymentStatusSelect
+                                        "
                                     >
                                         <SelectTrigger
                                             id="adj_emp_status"
@@ -678,9 +685,7 @@ function submit(): void {
                         once assignments are fully ended under this employment.
                     </p>
 
-                    <div
-                        class="border-t border-border/70 pt-4"
-                    >
+                    <div class="border-t border-border/70 pt-4">
                         <p
                             class="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
@@ -756,7 +761,9 @@ function submit(): void {
                     @click="submit"
                 >
                     {{
-                        isRecordSeparation ? 'Record separation' : 'Save changes'
+                        isRecordSeparation
+                            ? 'Record separation'
+                            : 'Save changes'
                     }}
                 </Button>
             </DialogFooter>

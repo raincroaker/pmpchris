@@ -329,7 +329,11 @@ function companyDocumentIdFromUiId(uiId: string): number | null {
  * may directly access files; everyone else must request access.
  */
 const requiresCompanyAccessRequestForCurrentUser = computed((): boolean => {
-    if (props.scope !== 'company' || isTrashView.value || isMyCatalogView.value) {
+    if (
+        props.scope !== 'company' ||
+        isTrashView.value ||
+        isMyCatalogView.value
+    ) {
         return false;
     }
 
@@ -393,8 +397,7 @@ async function loadTeamDocumentsUnits(): Promise<void> {
         const { units } = await fetchTeamHrFormUnits();
         branchUnits.value = units;
     } catch {
-        branchUnitsLoadError.value =
-            'Could not load units for this branch.';
+        branchUnitsLoadError.value = 'Could not load units for this branch.';
         branchUnits.value = [];
     } finally {
         branchUnitsLoading.value = false;
@@ -592,30 +595,46 @@ function closeShareDialog(): void {
     shareTargetMode.value = 'children';
 }
 
-function toggleShareSpecificUnit(unitId: number, checked: boolean | 'indeterminate'): void {
+function toggleShareSpecificUnit(
+    unitId: number,
+    checked: boolean | 'indeterminate',
+): void {
     const enabled = checked === true;
     if (enabled) {
         if (!shareSpecificUnitIds.value.includes(unitId)) {
-            shareSpecificUnitIds.value = [...shareSpecificUnitIds.value, unitId];
+            shareSpecificUnitIds.value = [
+                ...shareSpecificUnitIds.value,
+                unitId,
+            ];
         }
 
         return;
     }
 
-    shareSpecificUnitIds.value = shareSpecificUnitIds.value.filter((id) => id !== unitId);
+    shareSpecificUnitIds.value = shareSpecificUnitIds.value.filter(
+        (id) => id !== unitId,
+    );
 }
 
-function toggleShareExemptChildUnit(unitId: number, checked: boolean | 'indeterminate'): void {
+function toggleShareExemptChildUnit(
+    unitId: number,
+    checked: boolean | 'indeterminate',
+): void {
     const enabled = checked === true;
     if (enabled) {
         if (!shareExemptChildUnitIds.value.includes(unitId)) {
-            shareExemptChildUnitIds.value = [...shareExemptChildUnitIds.value, unitId];
+            shareExemptChildUnitIds.value = [
+                ...shareExemptChildUnitIds.value,
+                unitId,
+            ];
         }
 
         return;
     }
 
-    shareExemptChildUnitIds.value = shareExemptChildUnitIds.value.filter((id) => id !== unitId);
+    shareExemptChildUnitIds.value = shareExemptChildUnitIds.value.filter(
+        (id) => id !== unitId,
+    );
 }
 
 function confirmShareDialog(): void {
@@ -658,7 +677,10 @@ function confirmShareDialog(): void {
 
     const targetNames = targetUnitIds
         .map((id) => branchUnitById.value.get(id)?.name)
-        .filter((label): label is string => typeof label === 'string' && label !== '');
+        .filter(
+            (label): label is string =>
+                typeof label === 'string' && label !== '',
+        );
     const sharedCount = shareDialogTargetFiles.value.length;
     appToast.success(
         `Shared ${sharedCount} file${sharedCount > 1 ? 's' : ''} to ${targetNames.length} unit${targetNames.length > 1 ? 's' : ''}. (Session mock.)`,
@@ -702,7 +724,10 @@ watch(
         approvalQueueMode.value = s === 'my' ? false : prefs.approvalQueueMode;
         requestTypeView.value = prefs.requestTypeView;
 
-        if (restrictViewToQueuesOnly.value && requestTypeView.value === 'library') {
+        if (
+            restrictViewToQueuesOnly.value &&
+            requestTypeView.value === 'library'
+        ) {
             requestTypeView.value = 'upload';
         }
 
@@ -819,6 +844,9 @@ function initialDriveItems(): DriveItem[] {
 const items = ref<DriveItem[]>(initialDriveItems());
 const companyItemsLoading = ref(false);
 const companyItemsLoadedOnce = ref(false);
+const searchQuery = ref('');
+const sortKey = ref<DriveSortKey>('name');
+const sortOrder = ref<DriveSortOrder>('asc');
 
 async function reloadCompanyDriveItems(): Promise<void> {
     if (!isCompanyDriveScope.value) {
@@ -827,7 +855,12 @@ async function reloadCompanyDriveItems(): Promise<void> {
 
     companyItemsLoading.value = true;
     try {
-        items.value = await fetchCompanyDocumentsItems();
+        items.value = await fetchCompanyDocumentsItems({
+            q: searchQuery.value,
+            sortKey: sortKey.value,
+            sortOrder: sortOrder.value,
+            type: typeFilter.value,
+        });
         selectedIds.value = [];
         companyItemsLoadedOnce.value = true;
     } catch (error) {
@@ -861,7 +894,6 @@ watch(
     },
     { immediate: true },
 );
-const searchQuery = ref('');
 const ownershipChip = ref<DriveOwnershipChip>('all');
 const ownershipChipOptions: {
     value: DriveOwnershipChip;
@@ -880,8 +912,13 @@ const statusChipOptions: { value: DriveStatusChipFilter; label: string }[] = [
     { value: 'rejected', label: 'Rejected' },
 ];
 const viewMode = ref<DriveViewMode>('grid');
-const sortKey = ref<DriveSortKey>('name');
-const sortOrder = ref<DriveSortOrder>('asc');
+
+watch([searchQuery, typeFilter, sortKey, sortOrder], () => {
+    if (!isCompanyDriveScope.value) {
+        return;
+    }
+    void reloadCompanyDriveItems();
+});
 
 const detailSheetOpen = ref(false);
 const detailTargetId = ref<string | null>(null);
@@ -1064,11 +1101,7 @@ function matchesDriveSearchQuery(item: DriveItem, query: string): boolean {
         return true;
     }
 
-    const haystack = [
-        item.name,
-        ...(item.tags ?? []),
-        item.notesLabel ?? '',
-    ]
+    const haystack = [item.name, ...(item.tags ?? []), item.notesLabel ?? '']
         .join(' ')
         .toLowerCase();
 
@@ -1079,7 +1112,9 @@ function matchesDriveSearchQuery(item: DriveItem, query: string): boolean {
  * My documents: flat file list with search, type, submission status, and ownership filters.
  */
 function buildMyCatalogFileList(): DriveFileItem[] {
-    let filtered = items.value.filter((i): i is DriveFileItem => i.type === 'file');
+    let filtered = items.value.filter(
+        (i): i is DriveFileItem => i.type === 'file',
+    );
     const q = searchQuery.value.trim().toLowerCase();
     if (q) {
         filtered = filtered.filter((i) => matchesDriveSearchQuery(i, q));
@@ -1188,9 +1223,7 @@ const visibleChildren = computed(() => {
 
     const raw = getChildren(items.value, currentFolderId.value);
     const q = searchQuery.value.trim().toLowerCase();
-    let filtered = q
-        ? raw.filter((i) => matchesDriveSearchQuery(i, q))
-        : raw;
+    let filtered = q ? raw.filter((i) => matchesDriveSearchQuery(i, q)) : raw;
 
     const tf = typeFilter.value;
     if (tf !== 'all') {
@@ -1385,7 +1418,9 @@ function driveFileMayDownloadInUi(item: DriveFileItem): boolean {
         return false;
     }
 
-    return canDownloadDriveFilesForActiveScope.value && driveFileCanDownload(item);
+    return (
+        canDownloadDriveFilesForActiveScope.value && driveFileCanDownload(item)
+    );
 }
 
 function driveFileShowsRequestAccessInUi(item: DriveFileItem): boolean {
@@ -1839,7 +1874,11 @@ function onUploadTagPaste(e: ClipboardEvent): void {
 function finalizeUploadTagsList(): string[] {
     const draft = uploadTagDraft.value.trim();
     let list = [...uploadTags.value];
-    if (draft.length > 0 && list.length < UPLOAD_TAGS_MAX && !list.includes(draft)) {
+    if (
+        draft.length > 0 &&
+        list.length < UPLOAD_TAGS_MAX &&
+        !list.includes(draft)
+    ) {
         list = [...list, draft];
     }
 
@@ -2160,9 +2199,9 @@ function openInternalMetadataDialogForFile(file: DriveFileItem): void {
         decidedAt: '',
         createdAt: toDateTimeLocalValue(file.modifiedAt),
         updatedAt: toDateTimeLocalValue(file.modifiedAt),
-        status: (file.approvalStatusLabel?.toLowerCase() ?? 'approved').includes(
-            'pending',
-        )
+        status: (
+            file.approvalStatusLabel?.toLowerCase() ?? 'approved'
+        ).includes('pending')
             ? 'pending'
             : (file.approvalStatusLabel?.toLowerCase() ?? '').includes('reject')
               ? 'rejected'
@@ -2196,6 +2235,10 @@ function openInternalMetadataDialog(): void {
 
 async function saveInternalMetadata(): Promise<void> {
     const targetId = internalMetadataTargetId.value;
+    if (!targetId) {
+        return;
+    }
+
     const documentId = companyDocumentIdFromUiId(targetId);
     if (documentId === null) {
         return;
@@ -2581,1254 +2624,776 @@ function gridCheckboxSlotClass(item: DriveItem): string {
 <template>
     <TooltipProvider :delay-duration="200">
         <div class="flex min-h-0 flex-1 flex-col gap-4">
-        <input
-            v-if="!isTrashView"
-            ref="fileInputRef"
-            type="file"
-            class="sr-only"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            title="PDF, Word, Excel, or PowerPoint only — max 10 MB — one file per upload"
-            @change="onUploadChange"
-        />
+            <input
+                v-if="!isTrashView"
+                ref="fileInputRef"
+                type="file"
+                class="sr-only"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                title="PDF, Word, Excel, or PowerPoint only — max 10 MB — one file per upload"
+                @change="onUploadChange"
+            />
 
-        <HrisIndexToolbar>
-            <template #start>
-                <div class="flex w-full max-w-3xl items-center gap-2">
-                    <InputGroup class="max-w-md">
-                        <InputGroupAddon align="inline-start">
-                            <Search
-                                class="size-4 shrink-0 text-muted-foreground"
-                                aria-hidden="true"
+            <HrisIndexToolbar>
+                <template #start>
+                    <div class="flex w-full max-w-3xl items-center gap-2">
+                        <InputGroup class="max-w-md">
+                            <InputGroupAddon align="inline-start">
+                                <Search
+                                    class="size-4 shrink-0 text-muted-foreground"
+                                    aria-hidden="true"
+                                />
+                            </InputGroupAddon>
+                            <InputGroupInput
+                                id="documents_drive_search"
+                                v-model="searchQuery"
+                                type="search"
+                                :placeholder="
+                                    isTrashView
+                                        ? 'Search in Trash…'
+                                        : 'Search in this folder…'
+                                "
+                                autocomplete="off"
+                                :aria-label="
+                                    isTrashView
+                                        ? 'Search items in Trash'
+                                        : 'Search files and folders in this folder'
+                                "
                             />
-                        </InputGroupAddon>
-                        <InputGroupInput
-                            id="documents_drive_search"
-                            v-model="searchQuery"
-                            type="search"
-                            :placeholder="
-                                isTrashView
-                                    ? 'Search in Trash…'
-                                    : 'Search in this folder…'
-                            "
-                            autocomplete="off"
-                            :aria-label="
-                                isTrashView
-                                    ? 'Search items in Trash'
-                                    : 'Search files and folders in this folder'
-                            "
-                        />
-                    </InputGroup>
-                    <Button
-                        v-if="isCompanyDriveScope"
-                        type="button"
-                        variant="outline"
-                        class="h-9 shrink-0 gap-2 rounded-4xl border-violet-400/70 text-violet-800 hover:bg-violet-500/12 dark:border-violet-500/55 dark:text-violet-200 dark:hover:bg-violet-500/15"
-                        @click="openAiSearchDialog"
+                        </InputGroup>
+                        <Button
+                            v-if="isCompanyDriveScope"
+                            type="button"
+                            variant="outline"
+                            class="h-9 shrink-0 gap-2 rounded-4xl border-violet-400/70 text-violet-800 hover:bg-violet-500/12 dark:border-violet-500/55 dark:text-violet-200 dark:hover:bg-violet-500/15"
+                            @click="openAiSearchDialog"
+                        >
+                            <Sparkles class="size-4" aria-hidden="true" />
+                            AI Search
+                        </Button>
+                    </div>
+                </template>
+                <template #end>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        <template v-if="isTrashView">
+                            <Select v-model="sortControlModel">
+                                <SelectTrigger class="h-9 w-[140px]">
+                                    <SelectValue placeholder="Sort" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="name-asc"
+                                        >Name (A–Z)</SelectItem
+                                    >
+                                    <SelectItem value="name-desc"
+                                        >Name (Z–A)</SelectItem
+                                    >
+                                    <SelectItem value="modified-desc"
+                                        >Modified (newest)</SelectItem
+                                    >
+                                    <SelectItem value="modified-asc"
+                                        >Modified (oldest)</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+
+                            <Select v-model="typeFilter">
+                                <SelectTrigger
+                                    class="h-9 w-[140px]"
+                                    aria-label="Filter by file type"
+                                >
+                                    <SelectValue placeholder="Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all"
+                                        >All types</SelectItem
+                                    >
+                                    <SelectItem
+                                        v-if="!isMyCatalogView"
+                                        value="folder"
+                                        >Folders</SelectItem
+                                    >
+                                    <SelectItem value="docx">Word</SelectItem>
+                                    <SelectItem value="pdf">PDF</SelectItem>
+                                    <SelectItem value="xlsx">Excel</SelectItem>
+                                    <SelectItem value="pptx"
+                                        >PowerPoint</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                        </template>
+                        <template v-else>
+                            <div class="flex shrink-0 items-center gap-2">
+                                <Label
+                                    for="documents-drive-request-type-view"
+                                    class="text-sm whitespace-nowrap text-muted-foreground"
+                                >
+                                    View
+                                </Label>
+                                <NativeSelect
+                                    id="documents-drive-request-type-view"
+                                    v-model="requestTypeView"
+                                    class="h-9 min-w-[160px] max-sm:max-w-full sm:w-[180px]"
+                                    aria-label="View"
+                                >
+                                    <option
+                                        v-if="!restrictViewToQueuesOnly"
+                                        value="library"
+                                    >
+                                        Files
+                                    </option>
+                                    <option value="upload">
+                                        Upload Requests
+                                    </option>
+                                    <option value="access">
+                                        Access Requests
+                                    </option>
+                                </NativeSelect>
+                            </div>
+
+                            <div
+                                v-if="!isMyCatalogView"
+                                class="flex shrink-0 items-center gap-2"
+                            >
+                                <Button
+                                    v-if="showApprovalQueueModeToggle"
+                                    id="documents-drive-admin-view"
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    :class="
+                                        cn(
+                                            'h-9 shrink-0 gap-2 px-3',
+                                            approvalQueueMode
+                                                ? 'border-violet-600 bg-violet-600 text-white shadow-sm hover:bg-violet-600/90 hover:text-white dark:border-violet-500 dark:bg-violet-600 dark:hover:bg-violet-600/90'
+                                                : 'border-violet-400/70 text-violet-800 hover:bg-violet-500/12 dark:border-violet-500/55 dark:text-violet-200 dark:hover:bg-violet-500/15',
+                                        )
+                                    "
+                                    :aria-pressed="approvalQueueMode"
+                                    :aria-label="
+                                        approvalQueueMode
+                                            ? 'Admin View on — queues only'
+                                            : 'Admin View off — full library'
+                                    "
+                                    @click="toggleAdminView"
+                                >
+                                    <Shield
+                                        class="size-4 shrink-0"
+                                        aria-hidden="true"
+                                    />
+                                    Admin View
+                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger as-child>
+                                        <Button type="button" class="shrink-0">
+                                            <FolderPlus class="size-4" />
+                                            <span class="mr-1">New</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        class="min-w-48"
+                                        side="bottom"
+                                    >
+                                        <DropdownMenuItem
+                                            @click="openNewFolder"
+                                        >
+                                            <Folder class="size-4" />
+                                            New folder
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            @click="triggerUpload"
+                                        >
+                                            <Upload class="size-4" />
+                                            File upload
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </HrisIndexToolbar>
+
+            <div v-if="!isTrashView" class="mt-2 flex flex-col gap-3">
+                <div
+                    class="order-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-3"
+                >
+                    <div
+                        v-if="!isLibraryRequestTypeView"
+                        class="flex flex-wrap items-center gap-2"
+                        role="toolbar"
+                        aria-label="Filter by status"
                     >
-                        <Sparkles class="size-4" aria-hidden="true" />
-                        AI Search
-                    </Button>
-                </div>
-            </template>
-            <template #end>
-                <div class="flex flex-wrap items-center justify-end gap-2">
-                    <template v-if="isTrashView">
-                        <Select v-model="sortControlModel">
-                            <SelectTrigger class="h-9 w-[140px]">
-                                <SelectValue placeholder="Sort" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="name-asc"
-                                    >Name (A–Z)</SelectItem
-                                >
-                                <SelectItem value="name-desc"
-                                    >Name (Z–A)</SelectItem
-                                >
-                                <SelectItem value="modified-desc"
-                                    >Modified (newest)</SelectItem
-                                >
-                                <SelectItem value="modified-asc"
-                                    >Modified (oldest)</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <Select v-model="typeFilter">
-                            <SelectTrigger
-                                class="h-9 w-[140px]"
-                                aria-label="Filter by file type"
-                            >
-                                <SelectValue placeholder="Type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All types</SelectItem>
-                                <SelectItem
-                                    v-if="!isMyCatalogView"
-                                    value="folder"
-                                    >Folders</SelectItem
-                                >
-                                <SelectItem value="docx">Word</SelectItem>
-                                <SelectItem value="pdf">PDF</SelectItem>
-                                <SelectItem value="xlsx">Excel</SelectItem>
-                                <SelectItem value="pptx">PowerPoint</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </template>
-                    <template v-else>
-                        <div class="flex shrink-0 items-center gap-2">
-                            <Label
-                                for="documents-drive-request-type-view"
-                                class="whitespace-nowrap text-sm text-muted-foreground"
-                            >
-                                View
-                            </Label>
-                            <NativeSelect
-                                id="documents-drive-request-type-view"
-                                v-model="requestTypeView"
-                                class="h-9 min-w-[160px] sm:w-[180px] max-sm:max-w-full"
-                                aria-label="View"
-                            >
-                                <option
-                                    v-if="!restrictViewToQueuesOnly"
-                                    value="library"
-                                >
-                                    Files
-                                </option>
-                                <option value="upload">Upload Requests</option>
-                                <option value="access">Access Requests</option>
-                            </NativeSelect>
-                        </div>
-
+                        <Button
+                            v-for="opt in statusChipOptions"
+                            :key="opt.value"
+                            type="button"
+                            :variant="
+                                statusChipFilter === opt.value
+                                    ? 'default'
+                                    : 'outline'
+                            "
+                            size="sm"
+                            class="shrink-0 rounded-full px-4"
+                            @click="statusChipFilter = opt.value"
+                        >
+                            {{ opt.label }}
+                        </Button>
+                    </div>
+                    <div
+                        v-if="isLibraryRequestTypeView"
+                        class="flex flex-wrap items-center gap-2"
+                        role="toolbar"
+                        aria-label="Filter by ownership"
+                    >
+                        <Button
+                            v-for="opt in ownershipChipOptions"
+                            :key="opt.value"
+                            type="button"
+                            :variant="
+                                ownershipChip === opt.value
+                                    ? 'default'
+                                    : 'outline'
+                            "
+                            size="sm"
+                            class="shrink-0 rounded-full px-4"
+                            @click="ownershipChip = opt.value"
+                        >
+                            {{ opt.label }}
+                        </Button>
+                    </div>
+                    <div
+                        class="ml-auto flex flex-wrap items-center justify-end gap-2"
+                    >
+                        <span
+                            class="shrink-0 text-xs text-muted-foreground tabular-nums"
+                            aria-live="polite"
+                        >
+                            {{ toolbarStorageHint }}
+                        </span>
                         <div
-                            v-if="!isMyCatalogView"
-                            class="flex shrink-0 items-center gap-2"
+                            class="flex items-center rounded-lg border border-border/70 p-0.5"
                         >
                             <Button
-                                v-if="showApprovalQueueModeToggle"
-                                id="documents-drive-admin-view"
                                 type="button"
+                                variant="ghost"
                                 size="sm"
-                                variant="outline"
+                                class="h-8 px-2"
                                 :class="
-                                    cn(
-                                        'h-9 shrink-0 gap-2 px-3',
-                                        approvalQueueMode
-                                            ? 'border-violet-600 bg-violet-600 text-white shadow-sm hover:bg-violet-600/90 hover:text-white dark:border-violet-500 dark:bg-violet-600 dark:hover:bg-violet-600/90'
-                                            : 'border-violet-400/70 text-violet-800 hover:bg-violet-500/12 dark:border-violet-500/55 dark:text-violet-200 dark:hover:bg-violet-500/15',
-                                    )
+                                    viewMode === 'grid'
+                                        ? 'bg-muted shadow-sm'
+                                        : ''
                                 "
-                                :aria-pressed="approvalQueueMode"
-                                :aria-label="
-                                    approvalQueueMode
-                                        ? 'Admin View on — queues only'
-                                        : 'Admin View off — full library'
-                                "
-                                @click="toggleAdminView"
+                                :aria-pressed="viewMode === 'grid'"
+                                @click="viewMode = 'grid'"
                             >
-                                <Shield class="size-4 shrink-0" aria-hidden="true" />
-                                Admin View
+                                <LayoutGrid class="size-4" />
+                                <span class="sr-only">Grid view</span>
                             </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger as-child>
-                                    <Button type="button" class="shrink-0">
-                                        <FolderPlus class="size-4" />
-                                        <span class="mr-1">New</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    class="min-w-48"
-                                    side="bottom"
-                                >
-                                    <DropdownMenuItem @click="openNewFolder">
-                                        <Folder class="size-4" />
-                                        New folder
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem @click="triggerUpload">
-                                        <Upload class="size-4" />
-                                        File upload
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                class="h-8 px-2"
+                                :class="
+                                    viewMode === 'list'
+                                        ? 'bg-muted shadow-sm'
+                                        : ''
+                                "
+                                :aria-pressed="viewMode === 'list'"
+                                @click="viewMode = 'list'"
+                            >
+                                <List class="size-4" />
+                                <span class="sr-only">List view</span>
+                            </Button>
                         </div>
-                    </template>
-                </div>
-            </template>
-        </HrisIndexToolbar>
-
-        <div
-            v-if="!isTrashView"
-            class="mt-2 flex flex-col gap-3"
-        >
-            <div
-                class="order-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-3"
-            >
-                <div
-                v-if="!isLibraryRequestTypeView"
-                    class="flex flex-wrap items-center gap-2"
-                    role="toolbar"
-                    aria-label="Filter by status"
-                >
-                    <Button
-                        v-for="opt in statusChipOptions"
-                        :key="opt.value"
-                        type="button"
-                        :variant="
-                            statusChipFilter === opt.value ? 'default' : 'outline'
-                        "
-                        size="sm"
-                        class="shrink-0 rounded-full px-4"
-                        @click="statusChipFilter = opt.value"
-                    >
-                        {{ opt.label }}
-                    </Button>
-                </div>
-                <div
-                    v-if="isLibraryRequestTypeView"
-                    class="flex flex-wrap items-center gap-2"
-                    role="toolbar"
-                    aria-label="Filter by ownership"
-                >
-                    <Button
-                        v-for="opt in ownershipChipOptions"
-                        :key="opt.value"
-                        type="button"
-                        :variant="
-                            ownershipChip === opt.value ? 'default' : 'outline'
-                        "
-                        size="sm"
-                        class="shrink-0 rounded-full px-4"
-                        @click="ownershipChip = opt.value"
-                    >
-                        {{ opt.label }}
-                    </Button>
-                </div>
-                <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
-                    <span
-                        class="shrink-0 text-xs text-muted-foreground tabular-nums"
-                        aria-live="polite"
-                    >
-                        {{ toolbarStorageHint }}
-                    </span>
-                    <div
-                        class="flex items-center rounded-lg border border-border/70 p-0.5"
-                    >
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            class="h-8 px-2"
-                            :class="
-                                viewMode === 'grid' ? 'bg-muted shadow-sm' : ''
-                            "
-                            :aria-pressed="viewMode === 'grid'"
-                            @click="viewMode = 'grid'"
-                        >
-                            <LayoutGrid class="size-4" />
-                            <span class="sr-only">Grid view</span>
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            class="h-8 px-2"
-                            :class="
-                                viewMode === 'list' ? 'bg-muted shadow-sm' : ''
-                            "
-                            :aria-pressed="viewMode === 'list'"
-                            @click="viewMode = 'list'"
-                        >
-                            <List class="size-4" />
-                            <span class="sr-only">List view</span>
-                        </Button>
-                    </div>
-                </div>
-            </div>
-            <div
-                class="order-1 flex flex-wrap items-end justify-between gap-x-3 gap-y-3"
-            >
-                <div
-                    class="flex flex-wrap items-center gap-3 gap-y-2"
-                    role="toolbar"
-                    aria-label="Refine list"
-                >
-                    <div class="flex shrink-0 items-center gap-2">
-                        <Label
-                            for="documents-drive-type-filter"
-                            class="whitespace-nowrap text-sm text-muted-foreground"
-                        >
-                            Type
-                        </Label>
-                        <Select v-model="typeFilter">
-                            <SelectTrigger
-                                id="documents-drive-type-filter"
-                                class="h-9 w-[140px]"
-                                aria-label="Filter by file type"
-                            >
-                                <SelectValue placeholder="Type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All types</SelectItem>
-                                <SelectItem
-                                    v-if="!isMyCatalogView"
-                                    value="folder"
-                                    >Folders</SelectItem
-                                >
-                                <SelectItem value="docx">Word</SelectItem>
-                                <SelectItem value="pdf">PDF</SelectItem>
-                                <SelectItem value="xlsx">Excel</SelectItem>
-                                <SelectItem value="pptx">PowerPoint</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        <Label
-                            for="documents-drive-sort"
-                            class="whitespace-nowrap text-sm text-muted-foreground"
-                        >
-                            Sort
-                        </Label>
-                        <Select v-model="sortControlModel">
-                            <SelectTrigger
-                                id="documents-drive-sort"
-                                class="h-9 w-[140px]"
-                                aria-label="Sort items"
-                            >
-                                <SelectValue placeholder="Sort" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="name-asc"
-                                    >Name (A–Z)</SelectItem
-                                >
-                                <SelectItem value="name-desc"
-                                    >Name (Z–A)</SelectItem
-                                >
-                                <SelectItem value="modified-desc"
-                                    >Modified (newest)</SelectItem
-                                >
-                                <SelectItem value="modified-asc"
-                                    >Modified (oldest)</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        <Label
-                            for="documents-drive-uploaded-order"
-                            class="whitespace-nowrap text-sm text-muted-foreground"
-                        >
-                            Uploaded
-                        </Label>
-                        <Select v-model="uploadedRecencyOrder">
-                            <SelectTrigger
-                                id="documents-drive-uploaded-order"
-                                class="h-9 w-[140px]"
-                                aria-label="Order by upload recency"
-                            >
-                                <SelectValue placeholder="Uploaded" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="any">Any</SelectItem>
-                                <SelectItem value="newest"
-                                    >Newest first</SelectItem
-                                >
-                                <SelectItem value="oldest"
-                                    >Oldest first</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        <Label
-                            for="documents-drive-modified-order"
-                            class="whitespace-nowrap text-sm text-muted-foreground"
-                        >
-                            Modified
-                        </Label>
-                        <Select v-model="modifiedRecencyOrder">
-                            <SelectTrigger
-                                id="documents-drive-modified-order"
-                                class="h-9 w-[140px]"
-                                aria-label="Order by modification recency"
-                            >
-                                <SelectValue placeholder="Modified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="any">Any</SelectItem>
-                                <SelectItem value="newest"
-                                    >Newest first</SelectItem
-                                >
-                                <SelectItem value="oldest"
-                                    >Oldest first</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
                     </div>
                 </div>
                 <div
-                    class="flex flex-wrap items-center justify-end gap-3 gap-y-2"
+                    class="order-1 flex flex-wrap items-end justify-between gap-x-3 gap-y-3"
                 >
                     <div
-                        v-if="isTeamDriveScope"
-                        class="flex min-w-0 items-center gap-2"
+                        class="flex flex-wrap items-center gap-3 gap-y-2"
+                        role="toolbar"
+                        aria-label="Refine list"
                     >
-                        <Label
-                            for="documents-drive-team-unit"
-                            class="whitespace-nowrap text-sm text-muted-foreground"
-                        >
-                            Unit
-                        </Label>
-                        <Select v-model="teamDocumentUnitFilter">
-                            <SelectTrigger
-                                id="documents-drive-team-unit"
-                                class="h-9 w-full min-w-56 justify-between text-start font-normal sm:w-56"
-                                :disabled="branchUnitsLoading"
-                                aria-label="Filter by unit"
+                        <div class="flex shrink-0 items-center gap-2">
+                            <Label
+                                for="documents-drive-type-filter"
+                                class="text-sm whitespace-nowrap text-muted-foreground"
                             >
-                                <SelectValue placeholder="All units">
-                                    <template #default="{ modelValue }">
-                                        <HrisUnitSelectTriggerLabel
-                                            :select-model-value="modelValue"
-                                            :options="branchUnitFilterOptions"
-                                        />
-                                    </template>
-                                </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="opt in branchUnitFilterOptions"
-                                    :key="opt.value"
-                                    :value="opt.value"
+                                Type
+                            </Label>
+                            <Select v-model="typeFilter">
+                                <SelectTrigger
+                                    id="documents-drive-type-filter"
+                                    class="h-9 w-[140px]"
+                                    aria-label="Filter by file type"
                                 >
-                                    <div
-                                        class="flex min-w-0 items-baseline gap-1"
+                                    <SelectValue placeholder="Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all"
+                                        >All types</SelectItem
                                     >
-                                        <span class="truncate text-sm">{{
-                                            opt.label
-                                        }}</span>
-                                        <span
-                                            v-if="opt.code"
-                                            class="shrink-0 font-mono text-xs text-muted-foreground"
-                                            >{{ opt.code }}</span
+                                    <SelectItem
+                                        v-if="!isMyCatalogView"
+                                        value="folder"
+                                        >Folders</SelectItem
+                                    >
+                                    <SelectItem value="docx">Word</SelectItem>
+                                    <SelectItem value="pdf">PDF</SelectItem>
+                                    <SelectItem value="xlsx">Excel</SelectItem>
+                                    <SelectItem value="pptx"
+                                        >PowerPoint</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <Label
+                                for="documents-drive-sort"
+                                class="text-sm whitespace-nowrap text-muted-foreground"
+                            >
+                                Sort
+                            </Label>
+                            <Select v-model="sortControlModel">
+                                <SelectTrigger
+                                    id="documents-drive-sort"
+                                    class="h-9 w-[140px]"
+                                    aria-label="Sort items"
+                                >
+                                    <SelectValue placeholder="Sort" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="name-asc"
+                                        >Name (A–Z)</SelectItem
+                                    >
+                                    <SelectItem value="name-desc"
+                                        >Name (Z–A)</SelectItem
+                                    >
+                                    <SelectItem value="modified-desc"
+                                        >Modified (newest)</SelectItem
+                                    >
+                                    <SelectItem value="modified-asc"
+                                        >Modified (oldest)</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <Label
+                                for="documents-drive-uploaded-order"
+                                class="text-sm whitespace-nowrap text-muted-foreground"
+                            >
+                                Uploaded
+                            </Label>
+                            <Select v-model="uploadedRecencyOrder">
+                                <SelectTrigger
+                                    id="documents-drive-uploaded-order"
+                                    class="h-9 w-[140px]"
+                                    aria-label="Order by upload recency"
+                                >
+                                    <SelectValue placeholder="Uploaded" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="any">Any</SelectItem>
+                                    <SelectItem value="newest"
+                                        >Newest first</SelectItem
+                                    >
+                                    <SelectItem value="oldest"
+                                        >Oldest first</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <Label
+                                for="documents-drive-modified-order"
+                                class="text-sm whitespace-nowrap text-muted-foreground"
+                            >
+                                Modified
+                            </Label>
+                            <Select v-model="modifiedRecencyOrder">
+                                <SelectTrigger
+                                    id="documents-drive-modified-order"
+                                    class="h-9 w-[140px]"
+                                    aria-label="Order by modification recency"
+                                >
+                                    <SelectValue placeholder="Modified" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="any">Any</SelectItem>
+                                    <SelectItem value="newest"
+                                        >Newest first</SelectItem
+                                    >
+                                    <SelectItem value="oldest"
+                                        >Oldest first</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div
+                        class="flex flex-wrap items-center justify-end gap-3 gap-y-2"
+                    >
+                        <div
+                            v-if="isTeamDriveScope"
+                            class="flex min-w-0 items-center gap-2"
+                        >
+                            <Label
+                                for="documents-drive-team-unit"
+                                class="text-sm whitespace-nowrap text-muted-foreground"
+                            >
+                                Unit
+                            </Label>
+                            <Select v-model="teamDocumentUnitFilter">
+                                <SelectTrigger
+                                    id="documents-drive-team-unit"
+                                    class="h-9 w-full min-w-56 justify-between text-start font-normal sm:w-56"
+                                    :disabled="branchUnitsLoading"
+                                    aria-label="Filter by unit"
+                                >
+                                    <SelectValue placeholder="All units">
+                                        <template #default="{ modelValue }">
+                                            <HrisUnitSelectTriggerLabel
+                                                :select-model-value="modelValue"
+                                                :options="
+                                                    branchUnitFilterOptions
+                                                "
+                                            />
+                                        </template>
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem
+                                        v-for="opt in branchUnitFilterOptions"
+                                        :key="opt.value"
+                                        :value="opt.value"
+                                    >
+                                        <div
+                                            class="flex min-w-0 items-baseline gap-1"
                                         >
-                                    </div>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                                            <span class="truncate text-sm">{{
+                                                opt.label
+                                            }}</span>
+                                            <span
+                                                v-if="opt.code"
+                                                class="shrink-0 font-mono text-xs text-muted-foreground"
+                                                >{{ opt.code }}</span
+                                            >
+                                        </div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <Breadcrumb v-if="!isTrashView" class="mt-2">
-            <BreadcrumbList>
-                <BreadcrumbItem>
-                    <BreadcrumbLink as-child>
-                        <button
-                            type="button"
-                            class="hover:text-foreground"
-                            @click="goToFolder(null)"
-                        >
-                            {{ isTrashView ? 'Trash' : 'Home' }}
-                        </button>
-                    </BreadcrumbLink>
-                </BreadcrumbItem>
-                <template v-for="folder in breadcrumbFolders" :key="folder.id">
-                    <BreadcrumbSeparator>
-                        <ChevronRight class="size-4" />
-                    </BreadcrumbSeparator>
+            <Breadcrumb v-if="!isTrashView" class="mt-2">
+                <BreadcrumbList>
                     <BreadcrumbItem>
-                        <BreadcrumbLink
-                            v-if="
-                                folder.id !==
-                                breadcrumbFolders[breadcrumbFolders.length - 1]
-                                    ?.id
-                            "
-                            as-child
-                        >
+                        <BreadcrumbLink as-child>
                             <button
                                 type="button"
                                 class="hover:text-foreground"
-                                @click="goToFolder(folder.id)"
+                                @click="goToFolder(null)"
                             >
-                                {{ folder.name }}
+                                {{ isTrashView ? 'Trash' : 'Home' }}
                             </button>
                         </BreadcrumbLink>
-                        <BreadcrumbPage v-else>{{
-                            folder.name
-                        }}</BreadcrumbPage>
                     </BreadcrumbItem>
-                </template>
-            </BreadcrumbList>
-        </Breadcrumb>
+                    <template
+                        v-for="folder in breadcrumbFolders"
+                        :key="folder.id"
+                    >
+                        <BreadcrumbSeparator>
+                            <ChevronRight class="size-4" />
+                        </BreadcrumbSeparator>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink
+                                v-if="
+                                    folder.id !==
+                                    breadcrumbFolders[
+                                        breadcrumbFolders.length - 1
+                                    ]?.id
+                                "
+                                as-child
+                            >
+                                <button
+                                    type="button"
+                                    class="hover:text-foreground"
+                                    @click="goToFolder(folder.id)"
+                                >
+                                    {{ folder.name }}
+                                </button>
+                            </BreadcrumbLink>
+                            <BreadcrumbPage v-else>{{
+                                folder.name
+                            }}</BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </template>
+                </BreadcrumbList>
+            </Breadcrumb>
 
-        <div
-            v-if="driveSelectionBarVisible"
-            class="flex flex-wrap items-center gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm"
-        >
-            <span class="text-muted-foreground">
-                {{ selectedIds.length }} selected
-            </span>
-            <template v-if="canManageDriveMutations">
+            <div
+                v-if="driveSelectionBarVisible"
+                class="flex flex-wrap items-center gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm"
+            >
+                <span class="text-muted-foreground">
+                    {{ selectedIds.length }} selected
+                </span>
+                <template v-if="canManageDriveMutations">
+                    <Separator
+                        orientation="vertical"
+                        class="hidden h-6 sm:block"
+                    />
+                    <Button
+                        v-if="!selectionIncludesFolder"
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        class="shrink-0"
+                        @click="shareSelectedFiles"
+                    >
+                        <Share2 class="size-4" aria-hidden="true" />
+                        <span>Share</span>
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        class="shrink-0"
+                        @click="openMove(selectedIds)"
+                    >
+                        <FolderInput class="size-4" aria-hidden="true" />
+                        <span>Move</span>
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        class="shrink-0"
+                        @click="openDelete(selectedIds)"
+                    >
+                        <Trash2 class="size-4" aria-hidden="true" />
+                        <span>Move to Trash</span>
+                    </Button>
+                </template>
+            </div>
+
+            <div
+                v-if="trashSelectionBarVisible"
+                class="flex flex-wrap items-center gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm"
+            >
+                <span class="text-muted-foreground">
+                    {{ selectedIds.length }} selected
+                </span>
                 <Separator orientation="vertical" class="hidden h-6 sm:block" />
                 <Button
-                    v-if="!selectionIncludesFolder"
                     type="button"
                     variant="outline"
                     size="sm"
                     class="shrink-0"
-                    @click="shareSelectedFiles"
+                    @click="openTrashRestore(selectedIds)"
                 >
-                    <Share2 class="size-4" aria-hidden="true" />
-                    <span>Share</span>
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    class="shrink-0"
-                    @click="openMove(selectedIds)"
-                >
-                    <FolderInput class="size-4" aria-hidden="true" />
-                    <span>Move</span>
+                    <Undo2 class="size-4" aria-hidden="true" />
+                    <span>Restore</span>
                 </Button>
                 <Button
                     type="button"
                     variant="destructive"
                     size="sm"
                     class="shrink-0"
-                    @click="openDelete(selectedIds)"
+                    @click="openTrashPurge(selectedIds)"
                 >
                     <Trash2 class="size-4" aria-hidden="true" />
-                    <span>Move to Trash</span>
+                    <span>Delete forever</span>
                 </Button>
-            </template>
-        </div>
+            </div>
 
-        <div
-            v-if="trashSelectionBarVisible"
-            class="flex flex-wrap items-center gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm"
-        >
-            <span class="text-muted-foreground">
-                {{ selectedIds.length }} selected
-            </span>
-            <Separator orientation="vertical" class="hidden h-6 sm:block" />
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                class="shrink-0"
-                @click="openTrashRestore(selectedIds)"
-            >
-                <Undo2 class="size-4" aria-hidden="true" />
-                <span>Restore</span>
-            </Button>
-            <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                class="shrink-0"
-                @click="openTrashPurge(selectedIds)"
-            >
-                <Trash2 class="size-4" aria-hidden="true" />
-                <span>Delete forever</span>
-            </Button>
-        </div>
-
-        <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-            <div>
-                <div
-                    v-if="
-                        visibleChildren.length === 0 &&
-                        (!isCompanyDriveScope || !companyItemsLoading)
-                    "
-                    class="flex min-h-[200px] flex-col items-center justify-center gap-2 py-12 text-center"
-                >
-                    <template v-if="isTrashView">
-                        <Trash2
-                            class="size-12 text-muted-foreground/50"
-                            aria-hidden="true"
-                        />
-                        <p class="text-sm font-medium text-foreground">
-                            Nothing in Trash
-                        </p>
-                        <p class="max-w-sm text-xs text-muted-foreground">
-                            Deleted items from your document libraries appear
-                            here for this browser session.
-                        </p>
-                    </template>
-                    <template v-else-if="isMyCatalogView">
-                        <FileText
-                            class="size-12 text-muted-foreground/50"
-                            aria-hidden="true"
-                        />
-                        <p class="text-sm font-medium text-foreground">
-                            <template v-if="myCatalogEmptyReason === 'empty'">
-                                No uploads yet
-                            </template>
-                            <template
-                                v-else-if="myCatalogEmptyReason === 'no-match'"
-                            >
-                                No documents match this status
-                            </template>
-                        </p>
-                        <p class="max-w-sm text-xs text-muted-foreground">
-                            <template v-if="myCatalogEmptyReason === 'empty'">
-                                Files you upload from Team, Branch, or Company
-                                libraries will appear here (session preview).
-                            </template>
-                            <template v-else>
-                                Try another status filter or clear the search.
-                            </template>
-                        </p>
-                    </template>
-                    <template v-else>
+            <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+                <div>
+                    <div
+                        v-if="
+                            visibleChildren.length === 0 &&
+                            (!isCompanyDriveScope || !companyItemsLoading)
+                        "
+                        class="flex min-h-[200px] flex-col items-center justify-center gap-2 py-12 text-center"
+                    >
+                        <template v-if="isTrashView">
+                            <Trash2
+                                class="size-12 text-muted-foreground/50"
+                                aria-hidden="true"
+                            />
+                            <p class="text-sm font-medium text-foreground">
+                                Nothing in Trash
+                            </p>
+                            <p class="max-w-sm text-xs text-muted-foreground">
+                                Deleted items from your document libraries
+                                appear here for this browser session.
+                            </p>
+                        </template>
+                        <template v-else-if="isMyCatalogView">
+                            <FileText
+                                class="size-12 text-muted-foreground/50"
+                                aria-hidden="true"
+                            />
+                            <p class="text-sm font-medium text-foreground">
+                                <template
+                                    v-if="myCatalogEmptyReason === 'empty'"
+                                >
+                                    No uploads yet
+                                </template>
+                                <template
+                                    v-else-if="
+                                        myCatalogEmptyReason === 'no-match'
+                                    "
+                                >
+                                    No documents match this status
+                                </template>
+                            </p>
+                            <p class="max-w-sm text-xs text-muted-foreground">
+                                <template
+                                    v-if="myCatalogEmptyReason === 'empty'"
+                                >
+                                    Files you upload from Team, Branch, or
+                                    Company libraries will appear here (session
+                                    preview).
+                                </template>
+                                <template v-else>
+                                    Try another status filter or clear the
+                                    search.
+                                </template>
+                            </p>
+                        </template>
+                        <template v-else>
+                            <Folder
+                                class="size-12 text-muted-foreground/50"
+                                aria-hidden="true"
+                            />
+                            <p class="text-sm font-medium text-foreground">
+                                This folder is empty
+                            </p>
+                            <p class="max-w-sm text-xs text-muted-foreground">
+                                Upload files or create a folder — changes stay
+                                in this browser session only.
+                            </p>
+                            <div class="mt-2 flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="shrink-0"
+                                    @click="openNewFolder"
+                                >
+                                    <FolderPlus
+                                        class="size-4"
+                                        aria-hidden="true"
+                                    />
+                                    <span>New folder</span>
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    class="shrink-0"
+                                    @click="triggerUpload"
+                                >
+                                    <Upload class="size-4" aria-hidden="true" />
+                                    <span>Upload</span>
+                                </Button>
+                            </div>
+                        </template>
+                    </div>
+                    <div
+                        v-else-if="
+                            isCompanyDriveScope &&
+                            companyItemsLoading &&
+                            !companyItemsLoadedOnce
+                        "
+                        class="flex min-h-[200px] flex-col items-center justify-center gap-2 py-12 text-center"
+                    >
                         <Folder
-                            class="size-12 text-muted-foreground/50"
+                            class="size-12 animate-pulse text-muted-foreground/50"
                             aria-hidden="true"
                         />
                         <p class="text-sm font-medium text-foreground">
-                            This folder is empty
+                            Loading company documents...
                         </p>
-                        <p class="max-w-sm text-xs text-muted-foreground">
-                            Upload files or create a folder — changes stay in
-                            this browser session only.
-                        </p>
-                        <div class="mt-2 flex gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                class="shrink-0"
-                                @click="openNewFolder"
+                    </div>
+
+                    <!-- Grid (Drive-style tile: header strip + large preview) -->
+                    <div
+                        v-else-if="viewMode === 'grid'"
+                        class="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-3"
+                    >
+                        <div
+                            v-for="item in visibleChildren"
+                            :key="item.id"
+                            class="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/50 bg-card text-left shadow-sm transition select-none hover:shadow-md"
+                            :class="
+                                isSelected(item.id)
+                                    ? 'border-primary ring-2 ring-primary/25'
+                                    : ''
+                            "
+                            role="button"
+                            tabindex="0"
+                            @click="onRowClick(item, $event)"
+                            @dblclick.prevent="onRowDoubleClick(item)"
+                            @keydown.enter.prevent="onRowDoubleClick(item)"
+                        >
+                            <div
+                                class="flex items-center gap-2 border-b border-border/40 bg-muted/10 py-1.5 pr-2 pl-3"
                             >
-                                <FolderPlus
-                                    class="size-4"
+                                <component
+                                    :is="iconComponent(item)"
+                                    class="size-4 shrink-0"
+                                    :class="headerIconClass(item)"
                                     aria-hidden="true"
                                 />
-                                <span>New folder</span>
-                            </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                class="shrink-0"
-                                @click="triggerUpload"
-                            >
-                                <Upload class="size-4" aria-hidden="true" />
-                                <span>Upload</span>
-                            </Button>
-                        </div>
-                    </template>
-                </div>
-                <div
-                    v-else-if="
-                        isCompanyDriveScope &&
-                        companyItemsLoading &&
-                        !companyItemsLoadedOnce
-                    "
-                    class="flex min-h-[200px] flex-col items-center justify-center gap-2 py-12 text-center"
-                >
-                    <Folder
-                        class="size-12 animate-pulse text-muted-foreground/50"
-                        aria-hidden="true"
-                    />
-                    <p class="text-sm font-medium text-foreground">
-                        Loading company documents...
-                    </p>
-                </div>
-
-                <!-- Grid (Drive-style tile: header strip + large preview) -->
-                <div
-                    v-else-if="viewMode === 'grid'"
-                    class="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-3"
-                >
-                    <div
-                        v-for="item in visibleChildren"
-                        :key="item.id"
-                        class="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/50 bg-card text-left shadow-sm transition select-none hover:shadow-md"
-                        :class="
-                            isSelected(item.id)
-                                ? 'border-primary ring-2 ring-primary/25'
-                                : ''
-                        "
-                        role="button"
-                        tabindex="0"
-                        @click="onRowClick(item, $event)"
-                        @dblclick.prevent="onRowDoubleClick(item)"
-                        @keydown.enter.prevent="onRowDoubleClick(item)"
-                    >
-                        <div
-                            class="flex items-center gap-2 border-b border-border/40 bg-muted/10 py-1.5 pr-2 pl-3"
-                        >
-                            <component
-                                :is="iconComponent(item)"
-                                class="size-4 shrink-0"
-                                :class="headerIconClass(item)"
-                                aria-hidden="true"
-                            />
-                            <div
-                                class="min-w-0 flex flex-1 flex-col gap-0.5 overflow-hidden"
-                            >
-                                <span
-                                    class="truncate text-sm font-medium text-foreground"
-                                    :title="item.name"
-                                >
-                                    {{ item.name }}
-                                </span>
-                                <Badge
-                                    v-if="
-                                        isTrashView && item.trashSourceScope
-                                    "
-                                    variant="secondary"
-                                    class="w-fit max-w-full truncate text-[10px] font-normal"
-                                >
-                                    {{ scopeLabel(item.trashSourceScope) }}
-                                </Badge>
-                            </div>
-                            <div
-                                class="flex shrink-0 items-center gap-0.5"
-                                @click.stop
-                            >
                                 <div
-                                    :class="gridCheckboxSlotClass(item)"
+                                    class="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden"
                                 >
-                                    <Checkbox
-                                        :model-value="isSelected(item.id)"
-                                        class="size-3.5 border-border"
-                                        @update:model-value="
-                                            setRowCheckbox(item.id, $event)
+                                    <span
+                                        class="truncate text-sm font-medium text-foreground"
+                                        :title="item.name"
+                                    >
+                                        {{ item.name }}
+                                    </span>
+                                    <Badge
+                                        v-if="
+                                            isTrashView && item.trashSourceScope
                                         "
-                                    />
+                                        variant="secondary"
+                                        class="w-fit max-w-full truncate text-[10px] font-normal"
+                                    >
+                                        {{ scopeLabel(item.trashSourceScope) }}
+                                    </Badge>
                                 </div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger as-child>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            class="size-7 shrink-0"
-                                            :aria-label="`Actions for ${item.name}`"
-                                        >
-                                            <MoreVertical
-                                                class="size-4"
-                                                aria-hidden="true"
-                                            />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        align="start"
-                                        class="min-w-44"
-                                        side="right"
-                                    >
-                                        <template v-if="isTrashView">
-                                            <DropdownMenuItem
-                                                @click="openDetail(item)"
-                                            >
-                                                <Info
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Information
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="
-                                                    item.type === 'file' &&
-                                                    item.kind === 'pdf'
-                                                "
-                                                @click="
-                                                    openUploadedPdfInNewTab(
-                                                        item,
-                                                    )
-                                                "
-                                            >
-                                                <ExternalLink
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Preview
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="item.type === 'file'"
-                                                @click="downloadItem(item)"
-                                            >
-                                                <Download
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Download
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                                @click="
-                                                    openTrashRestore([
-                                                        item.id,
-                                                    ])
-                                                "
-                                            >
-                                                <Undo2
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Restore
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                variant="destructive"
-                                                @click="
-                                                    openTrashPurge([item.id])
-                                                "
-                                            >
-                                                <Trash2
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Delete forever
-                                            </DropdownMenuItem>
-                                        </template>
-                                        <template v-else>
-                                            <DropdownMenuItem
-                                                @click="openDetail(item)"
-                                            >
-                                                <Info
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Information
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="
-                                                    canEditCompanyDocumentInternalMetadata &&
-                                                    item.type === 'file'
-                                                "
-                                                @click="
-                                                    openInternalMetadataDialogFromItem(
-                                                        item,
-                                                    )
-                                                "
-                                            >
-                                                <Pencil
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Admin: edit metadata
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="
-                                                    item.type === 'file' &&
-                                                    item.kind === 'pdf' &&
-                                                    driveFileMayPreviewInUi(item)
-                                                "
-                                                @click="
-                                                    openUploadedPdfInNewTab(
-                                                        item,
-                                                    )
-                                                "
-                                            >
-                                                <ExternalLink
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Preview
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="
-                                                    item.type === 'file' &&
-                                                    driveFileMayDownloadInUi(item)
-                                                "
-                                                @click="downloadItem(item)"
-                                            >
-                                                <Download
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Download
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="
-                                                    item.type === 'file' &&
-                                                    driveFileShowsRequestAccessInUi(
-                                                        item,
-                                                    )
-                                                "
-                                                @click="
-                                                    requestAccessForFile(item)
-                                                "
-                                            >
-                                                <UserPlus
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Request access
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="canManageDriveMutations"
-                                                @click="openRename(item)"
-                                            >
-                                                <Pencil
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Rename
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="canManageDriveMutations"
-                                                @click="openMove([item.id])"
-                                            >
-                                                <FolderInput
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Move
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator
-                                                v-if="canManageDriveMutations"
-                                            />
-                                            <DropdownMenuItem
-                                                v-if="canManageDriveMutations"
-                                                variant="destructive"
-                                                @click="openDelete([item.id])"
-                                            >
-                                                <Trash2
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Move to Trash
-                                            </DropdownMenuItem>
-                                        </template>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-                        <div
-                            class="relative flex aspect-5/4 min-h-30 items-center justify-center bg-background"
-                        >
-                            <component
-                                :is="iconComponent(item)"
-                                class="size-16 shrink-0 sm:size-20"
-                                :class="previewIconClass(item)"
-                                aria-hidden="true"
-                            />
-                            <div
-                                v-if="
-                                    isMyCatalogView && item.type === 'file'
-                                "
-                                class="pointer-events-auto absolute left-2 bottom-2 z-10"
-                                @click.stop
-                            >
-                                <Tooltip>
-                                    <TooltipTrigger as-child>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            :class="cn(starToggleButtonClass)"
-                                            :aria-label="
-                                                mySubmissionStatusTooltip(
-                                                    item.mockSubmissionStatus,
-                                                )
-                                            "
-                                        >
-                                            <component
-                                                :is="
-                                                    mySubmissionStatusIconComponent(
-                                                        item.mockSubmissionStatus,
-                                                    )
-                                                "
-                                                class="size-4 shrink-0"
-                                                :class="
-                                                    mySubmissionStatusIconClass(
-                                                        item.mockSubmissionStatus,
-                                                    )
-                                                "
-                                                aria-hidden="true"
-                                            />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                        {{
-                                            mySubmissionStatusTooltip(
-                                                item.mockSubmissionStatus,
-                                            )
-                                        }}
-                                    </TooltipContent>
-                                </Tooltip>
-                            </div>
-                            <div
-                                v-if="!isTrashView && !isMyCatalogView"
-                                class="absolute right-2 bottom-2 z-10"
-                                :class="starOverlayVisibilityClass(item)"
-                                @click.stop
-                            >
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    :class="cn(starToggleButtonClass)"
-                                    :aria-pressed="item.starred === true"
-                                    :aria-label="
-                                        item.starred
-                                            ? `Remove star from ${item.name}`
-                                            : `Star ${item.name}`
-                                    "
-                                    @click="
-                                        toggleStarredFromUi(item.id, $event)
-                                    "
-                                >
-                                    <Star
-                                        class="size-4"
-                                        :class="
-                                            item.starred
-                                                ? 'fill-amber-400 text-amber-500 dark:fill-amber-400/90 dark:text-amber-400'
-                                                : 'text-muted-foreground'
-                                        "
-                                        aria-hidden="true"
-                                    />
-                                </Button>
-                            </div>
-                            <div
-                                v-else-if="
-                                    isMyCatalogView &&
-                                    item.type === 'file' &&
-                                    submissionStatusForFile(item) ===
-                                        'approved'
-                                "
-                                class="absolute right-2 bottom-2 z-10"
-                                :class="starOverlayVisibilityClass(item)"
-                                @click.stop
-                            >
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    :class="cn(starToggleButtonClass)"
-                                    :aria-pressed="item.starred === true"
-                                    :aria-label="
-                                        item.starred
-                                            ? `Remove star from ${item.name}`
-                                            : `Star ${item.name}`
-                                    "
-                                    @click="
-                                        toggleStarredFromUi(item.id, $event)
-                                    "
-                                >
-                                    <Star
-                                        class="size-4"
-                                        :class="
-                                            item.starred
-                                                ? 'fill-amber-400 text-amber-500 dark:fill-amber-400/90 dark:text-amber-400'
-                                                : 'text-muted-foreground'
-                                        "
-                                        aria-hidden="true"
-                                    />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- List -->
-                <div v-else class="overflow-x-auto">
-                    <table
-                        class="w-full min-w-[640px] text-left text-sm select-none"
-                    >
-                        <thead>
-                            <tr
-                                class="border-b border-border/70 text-sm font-medium text-muted-foreground"
-                            >
-                                <th class="w-10 px-2 py-2">
-                                    <Checkbox
-                                        :model-value="
-                                            allVisibleSelected()
-                                                ? true
-                                                : someVisibleSelected()
-                                                  ? 'indeterminate'
-                                                  : false
-                                        "
-                                        @update:model-value="toggleSelectAll"
-                                    />
-                                </th>
-                                <th class="px-2 py-2">Name</th>
-                                <th
-                                    v-if="isTrashView"
-                                    class="hidden px-2 py-2 sm:table-cell"
-                                >
-                                    Source
-                                </th>
-                                <th
-                                    v-if="isMyCatalogView"
-                                    class="hidden w-[120px] min-w-28 px-2 py-2 text-center md:table-cell"
-                                >
-                                    Status
-                                </th>
-                                <th
-                                    class="hidden px-2 py-2 text-center md:table-cell"
-                                >
-                                    Owner
-                                </th>
-                                <th class="hidden px-2 py-2 lg:table-cell">
-                                    Modified
-                                </th>
-                                <th class="hidden px-2 py-2 sm:table-cell">
-                                    Size
-                                </th>
-                                <th class="w-12 px-2 py-2" />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="item in visibleChildren"
-                                :key="item.id"
-                                class="group cursor-pointer border-b border-border/40 transition hover:bg-muted/40"
-                                :class="
-                                    isSelected(item.id) ? 'bg-muted/50' : ''
-                                "
-                                @click="onRowClick(item, $event)"
-                                @dblclick.prevent="onRowDoubleClick(item)"
-                            >
-                                <td class="px-2 py-2 align-middle" @click.stop>
-                                    <Checkbox
-                                        :model-value="isSelected(item.id)"
-                                        @update:model-value="
-                                            setRowCheckbox(item.id, $event)
-                                        "
-                                    />
-                                </td>
-                                <td class="px-2 py-2 align-middle">
-                                    <div
-                                        class="flex max-w-md items-center gap-1.5 sm:gap-2"
-                                    >
-                                        <component
-                                            :is="iconComponent(item)"
-                                            class="size-5 shrink-0"
-                                            :class="
-                                                item.type === 'file'
-                                                    ? fileKindIconClass(
-                                                          item.kind,
-                                                      )
-                                                    : 'text-sky-600 dark:text-sky-400'
-                                            "
-                                        />
-                                        <div
-                                            v-if="
-                                                !isTrashView &&
-                                                (!isMyCatalogView ||
-                                                    (item.type === 'file' &&
-                                                        submissionStatusForFile(
-                                                            item,
-                                                        ) === 'approved'))
-                                            "
-                                            :class="listStarSlotClass(item)"
-                                            @click.stop
-                                        >
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                :class="
-                                                    cn(starToggleButtonClass)
-                                                "
-                                                :aria-pressed="
-                                                    item.starred === true
-                                                "
-                                                :aria-label="
-                                                    item.starred
-                                                        ? `Remove star from ${item.name}`
-                                                        : `Star ${item.name}`
-                                                "
-                                                @click="
-                                                    toggleStarredFromUi(
-                                                        item.id,
-                                                        $event,
-                                                    )
-                                                "
-                                            >
-                                                <Star
-                                                    class="size-4"
-                                                    :class="
-                                                        item.starred
-                                                            ? 'fill-amber-400 text-amber-500 dark:fill-amber-400/90 dark:text-amber-400'
-                                                            : 'text-muted-foreground'
-                                                    "
-                                                    aria-hidden="true"
-                                                />
-                                            </Button>
-                                        </div>
-                                        <span
-                                            class="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
-                                            >{{ item.name }}</span
-                                        >
-                                    </div>
-                                </td>
-                                <td
-                                    v-if="isTrashView"
-                                    class="hidden px-2 py-2 align-middle text-muted-foreground sm:table-cell"
-                                >
-                                    {{
-                                        item.trashSourceScope
-                                            ? scopeLabel(item.trashSourceScope)
-                                            : '—'
-                                    }}
-                                </td>
-                                <td
-                                    v-if="isMyCatalogView"
-                                    class="hidden w-[120px] min-w-28 px-2 py-2 align-middle md:table-cell"
+                                <div
+                                    class="flex shrink-0 items-center gap-0.5"
                                     @click.stop
                                 >
-                                    <div
-                                        class="flex justify-center text-center"
-                                    >
-                                        <Badge
-                                            v-if="item.type === 'file'"
-                                            variant="outline"
-                                            class="text-xs font-normal"
-                                            :class="
-                                                mySubmissionStatusListBadgeClass(
-                                                    item.mockSubmissionStatus,
-                                                )
+                                    <div :class="gridCheckboxSlotClass(item)">
+                                        <Checkbox
+                                            :model-value="isSelected(item.id)"
+                                            class="size-3.5 border-border"
+                                            @update:model-value="
+                                                setRowCheckbox(item.id, $event)
                                             "
-                                        >
-                                            {{
-                                                mySubmissionStatusListBadgeLabel(
-                                                    item.mockSubmissionStatus,
-                                                )
-                                            }}
-                                        </Badge>
-                                        <span
-                                            v-else
-                                            class="text-muted-foreground"
-                                            >—</span
-                                        >
+                                        />
                                     </div>
-                                </td>
-                                <td
-                                    class="hidden px-2 py-2 align-middle text-center text-muted-foreground md:table-cell"
-                                >
-                                    {{ item.ownerLabel }}
-                                </td>
-                                <td
-                                    class="hidden px-2 py-2 align-middle text-muted-foreground lg:table-cell"
-                                >
-                                    {{ formatModified(item.modifiedAt) }}
-                                </td>
-                                <td
-                                    class="hidden px-2 py-2 align-middle text-muted-foreground sm:table-cell"
-                                >
-                                    {{
-                                        item.type === 'folder'
-                                            ? '—'
-                                            : item.sizeLabel
-                                    }}
-                                </td>
-                                <td class="px-2 py-2 align-middle" @click.stop>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child>
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon"
-                                                class="size-8"
+                                                class="size-7 shrink-0"
                                                 :aria-label="`Actions for ${item.name}`"
                                             >
-                                                <MoreHorizontal
+                                                <MoreVertical
                                                     class="size-4"
                                                     aria-hidden="true"
                                                 />
@@ -3975,7 +3540,9 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                                                         )
                                                     "
                                                     @click="
-                                                        requestAccessForFile(item)
+                                                        requestAccessForFile(
+                                                            item,
+                                                        )
                                                     "
                                                 >
                                                     <UserPlus
@@ -4000,9 +3567,7 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                                                     v-if="
                                                         canManageDriveMutations
                                                     "
-                                                    @click="
-                                                        openMove([item.id])
-                                                    "
+                                                    @click="openMove([item.id])"
                                                 >
                                                     <FolderInput
                                                         class="size-4"
@@ -4033,1480 +3598,2220 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                                             </template>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Detail sheet (layout aligned with calendar sheets: cards + footer actions) -->
-        <Sheet v-model:open="detailSheetOpen">
-            <SheetContent
-                side="right"
-                class="flex max-h-dvh w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg"
-            >
-                <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    <div
-                        class="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden px-4 pb-4 text-sm"
-                    >
-                        <SheetHeader class="space-y-0 px-0 pt-4 pb-0 text-left">
-                            <SheetTitle
-                                class="pr-8 text-base leading-snug font-semibold text-foreground"
+                                </div>
+                            </div>
+                            <div
+                                class="relative flex aspect-5/4 min-h-30 items-center justify-center bg-background"
                             >
-                                {{ detailItem?.name ?? 'Details' }}
-                            </SheetTitle>
-                            <SheetDescription class="mt-2">
-                                <template v-if="isTrashView">
-                                    Items stay in Trash for this browser session
-                                    until you restore them or delete forever.
-                                </template>
-                                <template v-else>
-                                    Session mock — metadata for UI only.
-                                    Sharing is by employee access, not a URL.
-                                    Ownership & approval rules apply when
-                                    wired to the server.
-                                </template>
-                            </SheetDescription>
-                        </SheetHeader>
-
-                        <div class="mt-4 flex min-h-0 flex-1 flex-col">
-                            <ScrollArea
-                                v-if="detailItem"
-                                class="min-h-0 flex-1"
-                            >
-                                <div class="space-y-3 px-1.5 pr-3 pb-8">
-                                    <div
-                                        class="rounded-lg border border-border/60 bg-muted/20 p-4"
+                                <component
+                                    :is="iconComponent(item)"
+                                    class="size-16 shrink-0 sm:size-20"
+                                    :class="previewIconClass(item)"
+                                    aria-hidden="true"
+                                />
+                                <div
+                                    v-if="
+                                        isMyCatalogView && item.type === 'file'
+                                    "
+                                    class="pointer-events-auto absolute bottom-2 left-2 z-10"
+                                    @click.stop
+                                >
+                                    <Tooltip>
+                                        <TooltipTrigger as-child>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                :class="
+                                                    cn(starToggleButtonClass)
+                                                "
+                                                :aria-label="
+                                                    mySubmissionStatusTooltip(
+                                                        item.mockSubmissionStatus,
+                                                    )
+                                                "
+                                            >
+                                                <component
+                                                    :is="
+                                                        mySubmissionStatusIconComponent(
+                                                            item.mockSubmissionStatus,
+                                                        )
+                                                    "
+                                                    class="size-4 shrink-0"
+                                                    :class="
+                                                        mySubmissionStatusIconClass(
+                                                            item.mockSubmissionStatus,
+                                                        )
+                                                    "
+                                                    aria-hidden="true"
+                                                />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            {{
+                                                mySubmissionStatusTooltip(
+                                                    item.mockSubmissionStatus,
+                                                )
+                                            }}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <div
+                                    v-if="!isTrashView && !isMyCatalogView"
+                                    class="absolute right-2 bottom-2 z-10"
+                                    :class="starOverlayVisibilityClass(item)"
+                                    @click.stop
+                                >
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        :class="cn(starToggleButtonClass)"
+                                        :aria-pressed="item.starred === true"
+                                        :aria-label="
+                                            item.starred
+                                                ? `Remove star from ${item.name}`
+                                                : `Star ${item.name}`
+                                        "
+                                        @click="
+                                            toggleStarredFromUi(item.id, $event)
+                                        "
                                     >
-                                        <p
-                                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                        >
-                                            Overview
-                                        </p>
+                                        <Star
+                                            class="size-4"
+                                            :class="
+                                                item.starred
+                                                    ? 'fill-amber-400 text-amber-500 dark:fill-amber-400/90 dark:text-amber-400'
+                                                    : 'text-muted-foreground'
+                                            "
+                                            aria-hidden="true"
+                                        />
+                                    </Button>
+                                </div>
+                                <div
+                                    v-else-if="
+                                        isMyCatalogView &&
+                                        item.type === 'file' &&
+                                        submissionStatusForFile(item) ===
+                                            'approved'
+                                    "
+                                    class="absolute right-2 bottom-2 z-10"
+                                    :class="starOverlayVisibilityClass(item)"
+                                    @click.stop
+                                >
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        :class="cn(starToggleButtonClass)"
+                                        :aria-pressed="item.starred === true"
+                                        :aria-label="
+                                            item.starred
+                                                ? `Remove star from ${item.name}`
+                                                : `Star ${item.name}`
+                                        "
+                                        @click="
+                                            toggleStarredFromUi(item.id, $event)
+                                        "
+                                    >
+                                        <Star
+                                            class="size-4"
+                                            :class="
+                                                item.starred
+                                                    ? 'fill-amber-400 text-amber-500 dark:fill-amber-400/90 dark:text-amber-400'
+                                                    : 'text-muted-foreground'
+                                            "
+                                            aria-hidden="true"
+                                        />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- List -->
+                    <div v-else class="overflow-x-auto">
+                        <table
+                            class="w-full min-w-[640px] text-left text-sm select-none"
+                        >
+                            <thead>
+                                <tr
+                                    class="border-b border-border/70 text-sm font-medium text-muted-foreground"
+                                >
+                                    <th class="w-10 px-2 py-2">
+                                        <Checkbox
+                                            :model-value="
+                                                allVisibleSelected()
+                                                    ? true
+                                                    : someVisibleSelected()
+                                                      ? 'indeterminate'
+                                                      : false
+                                            "
+                                            @update:model-value="
+                                                toggleSelectAll
+                                            "
+                                        />
+                                    </th>
+                                    <th class="px-2 py-2">Name</th>
+                                    <th
+                                        v-if="isTrashView"
+                                        class="hidden px-2 py-2 sm:table-cell"
+                                    >
+                                        Source
+                                    </th>
+                                    <th
+                                        v-if="isMyCatalogView"
+                                        class="hidden w-[120px] min-w-28 px-2 py-2 text-center md:table-cell"
+                                    >
+                                        Status
+                                    </th>
+                                    <th
+                                        class="hidden px-2 py-2 text-center md:table-cell"
+                                    >
+                                        Owner
+                                    </th>
+                                    <th class="hidden px-2 py-2 lg:table-cell">
+                                        Modified
+                                    </th>
+                                    <th class="hidden px-2 py-2 sm:table-cell">
+                                        Size
+                                    </th>
+                                    <th class="w-12 px-2 py-2" />
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="item in visibleChildren"
+                                    :key="item.id"
+                                    class="group cursor-pointer border-b border-border/40 transition hover:bg-muted/40"
+                                    :class="
+                                        isSelected(item.id) ? 'bg-muted/50' : ''
+                                    "
+                                    @click="onRowClick(item, $event)"
+                                    @dblclick.prevent="onRowDoubleClick(item)"
+                                >
+                                    <td
+                                        class="px-2 py-2 align-middle"
+                                        @click.stop
+                                    >
+                                        <Checkbox
+                                            :model-value="isSelected(item.id)"
+                                            @update:model-value="
+                                                setRowCheckbox(item.id, $event)
+                                            "
+                                        />
+                                    </td>
+                                    <td class="px-2 py-2 align-middle">
                                         <div
-                                            class="mt-3 flex min-h-[120px] items-center justify-center rounded-md bg-muted/30"
+                                            class="flex max-w-md items-center gap-1.5 sm:gap-2"
                                         >
                                             <component
-                                                :is="iconComponent(detailItem)"
-                                                class="size-14 shrink-0 opacity-90 sm:size-16"
+                                                :is="iconComponent(item)"
+                                                class="size-5 shrink-0"
                                                 :class="
-                                                    detailItem.type === 'file'
+                                                    item.type === 'file'
                                                         ? fileKindIconClass(
-                                                              detailItem.kind,
+                                                              item.kind,
                                                           )
                                                         : 'text-sky-600 dark:text-sky-400'
                                                 "
-                                                aria-hidden="true"
                                             />
+                                            <div
+                                                v-if="
+                                                    !isTrashView &&
+                                                    (!isMyCatalogView ||
+                                                        (item.type === 'file' &&
+                                                            submissionStatusForFile(
+                                                                item,
+                                                            ) === 'approved'))
+                                                "
+                                                :class="listStarSlotClass(item)"
+                                                @click.stop
+                                            >
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    :class="
+                                                        cn(
+                                                            starToggleButtonClass,
+                                                        )
+                                                    "
+                                                    :aria-pressed="
+                                                        item.starred === true
+                                                    "
+                                                    :aria-label="
+                                                        item.starred
+                                                            ? `Remove star from ${item.name}`
+                                                            : `Star ${item.name}`
+                                                    "
+                                                    @click="
+                                                        toggleStarredFromUi(
+                                                            item.id,
+                                                            $event,
+                                                        )
+                                                    "
+                                                >
+                                                    <Star
+                                                        class="size-4"
+                                                        :class="
+                                                            item.starred
+                                                                ? 'fill-amber-400 text-amber-500 dark:fill-amber-400/90 dark:text-amber-400'
+                                                                : 'text-muted-foreground'
+                                                        "
+                                                        aria-hidden="true"
+                                                    />
+                                                </Button>
+                                            </div>
+                                            <span
+                                                class="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
+                                                >{{ item.name }}</span
+                                            >
                                         </div>
-                                        <p
-                                            class="mt-3 text-center text-xs text-muted-foreground"
-                                        >
-                                            {{
-                                                detailItem.type === 'folder'
-                                                    ? 'Folder'
-                                                    : driveFileKindLabel(
-                                                          detailItem.kind,
-                                                      )
-                                            }}
-                                            · thumbnail placeholder
-                                        </p>
-                                    </div>
-
-                                    <div
-                                        class="rounded-lg border border-border/60 bg-muted/20 p-3"
+                                    </td>
+                                    <td
+                                        v-if="isTrashView"
+                                        class="hidden px-2 py-2 align-middle text-muted-foreground sm:table-cell"
                                     >
-                                        <p
-                                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                        >
-                                            File properties
-                                        </p>
-                                        <dl
-                                            class="mt-3 space-y-3 text-foreground"
-                                        >
-                                            <div
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <component
-                                                        :is="
-                                                            detailItem.type ===
-                                                            'folder'
-                                                                ? Folder
-                                                                : FileText
-                                                        "
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Type</span>
-                                                </dt>
-                                                <dd
-                                                    class="text-right text-sm font-medium"
-                                                >
-                                                    {{
-                                                        detailItem.type ===
-                                                        'folder'
-                                                            ? 'Folder'
-                                                            : driveFileKindLabel(
-                                                                  detailItem.kind,
-                                                              )
-                                                    }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <Clock3
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Modified</span>
-                                                </dt>
-                                                <dd
-                                                    class="text-right text-sm font-medium tabular-nums"
-                                                >
-                                                    {{
-                                                        formatModified(
-                                                            detailItem.modifiedAt,
-                                                        )
-                                                    }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                v-if="
-                                                    detailItem.type === 'file'
-                                                "
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <Calendar
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Upload date</span>
-                                                </dt>
-                                                <dd
-                                                    class="text-right text-sm font-medium tabular-nums"
-                                                >
-                                                    {{
-                                                        uploadDateDisplay(
-                                                            detailItem.uploadedAt ??
-                                                                detailItem.modifiedAt,
-                                                        )
-                                                    }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                v-if="
-                                                    detailItem.type === 'file'
-                                                "
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <HardDrive
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Size</span>
-                                                </dt>
-                                                <dd
-                                                    class="text-right text-sm font-medium tabular-nums"
-                                                >
-                                                    {{ detailItem.sizeLabel }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                v-if="
-                                                    detailItem.type === 'folder'
-                                                "
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <FolderOpen
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Items</span>
-                                                </dt>
-                                                <dd
-                                                    class="text-right text-sm font-medium tabular-nums"
-                                                >
-                                                    {{ folderChildCount }}
-                                                </dd>
-                                            </div>
-                                        </dl>
-                                    </div>
-
-                                    <div
-                                        class="rounded-lg border border-border/60 bg-muted/20 p-3"
+                                        {{
+                                            item.trashSourceScope
+                                                ? scopeLabel(
+                                                      item.trashSourceScope,
+                                                  )
+                                                : '—'
+                                        }}
+                                    </td>
+                                    <td
+                                        v-if="isMyCatalogView"
+                                        class="hidden w-[120px] min-w-28 px-2 py-2 align-middle md:table-cell"
+                                        @click.stop
                                     >
-                                        <div class="flex items-center justify-between gap-2">
-                                            <p
-                                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                            >
-                                                Information
-                                            </p>
-                                            <Button
-                                                v-if="
-                                                    canEditCompanyDocumentInternalMetadata &&
-                                                    detailItem.type === 'file'
-                                                "
-                                                variant="ghost"
-                                                size="sm"
-                                                class="h-7 px-2 text-[11px]"
-                                                @click="openInternalMetadataDialog"
-                                            >
-                                                Internal edit
-                                            </Button>
-                                        </div>
-                                        <dl
-                                            class="mt-3 space-y-3 text-foreground"
+                                        <div
+                                            class="flex justify-center text-center"
                                         >
-                                            <div
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <User
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Owner</span>
-                                                </dt>
-                                                <dd
-                                                    class="max-w-[60%] text-right text-sm font-medium"
-                                                >
-                                                    {{
-                                                        primaryOwnerDisplay(
-                                                            detailItem,
-                                                        )
-                                                    }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 shrink-0 items-center gap-2 text-muted-foreground"
-                                                >
-                                                    <Tags
-                                                        class="size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Tags</span>
-                                                </dt>
-                                                <dd
-                                                    class="flex min-w-0 flex-1 flex-wrap justify-end gap-1.5 sm:max-w-[60%]"
-                                                >
-                                                    <template
-                                                        v-if="
-                                                            detailItem.tags
-                                                                ?.length
-                                                        "
-                                                    >
-                                                        <Badge
-                                                            v-for="tag in detailItem.tags"
-                                                            :key="tag"
-                                                            variant="secondary"
-                                                            class="text-xs font-normal"
-                                                        >
-                                                            {{ tag }}
-                                                        </Badge>
-                                                    </template>
-                                                    <span
-                                                        v-else
-                                                        class="text-sm text-muted-foreground"
-                                                        >—</span
-                                                    >
-                                                </dd>
-                                            </div>
-                                            <div
-                                                v-if="
-                                                    detailItem.type === 'file' &&
-                                                    (detailItem.notesLabel ?? '')
-                                                        .trim().length > 0
-                                                "
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <StickyNote
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Notes</span>
-                                                </dt>
-                                                <dd
-                                                    class="max-w-[min(100%,24rem)] text-right text-sm font-medium whitespace-pre-wrap"
-                                                >
-                                                    {{ detailItem.notesLabel }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <Shield
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Visibility</span>
-                                                </dt>
-                                                <dd
-                                                    class="max-w-[60%] text-right text-sm font-medium"
-                                                >
-                                                    {{
-                                                        visibilityDisplay(
-                                                            detailItem,
-                                                        )
-                                                    }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <component
-                                                        :is="
-                                                            accessInformationIcon(
-                                                                detailItem,
-                                                            )
-                                                        "
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Access</span>
-                                                </dt>
-                                                <dd
-                                                    class="max-w-[60%] text-right text-sm font-medium"
-                                                >
-                                                    {{
-                                                        accessInformationDisplay(
-                                                            detailItem,
-                                                        )
-                                                    }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <UserCheck
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Approver</span>
-                                                </dt>
-                                                <dd
-                                                    class="max-w-[60%] text-right text-sm font-medium"
-                                                >
-                                                    {{
-                                                        approverInformationDisplay(
-                                                            detailItem,
-                                                        )
-                                                    }}
-                                                </dd>
-                                            </div>
-                                            <div
-                                                class="flex items-start justify-between gap-4"
-                                            >
-                                                <dt
-                                                    class="flex min-w-0 items-start gap-2 text-muted-foreground"
-                                                >
-                                                    <ClipboardCheck
-                                                        class="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span>Approval status</span>
-                                                </dt>
-                                                <dd
-                                                    class="max-w-[60%] text-right text-sm font-medium"
-                                                >
-                                                    {{
-                                                        approvalStatusInformationDisplay(
-                                                            detailItem,
-                                                        )
-                                                    }}
-                                                </dd>
-                                            </div>
-                                        </dl>
-                                    </div>
-                                </div>
-                            </ScrollArea>
-                        </div>
-                    </div>
-
-                    <div
-                        v-if="detailItem"
-                        class="shrink-0 border-t border-border/60 px-4 py-3"
-                    >
-                        <div
-                            class="flex w-full flex-nowrap items-stretch gap-2"
-                        >
-                            <div class="flex shrink-0 items-center self-center">
-                                <DropdownMenu
-                                    v-model:open="detailOverflowMenuOpen"
-                                >
-                                    <DropdownMenuTrigger as-child>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon"
-                                            class="size-9 shrink-0 rounded-md"
-                                            aria-label="More actions"
-                                        >
-                                            <MoreVertical
-                                                class="size-4"
-                                                aria-hidden="true"
-                                            />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        align="end"
-                                        class="min-w-44"
-                                        side="top"
-                                        :side-offset="6"
-                                        :align-flip="false"
-                                        :side-flip="false"
-                                    >
-                                        <template v-if="isTrashView">
-                                            <DropdownMenuItem
-                                                v-if="
-                                                    detailItem.type === 'folder'
-                                                "
-                                                @click="detailOverflowOpenFolder"
-                                            >
-                                                <FolderOpen
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Open folder
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="
-                                                    detailItem.type ===
-                                                        'file' &&
-                                                    detailItem.kind === 'pdf'
-                                                "
-                                                @click="detailOverflowPreviewPdf"
-                                            >
-                                                <ExternalLink
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Preview
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                                @click="detailOverflowRestore"
-                                            >
-                                                <Undo2
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Restore
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                variant="destructive"
-                                                @click="detailOverflowDelete"
-                                            >
-                                                <Trash2
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Delete forever
-                                            </DropdownMenuItem>
-                                        </template>
-                                        <template v-else>
-                                            <DropdownMenuItem
-                                                v-if="
-                                                    detailItem.type === 'folder'
-                                                "
-                                                @click="detailOverflowOpenFolder"
-                                            >
-                                                <FolderOpen
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Open folder
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="
-                                                    detailItem.type ===
-                                                        'file' &&
-                                                    detailItem.kind === 'pdf' &&
-                                                    driveFileMayPreviewInUi(
-                                                        detailItem,
+                                            <Badge
+                                                v-if="item.type === 'file'"
+                                                variant="outline"
+                                                class="text-xs font-normal"
+                                                :class="
+                                                    mySubmissionStatusListBadgeClass(
+                                                        item.mockSubmissionStatus,
                                                     )
                                                 "
-                                                @click="detailOverflowPreviewPdf"
                                             >
-                                                <ExternalLink
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Preview
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="canManageDriveMutations"
-                                                @click="detailOverflowRename"
-                                            >
-                                                <Pencil
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Rename
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="canManageDriveMutations"
-                                                @click="detailOverflowMove"
-                                            >
-                                                <FolderInput
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Move
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator
-                                                v-if="canManageDriveMutations"
-                                            />
-                                            <DropdownMenuItem
-                                                v-if="canManageDriveMutations"
-                                                variant="destructive"
-                                                @click="detailOverflowDelete"
-                                            >
-                                                <Trash2
-                                                    class="size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                Move to Trash
-                                            </DropdownMenuItem>
-                                        </template>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                            <template v-if="isTrashView">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
-                                    @click="detailOverflowRestore"
-                                >
-                                    <Undo2 class="size-4" aria-hidden="true" />
-                                    Restore
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
-                                    @click="detailOverflowDelete"
-                                >
-                                    <Trash2 class="size-4" aria-hidden="true" />
-                                    Delete forever
-                                </Button>
-                                <Button
-                                    v-if="detailItem.type === 'file'"
-                                    type="button"
-                                    class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
-                                    @click="downloadItem(detailItem)"
-                                >
-                                    <Download
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    Download
-                                </Button>
-                            </template>
-                            <template v-else>
-                                <Button
-                                    v-if="
-                                        detailItem.type === 'file' &&
-                                        canManageDriveMutations
-                                    "
-                                    type="button"
-                                    variant="outline"
-                                    class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
-                                    @click="shareDetailFile"
-                                >
-                                    <Share2 class="size-4" aria-hidden="true" />
-                                    Share
-                                </Button>
-                                <Button
-                                    v-if="
-                                        detailItem.type === 'file' &&
-                                        driveFileShowsRequestAccessInUi(
-                                            detailItem,
-                                        )
-                                    "
-                                    type="button"
-                                    variant="outline"
-                                    class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
-                                    @click="
-                                        requestAccessForFile(detailItem)
-                                    "
-                                >
-                                    <UserPlus
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    Request access
-                                </Button>
-                                <Button
-                                    v-if="
-                                        detailItem.type === 'file' &&
-                                        driveFileMayDownloadInUi(detailItem)
-                                    "
-                                    type="button"
-                                    class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
-                                    @click="downloadItem(detailItem)"
-                                >
-                                    <Download
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    Download
-                                </Button>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-            </SheetContent>
-        </Sheet>
-
-        <Dialog v-model:open="shareDialogOpen">
-            <DialogContent class="sm:max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>Share files</DialogTitle>
-                    <DialogDescription>
-                        Share only within units in the current branch. Links are not
-                        public in this session preview.
-                    </DialogDescription>
-                </DialogHeader>
-                <div class="grid gap-4 py-2">
-                    <div class="rounded-md border bg-muted/20 px-3 py-2 text-sm">
-                        <p class="font-medium text-foreground">
-                            {{ shareDialogTargetFiles.length }} file{{
-                                shareDialogTargetFiles.length === 1 ? '' : 's'
-                            }}
-                        </p>
-                        <p
-                            v-if="shareSourceUnitLabel"
-                            class="text-muted-foreground"
-                        >
-                            Source unit: {{ shareSourceUnitLabel }}
-                        </p>
-                        <p v-else class="text-muted-foreground">
-                            Source unit is unavailable for one or more selected
-                            files.
-                        </p>
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label>Share mode</Label>
-                        <div class="grid gap-2">
-                            <label
-                                class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
-                            >
-                                <Checkbox
-                                    :model-value="shareTargetMode === 'children'"
-                                    :disabled="shareSourceUnitId === null"
-                                    @update:model-value="
-                                        (next) => {
-                                            if (next === true) {
-                                                shareTargetMode = 'children';
-                                            }
-                                        }
-                                    "
-                                />
-                                <div class="grid gap-0.5">
-                                    <span class="text-sm font-medium"
-                                        >All child units</span
-                                    >
-                                    <span class="text-xs text-muted-foreground">
-                                        Share to all descendants of the source
-                                        unit, with optional exemptions.
-                                    </span>
-                                </div>
-                            </label>
-                            <label
-                                class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
-                            >
-                                <Checkbox
-                                    :model-value="
-                                        shareTargetMode === 'specific_units'
-                                    "
-                                    @update:model-value="
-                                        (next) => {
-                                            if (next === true) {
-                                                shareTargetMode =
-                                                    'specific_units';
-                                            }
-                                        }
-                                    "
-                                />
-                                <div class="grid gap-0.5">
-                                    <span class="text-sm font-medium"
-                                        >Specific units</span
-                                    >
-                                    <span class="text-xs text-muted-foreground">
-                                        Pick any same-branch units (neighbor,
-                                        parent, or other related units).
-                                    </span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div
-                        v-if="shareTargetMode === 'children'"
-                        class="grid gap-2 rounded-md border px-3 py-3"
-                    >
-                        <div class="grid gap-0.5">
-                            <p class="text-sm font-medium">
-                                Exempt child units
-                            </p>
-                            <p class="text-xs text-muted-foreground">
-                                Leave unchecked to include all child units.
-                            </p>
-                        </div>
-                        <div
-                            v-if="shareChildrenUnitOptions.length > 0"
-                            class="grid max-h-44 gap-2 overflow-auto pr-1"
-                        >
-                            <label
-                                v-for="unit in shareChildrenUnitOptions"
-                                :key="`share-children-${unit.id}`"
-                                class="flex cursor-pointer items-center gap-2"
-                            >
-                                <Checkbox
-                                    :model-value="
-                                        shareExemptChildUnitIds.includes(unit.id)
-                                    "
-                                    @update:model-value="
-                                        toggleShareExemptChildUnit(
-                                            unit.id,
-                                            $event,
-                                        )
-                                    "
-                                />
-                                <span class="text-sm">{{ unit.name }}</span>
-                                <span
-                                    v-if="unit.code"
-                                    class="font-mono text-xs text-muted-foreground"
-                                    >{{ unit.code }}</span
-                                >
-                            </label>
-                        </div>
-                        <p v-else class="text-xs text-muted-foreground">
-                            No child units available from the selected source
-                            unit.
-                        </p>
-                    </div>
-
-                    <div
-                        v-else
-                        class="grid gap-2 rounded-md border px-3 py-3"
-                    >
-                        <div class="grid gap-0.5">
-                            <p class="text-sm font-medium">Choose units</p>
-                            <p class="text-xs text-muted-foreground">
-                                Only same-branch units are listed.
-                            </p>
-                        </div>
-                        <div class="grid max-h-44 gap-2 overflow-auto pr-1">
-                            <label
-                                v-for="unit in shareSpecificUnitOptions"
-                                :key="`share-specific-${unit.id}`"
-                                class="flex cursor-pointer items-center gap-2"
-                            >
-                                <Checkbox
-                                    :model-value="
-                                        shareSpecificUnitIds.includes(unit.id)
-                                    "
-                                    @update:model-value="
-                                        toggleShareSpecificUnit(unit.id, $event)
-                                    "
-                                />
-                                <span class="text-sm">{{ unit.name }}</span>
-                                <span
-                                    v-if="unit.code"
-                                    class="font-mono text-xs text-muted-foreground"
-                                    >{{ unit.code }}</span
-                                >
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <DialogFooter class="gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        class="shrink-0"
-                        @click="closeShareDialog"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        class="shrink-0"
-                        @click="confirmShareDialog"
-                    >
-                        Share
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <!-- Upload file + metadata (session mock; visibility & sharing are managed elsewhere). -->
-        <Dialog v-model:open="uploadDialogOpen">
-            <DialogContent class="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Upload file</DialogTitle>
-                    <DialogDescription>
-                        One file per upload. PDF, Word, Excel, or PowerPoint —
-                        maximum 10 MB. Library is the page you are on.
-                    </DialogDescription>
-                </DialogHeader>
-                <div class="grid gap-3 py-2">
-                    <div class="grid gap-1.5">
-                        <Label for="drive-upload-browse">File</Label>
-                        <div class="flex min-w-0 items-center gap-2">
-                            <div
-                                class="min-w-0 flex-1 cursor-pointer rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/55 focus-visible:ring-offset-2 ring-offset-background"
-                                role="button"
-                                tabindex="0"
-                                aria-label="Select file for upload"
-                                @click="fileInputRef?.click()"
-                                @keydown.enter.prevent="fileInputRef?.click()"
-                                @keydown.space.prevent="fileInputRef?.click()"
-                            >
-                                <InputGroup
-                                    class="min-h-9 w-full items-center"
-                                >
-                                    <InputGroupAddon align="inline-start">
-                                        <FileText
-                                            class="text-muted-foreground"
-                                            aria-hidden="true"
-                                        />
-                                    </InputGroupAddon>
-                                    <div
-                                        class="flex min-w-0 flex-1 items-center border-0 bg-transparent py-1.5 pl-1.5 pr-2"
-                                    >
-                                        <p
-                                            class="min-w-0 flex-1 truncate text-left text-sm"
-                                        >
-                                            <template v-if="uploadPendingFile">
-                                                <span class="text-foreground">{{
-                                                    uploadPendingFile.name
-                                                }}</span>
-                                                <span
-                                                    class="text-muted-foreground"
-                                                >
-                                                    ·
-                                                    {{
-                                                        formatBytes(
-                                                            uploadPendingFile.size,
-                                                        )
-                                                    }}
-                                                </span>
-                                            </template>
+                                                {{
+                                                    mySubmissionStatusListBadgeLabel(
+                                                        item.mockSubmissionStatus,
+                                                    )
+                                                }}
+                                            </Badge>
                                             <span
                                                 v-else
                                                 class="text-muted-foreground"
+                                                >—</span
                                             >
-                                                No file selected
-                                            </span>
-                                        </p>
-                                    </div>
-                                </InputGroup>
-                            </div>
-                            <Button
-                                id="drive-upload-browse"
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                class="inline-flex h-9 shrink-0 items-center gap-1.5"
-                                @click="fileInputRef?.click()"
-                            >
-                                <Upload
-                                    class="size-4"
-                                    aria-hidden="true"
-                                />
-                                Upload
-                            </Button>
-                        </div>
-                    </div>
-                    <div class="grid gap-1.5">
-                        <Label for="drive-upload-tags-input">Tags (optional)</Label>
-                        <div
-                            class="flex min-h-9 cursor-text flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-2 py-1 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30"
-                            role="group"
-                            aria-label="Tags"
-                            @click="uploadTagInputRef?.focus()"
-                        >
-                            <Badge
-                                v-for="(tag, idx) in uploadTags"
-                                :key="`${tag}-${idx}`"
-                                variant="secondary"
-                                class="inline-flex max-w-full items-center gap-0.5 py-0.5 pr-0.5 pl-2 font-normal"
-                            >
-                                <span class="max-w-48 truncate">{{ tag }}</span>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    class="size-6 shrink-0 rounded-sm text-muted-foreground hover:text-foreground"
-                                    :aria-label="`Remove tag ${tag}`"
-                                    @click.stop="removeUploadTag(idx)"
-                                >
-                                    <X class="size-3.5" aria-hidden="true" />
-                                </Button>
-                            </Badge>
-                            <input
-                                id="drive-upload-tags-input"
-                                ref="uploadTagInputRef"
-                                v-model="uploadTagDraft"
-                                type="text"
-                                class="min-w-24 flex-1 border-0 bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground"
-                                :placeholder="
-                                    uploadTags.length === 0
-                                        ? 'Type a tag, comma or Enter…'
-                                        : 'Add another…'
-                                "
-                                autocomplete="off"
-                                @keydown="onUploadTagInputKeydown"
-                                @paste="onUploadTagPaste"
-                            />
-                        </div>
-                        <p class="text-xs text-muted-foreground">
-                            Comma or Enter adds tags. Up to {{ UPLOAD_TAGS_MAX }}.
-                        </p>
-                    </div>
-                    <div class="grid gap-1.5">
-                        <Label for="drive-upload-notes">Notes (optional)</Label>
-                        <Textarea
-                            id="drive-upload-notes"
-                            v-model="uploadNotes"
-                            class="min-h-20"
-                            placeholder="Optional context for approvers or your records (session mock)"
-                        />
+                                        </div>
+                                    </td>
+                                    <td
+                                        class="hidden px-2 py-2 text-center align-middle text-muted-foreground md:table-cell"
+                                    >
+                                        {{ item.ownerLabel }}
+                                    </td>
+                                    <td
+                                        class="hidden px-2 py-2 align-middle text-muted-foreground lg:table-cell"
+                                    >
+                                        {{ formatModified(item.modifiedAt) }}
+                                    </td>
+                                    <td
+                                        class="hidden px-2 py-2 align-middle text-muted-foreground sm:table-cell"
+                                    >
+                                        {{
+                                            item.type === 'folder'
+                                                ? '—'
+                                                : item.sizeLabel
+                                        }}
+                                    </td>
+                                    <td
+                                        class="px-2 py-2 align-middle"
+                                        @click.stop
+                                    >
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger as-child>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    class="size-8"
+                                                    :aria-label="`Actions for ${item.name}`"
+                                                >
+                                                    <MoreHorizontal
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent
+                                                align="start"
+                                                class="min-w-44"
+                                                side="right"
+                                            >
+                                                <template v-if="isTrashView">
+                                                    <DropdownMenuItem
+                                                        @click="
+                                                            openDetail(item)
+                                                        "
+                                                    >
+                                                        <Info
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Information
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            item.type ===
+                                                                'file' &&
+                                                            item.kind === 'pdf'
+                                                        "
+                                                        @click="
+                                                            openUploadedPdfInNewTab(
+                                                                item,
+                                                            )
+                                                        "
+                                                    >
+                                                        <ExternalLink
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Preview
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            item.type === 'file'
+                                                        "
+                                                        @click="
+                                                            downloadItem(item)
+                                                        "
+                                                    >
+                                                        <Download
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Download
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        @click="
+                                                            openTrashRestore([
+                                                                item.id,
+                                                            ])
+                                                        "
+                                                    >
+                                                        <Undo2
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Restore
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        variant="destructive"
+                                                        @click="
+                                                            openTrashPurge([
+                                                                item.id,
+                                                            ])
+                                                        "
+                                                    >
+                                                        <Trash2
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Delete forever
+                                                    </DropdownMenuItem>
+                                                </template>
+                                                <template v-else>
+                                                    <DropdownMenuItem
+                                                        @click="
+                                                            openDetail(item)
+                                                        "
+                                                    >
+                                                        <Info
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Information
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            canEditCompanyDocumentInternalMetadata &&
+                                                            item.type === 'file'
+                                                        "
+                                                        @click="
+                                                            openInternalMetadataDialogFromItem(
+                                                                item,
+                                                            )
+                                                        "
+                                                    >
+                                                        <Pencil
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Admin: edit metadata
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            item.type ===
+                                                                'file' &&
+                                                            item.kind ===
+                                                                'pdf' &&
+                                                            driveFileMayPreviewInUi(
+                                                                item,
+                                                            )
+                                                        "
+                                                        @click="
+                                                            openUploadedPdfInNewTab(
+                                                                item,
+                                                            )
+                                                        "
+                                                    >
+                                                        <ExternalLink
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Preview
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            item.type ===
+                                                                'file' &&
+                                                            driveFileMayDownloadInUi(
+                                                                item,
+                                                            )
+                                                        "
+                                                        @click="
+                                                            downloadItem(item)
+                                                        "
+                                                    >
+                                                        <Download
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Download
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            item.type ===
+                                                                'file' &&
+                                                            driveFileShowsRequestAccessInUi(
+                                                                item,
+                                                            )
+                                                        "
+                                                        @click="
+                                                            requestAccessForFile(
+                                                                item,
+                                                            )
+                                                        "
+                                                    >
+                                                        <UserPlus
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Request access
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            canManageDriveMutations
+                                                        "
+                                                        @click="
+                                                            openRename(item)
+                                                        "
+                                                    >
+                                                        <Pencil
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Rename
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            canManageDriveMutations
+                                                        "
+                                                        @click="
+                                                            openMove([item.id])
+                                                        "
+                                                    >
+                                                        <FolderInput
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Move
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator
+                                                        v-if="
+                                                            canManageDriveMutations
+                                                        "
+                                                    />
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            canManageDriveMutations
+                                                        "
+                                                        variant="destructive"
+                                                        @click="
+                                                            openDelete([
+                                                                item.id,
+                                                            ])
+                                                        "
+                                                    >
+                                                        <Trash2
+                                                            class="size-4"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Move to Trash
+                                                    </DropdownMenuItem>
+                                                </template>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <DialogFooter class="gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        class="shrink-0"
-                        @click="resetUploadDialogDraft"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        class="shrink-0"
-                        :disabled="uploadPendingFile === null"
-                        @click="confirmUploadWithMetadata"
-                    >
-                        Upload
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
 
-        <Dialog v-model:open="aiSearchDialogOpen">
-            <DialogContent class="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle class="flex items-center gap-2">
-                        <Sparkles class="size-4 text-violet-600 dark:text-violet-300" />
-                        Smart Search AI
-                    </DialogTitle>
-                    <DialogDescription>
-                        Mock design preview for semantic document search in Company
-                        Documents. This is UI-only for now.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div class="grid gap-4 py-1">
-                    <div class="grid gap-2 sm:grid-cols-2">
-                        <label
-                            class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
-                        >
-                            <Checkbox
-                                :model-value="aiSearchMode === 'keywords'"
-                                @update:model-value="
-                                    (next) => {
-                                        if (next === true) {
-                                            aiSearchMode = 'keywords';
-                                        }
-                                    }
-                                "
-                            />
-                            <div class="grid gap-0.5">
-                                <span class="text-sm font-medium"
-                                    >Keyword search</span
-                                >
-                                <span class="text-xs text-muted-foreground">
-                                    Add terms like policy names, tags, or
-                                    document themes.
-                                </span>
-                            </div>
-                        </label>
-                        <label
-                            class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
-                        >
-                            <Checkbox
-                                :model-value="aiSearchMode === 'prompt'"
-                                @update:model-value="
-                                    (next) => {
-                                        if (next === true) {
-                                            aiSearchMode = 'prompt';
-                                        }
-                                    }
-                                "
-                            />
-                            <div class="grid gap-0.5">
-                                <span class="text-sm font-medium"
-                                    >Prompt search</span
-                                >
-                                <span class="text-xs text-muted-foreground">
-                                    Describe what you need in natural language.
-                                </span>
-                            </div>
-                        </label>
-                    </div>
-
-                    <div
-                        v-if="aiSearchMode === 'keywords'"
-                        class="grid gap-2 rounded-md border p-3"
-                    >
-                        <Label for="company-ai-keywords">Keywords</Label>
-                        <Input
-                            id="company-ai-keywords"
-                            v-model="aiKeywordDraft"
-                            placeholder="Type keyword and press Enter or comma"
-                            @keydown="onAiKeywordInputKeydown"
-                        />
-                        <div class="flex flex-wrap gap-2">
-                            <Badge
-                                v-for="(tag, idx) in aiKeywords"
-                                :key="`${tag}-${idx}`"
-                                variant="secondary"
-                                class="inline-flex items-center gap-1"
-                            >
-                                {{ tag }}
-                                <button
-                                    type="button"
-                                    class="rounded-sm p-0.5 hover:bg-muted"
-                                    :aria-label="`Remove keyword ${tag}`"
-                                    @click="removeAiKeyword(idx)"
-                                >
-                                    <X class="size-3" />
-                                </button>
-                            </Badge>
-                            <span
-                                v-if="aiKeywords.length === 0"
-                                class="text-xs text-muted-foreground"
-                            >
-                                No keywords yet.
-                            </span>
-                        </div>
-                    </div>
-
-                    <div
-                        v-else
-                        class="grid gap-2 rounded-md border p-3"
-                    >
-                        <Label for="company-ai-prompt">Prompt</Label>
-                        <Textarea
-                            id="company-ai-prompt"
-                            v-model="aiPromptDraft"
-                            placeholder="Example: Find approved company policy updates related to leave, attendance, and onboarding."
-                            class="min-h-24"
-                        />
-                    </div>
-
-                    <div class="grid gap-2 rounded-md border p-3">
-                        <div class="flex items-center justify-between gap-2">
-                            <p class="text-sm font-medium">AI results</p>
-                            <Badge variant="outline">
-                                {{ aiSearchResults.length }} match{{
-                                    aiSearchResults.length === 1 ? '' : 'es'
-                                }}
-                            </Badge>
-                        </div>
+            <!-- Detail sheet (layout aligned with calendar sheets: cards + footer actions) -->
+            <Sheet v-model:open="detailSheetOpen">
+                <SheetContent
+                    side="right"
+                    class="flex max-h-dvh w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg"
+                >
+                    <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
                         <div
-                            v-if="aiSearching"
-                            class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+                            class="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden px-4 pb-4 text-sm"
                         >
-                            Searching documents...
+                            <SheetHeader
+                                class="space-y-0 px-0 pt-4 pb-0 text-left"
+                            >
+                                <SheetTitle
+                                    class="pr-8 text-base leading-snug font-semibold text-foreground"
+                                >
+                                    {{ detailItem?.name ?? 'Details' }}
+                                </SheetTitle>
+                                <SheetDescription class="mt-2">
+                                    <template v-if="isTrashView">
+                                        Items stay in Trash for this browser
+                                        session until you restore them or delete
+                                        forever.
+                                    </template>
+                                    <template v-else>
+                                        Session mock — metadata for UI only.
+                                        Sharing is by employee access, not a
+                                        URL. Ownership & approval rules apply
+                                        when wired to the server.
+                                    </template>
+                                </SheetDescription>
+                            </SheetHeader>
+
+                            <div class="mt-4 flex min-h-0 flex-1 flex-col">
+                                <ScrollArea
+                                    v-if="detailItem"
+                                    class="min-h-0 flex-1"
+                                >
+                                    <div class="space-y-3 px-1.5 pr-3 pb-8">
+                                        <div
+                                            class="rounded-lg border border-border/60 bg-muted/20 p-4"
+                                        >
+                                            <p
+                                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                            >
+                                                Overview
+                                            </p>
+                                            <div
+                                                class="mt-3 flex min-h-[120px] items-center justify-center rounded-md bg-muted/30"
+                                            >
+                                                <component
+                                                    :is="
+                                                        iconComponent(
+                                                            detailItem,
+                                                        )
+                                                    "
+                                                    class="size-14 shrink-0 opacity-90 sm:size-16"
+                                                    :class="
+                                                        detailItem.type ===
+                                                        'file'
+                                                            ? fileKindIconClass(
+                                                                  detailItem.kind,
+                                                              )
+                                                            : 'text-sky-600 dark:text-sky-400'
+                                                    "
+                                                    aria-hidden="true"
+                                                />
+                                            </div>
+                                            <p
+                                                class="mt-3 text-center text-xs text-muted-foreground"
+                                            >
+                                                {{
+                                                    detailItem.type === 'folder'
+                                                        ? 'Folder'
+                                                        : driveFileKindLabel(
+                                                              detailItem.kind,
+                                                          )
+                                                }}
+                                                · thumbnail placeholder
+                                            </p>
+                                        </div>
+
+                                        <div
+                                            class="rounded-lg border border-border/60 bg-muted/20 p-3"
+                                        >
+                                            <p
+                                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                            >
+                                                File properties
+                                            </p>
+                                            <dl
+                                                class="mt-3 space-y-3 text-foreground"
+                                            >
+                                                <div
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <component
+                                                            :is="
+                                                                detailItem.type ===
+                                                                'folder'
+                                                                    ? Folder
+                                                                    : FileText
+                                                            "
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Type</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="text-right text-sm font-medium"
+                                                    >
+                                                        {{
+                                                            detailItem.type ===
+                                                            'folder'
+                                                                ? 'Folder'
+                                                                : driveFileKindLabel(
+                                                                      detailItem.kind,
+                                                                  )
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <Clock3
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Modified</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="text-right text-sm font-medium tabular-nums"
+                                                    >
+                                                        {{
+                                                            formatModified(
+                                                                detailItem.modifiedAt,
+                                                            )
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    v-if="
+                                                        detailItem.type ===
+                                                        'file'
+                                                    "
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <Calendar
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Upload date</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="text-right text-sm font-medium tabular-nums"
+                                                    >
+                                                        {{
+                                                            uploadDateDisplay(
+                                                                detailItem.uploadedAt ??
+                                                                    detailItem.modifiedAt,
+                                                            )
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    v-if="
+                                                        detailItem.type ===
+                                                        'file'
+                                                    "
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <HardDrive
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Size</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="text-right text-sm font-medium tabular-nums"
+                                                    >
+                                                        {{
+                                                            detailItem.sizeLabel
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    v-if="
+                                                        detailItem.type ===
+                                                        'folder'
+                                                    "
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <FolderOpen
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Items</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="text-right text-sm font-medium tabular-nums"
+                                                    >
+                                                        {{ folderChildCount }}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                        </div>
+
+                                        <div
+                                            class="rounded-lg border border-border/60 bg-muted/20 p-3"
+                                        >
+                                            <div
+                                                class="flex items-center justify-between gap-2"
+                                            >
+                                                <p
+                                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                                >
+                                                    Information
+                                                </p>
+                                                <Button
+                                                    v-if="
+                                                        canEditCompanyDocumentInternalMetadata &&
+                                                        detailItem.type ===
+                                                            'file'
+                                                    "
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    class="h-7 px-2 text-[11px]"
+                                                    @click="
+                                                        openInternalMetadataDialog
+                                                    "
+                                                >
+                                                    Internal edit
+                                                </Button>
+                                            </div>
+                                            <dl
+                                                class="mt-3 space-y-3 text-foreground"
+                                            >
+                                                <div
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <User
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Owner</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="max-w-[60%] text-right text-sm font-medium"
+                                                    >
+                                                        {{
+                                                            primaryOwnerDisplay(
+                                                                detailItem,
+                                                            )
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 shrink-0 items-center gap-2 text-muted-foreground"
+                                                    >
+                                                        <Tags
+                                                            class="size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Tags</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="flex min-w-0 flex-1 flex-wrap justify-end gap-1.5 sm:max-w-[60%]"
+                                                    >
+                                                        <template
+                                                            v-if="
+                                                                detailItem.tags
+                                                                    ?.length
+                                                            "
+                                                        >
+                                                            <Badge
+                                                                v-for="tag in detailItem.tags"
+                                                                :key="tag"
+                                                                variant="secondary"
+                                                                class="text-xs font-normal"
+                                                            >
+                                                                {{ tag }}
+                                                            </Badge>
+                                                        </template>
+                                                        <span
+                                                            v-else
+                                                            class="text-sm text-muted-foreground"
+                                                            >—</span
+                                                        >
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    v-if="
+                                                        detailItem.type ===
+                                                            'file' &&
+                                                        (
+                                                            detailItem.notesLabel ??
+                                                            ''
+                                                        ).trim().length > 0
+                                                    "
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <StickyNote
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Notes</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="max-w-[min(100%,24rem)] text-right text-sm font-medium whitespace-pre-wrap"
+                                                    >
+                                                        {{
+                                                            detailItem.notesLabel
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <Shield
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Visibility</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="max-w-[60%] text-right text-sm font-medium"
+                                                    >
+                                                        {{
+                                                            visibilityDisplay(
+                                                                detailItem,
+                                                            )
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <component
+                                                            :is="
+                                                                accessInformationIcon(
+                                                                    detailItem,
+                                                                )
+                                                            "
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Access</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="max-w-[60%] text-right text-sm font-medium"
+                                                    >
+                                                        {{
+                                                            accessInformationDisplay(
+                                                                detailItem,
+                                                            )
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <UserCheck
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>Approver</span>
+                                                    </dt>
+                                                    <dd
+                                                        class="max-w-[60%] text-right text-sm font-medium"
+                                                    >
+                                                        {{
+                                                            approverInformationDisplay(
+                                                                detailItem,
+                                                            )
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                                <div
+                                                    class="flex items-start justify-between gap-4"
+                                                >
+                                                    <dt
+                                                        class="flex min-w-0 items-start gap-2 text-muted-foreground"
+                                                    >
+                                                        <ClipboardCheck
+                                                            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span
+                                                            >Approval
+                                                            status</span
+                                                        >
+                                                    </dt>
+                                                    <dd
+                                                        class="max-w-[60%] text-right text-sm font-medium"
+                                                    >
+                                                        {{
+                                                            approvalStatusInformationDisplay(
+                                                                detailItem,
+                                                            )
+                                                        }}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </ScrollArea>
+                            </div>
                         </div>
+
                         <div
-                            v-else-if="
-                                aiSearchExecuted && aiSearchResults.length === 0
-                            "
-                            class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+                            v-if="detailItem"
+                            class="shrink-0 border-t border-border/60 px-4 py-3"
                         >
-                            No documents matched your search terms.
-                        </div>
-                        <div v-else class="grid gap-2">
                             <div
-                                v-for="result in aiSearchResults"
-                                :key="result.id"
-                                class="rounded-md border bg-muted/20 p-3"
+                                class="flex w-full flex-nowrap items-stretch gap-2"
                             >
                                 <div
-                                    class="flex items-start justify-between gap-3"
+                                    class="flex shrink-0 items-center self-center"
                                 >
+                                    <DropdownMenu
+                                        v-model:open="detailOverflowMenuOpen"
+                                    >
+                                        <DropdownMenuTrigger as-child>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                class="size-9 shrink-0 rounded-md"
+                                                aria-label="More actions"
+                                            >
+                                                <MoreVertical
+                                                    class="size-4"
+                                                    aria-hidden="true"
+                                                />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                            align="end"
+                                            class="min-w-44"
+                                            side="top"
+                                            :side-offset="6"
+                                            :align-flip="false"
+                                            :side-flip="false"
+                                        >
+                                            <template v-if="isTrashView">
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        detailItem.type ===
+                                                        'folder'
+                                                    "
+                                                    @click="
+                                                        detailOverflowOpenFolder
+                                                    "
+                                                >
+                                                    <FolderOpen
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Open folder
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        detailItem.type ===
+                                                            'file' &&
+                                                        detailItem.kind ===
+                                                            'pdf'
+                                                    "
+                                                    @click="
+                                                        detailOverflowPreviewPdf
+                                                    "
+                                                >
+                                                    <ExternalLink
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Preview
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    @click="
+                                                        detailOverflowRestore
+                                                    "
+                                                >
+                                                    <Undo2
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Restore
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    variant="destructive"
+                                                    @click="
+                                                        detailOverflowDelete
+                                                    "
+                                                >
+                                                    <Trash2
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Delete forever
+                                                </DropdownMenuItem>
+                                            </template>
+                                            <template v-else>
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        detailItem.type ===
+                                                        'folder'
+                                                    "
+                                                    @click="
+                                                        detailOverflowOpenFolder
+                                                    "
+                                                >
+                                                    <FolderOpen
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Open folder
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        detailItem.type ===
+                                                            'file' &&
+                                                        detailItem.kind ===
+                                                            'pdf' &&
+                                                        driveFileMayPreviewInUi(
+                                                            detailItem,
+                                                        )
+                                                    "
+                                                    @click="
+                                                        detailOverflowPreviewPdf
+                                                    "
+                                                >
+                                                    <ExternalLink
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Preview
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        canManageDriveMutations
+                                                    "
+                                                    @click="
+                                                        detailOverflowRename
+                                                    "
+                                                >
+                                                    <Pencil
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Rename
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        canManageDriveMutations
+                                                    "
+                                                    @click="detailOverflowMove"
+                                                >
+                                                    <FolderInput
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Move
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator
+                                                    v-if="
+                                                        canManageDriveMutations
+                                                    "
+                                                />
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        canManageDriveMutations
+                                                    "
+                                                    variant="destructive"
+                                                    @click="
+                                                        detailOverflowDelete
+                                                    "
+                                                >
+                                                    <Trash2
+                                                        class="size-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Move to Trash
+                                                </DropdownMenuItem>
+                                            </template>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                                <template v-if="isTrashView">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
+                                        @click="detailOverflowRestore"
+                                    >
+                                        <Undo2
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Restore
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
+                                        @click="detailOverflowDelete"
+                                    >
+                                        <Trash2
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Delete forever
+                                    </Button>
+                                    <Button
+                                        v-if="detailItem.type === 'file'"
+                                        type="button"
+                                        class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
+                                        @click="downloadItem(detailItem)"
+                                    >
+                                        <Download
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Download
+                                    </Button>
+                                </template>
+                                <template v-else>
+                                    <Button
+                                        v-if="
+                                            detailItem.type === 'file' &&
+                                            canManageDriveMutations
+                                        "
+                                        type="button"
+                                        variant="outline"
+                                        class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
+                                        @click="shareDetailFile"
+                                    >
+                                        <Share2
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Share
+                                    </Button>
+                                    <Button
+                                        v-if="
+                                            detailItem.type === 'file' &&
+                                            driveFileShowsRequestAccessInUi(
+                                                detailItem,
+                                            )
+                                        "
+                                        type="button"
+                                        variant="outline"
+                                        class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
+                                        @click="
+                                            requestAccessForFile(detailItem)
+                                        "
+                                    >
+                                        <UserPlus
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Request access
+                                    </Button>
+                                    <Button
+                                        v-if="
+                                            detailItem.type === 'file' &&
+                                            driveFileMayDownloadInUi(detailItem)
+                                        "
+                                        type="button"
+                                        class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
+                                        @click="downloadItem(detailItem)"
+                                    >
+                                        <Download
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Download
+                                    </Button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            <Dialog v-model:open="shareDialogOpen">
+                <DialogContent class="sm:max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Share files</DialogTitle>
+                        <DialogDescription>
+                            Share only within units in the current branch. Links
+                            are not public in this session preview.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div class="grid gap-4 py-2">
+                        <div
+                            class="rounded-md border bg-muted/20 px-3 py-2 text-sm"
+                        >
+                            <p class="font-medium text-foreground">
+                                {{ shareDialogTargetFiles.length }} file{{
+                                    shareDialogTargetFiles.length === 1
+                                        ? ''
+                                        : 's'
+                                }}
+                            </p>
+                            <p
+                                v-if="shareSourceUnitLabel"
+                                class="text-muted-foreground"
+                            >
+                                Source unit: {{ shareSourceUnitLabel }}
+                            </p>
+                            <p v-else class="text-muted-foreground">
+                                Source unit is unavailable for one or more
+                                selected files.
+                            </p>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label>Share mode</Label>
+                            <div class="grid gap-2">
+                                <label
+                                    class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
+                                >
+                                    <Checkbox
+                                        :model-value="
+                                            shareTargetMode === 'children'
+                                        "
+                                        :disabled="shareSourceUnitId === null"
+                                        @update:model-value="
+                                            (next) => {
+                                                if (next === true) {
+                                                    shareTargetMode =
+                                                        'children';
+                                                }
+                                            }
+                                        "
+                                    />
+                                    <div class="grid gap-0.5">
+                                        <span class="text-sm font-medium"
+                                            >All child units</span
+                                        >
+                                        <span
+                                            class="text-xs text-muted-foreground"
+                                        >
+                                            Share to all descendants of the
+                                            source unit, with optional
+                                            exemptions.
+                                        </span>
+                                    </div>
+                                </label>
+                                <label
+                                    class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
+                                >
+                                    <Checkbox
+                                        :model-value="
+                                            shareTargetMode === 'specific_units'
+                                        "
+                                        @update:model-value="
+                                            (next) => {
+                                                if (next === true) {
+                                                    shareTargetMode =
+                                                        'specific_units';
+                                                }
+                                            }
+                                        "
+                                    />
+                                    <div class="grid gap-0.5">
+                                        <span class="text-sm font-medium"
+                                            >Specific units</span
+                                        >
+                                        <span
+                                            class="text-xs text-muted-foreground"
+                                        >
+                                            Pick any same-branch units
+                                            (neighbor, parent, or other related
+                                            units).
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="shareTargetMode === 'children'"
+                            class="grid gap-2 rounded-md border px-3 py-3"
+                        >
+                            <div class="grid gap-0.5">
+                                <p class="text-sm font-medium">
+                                    Exempt child units
+                                </p>
+                                <p class="text-xs text-muted-foreground">
+                                    Leave unchecked to include all child units.
+                                </p>
+                            </div>
+                            <div
+                                v-if="shareChildrenUnitOptions.length > 0"
+                                class="grid max-h-44 gap-2 overflow-auto pr-1"
+                            >
+                                <label
+                                    v-for="unit in shareChildrenUnitOptions"
+                                    :key="`share-children-${unit.id}`"
+                                    class="flex cursor-pointer items-center gap-2"
+                                >
+                                    <Checkbox
+                                        :model-value="
+                                            shareExemptChildUnitIds.includes(
+                                                unit.id,
+                                            )
+                                        "
+                                        @update:model-value="
+                                            toggleShareExemptChildUnit(
+                                                unit.id,
+                                                $event,
+                                            )
+                                        "
+                                    />
+                                    <span class="text-sm">{{ unit.name }}</span>
+                                    <span
+                                        v-if="unit.code"
+                                        class="font-mono text-xs text-muted-foreground"
+                                        >{{ unit.code }}</span
+                                    >
+                                </label>
+                            </div>
+                            <p v-else class="text-xs text-muted-foreground">
+                                No child units available from the selected
+                                source unit.
+                            </p>
+                        </div>
+
+                        <div
+                            v-else
+                            class="grid gap-2 rounded-md border px-3 py-3"
+                        >
+                            <div class="grid gap-0.5">
+                                <p class="text-sm font-medium">Choose units</p>
+                                <p class="text-xs text-muted-foreground">
+                                    Only same-branch units are listed.
+                                </p>
+                            </div>
+                            <div class="grid max-h-44 gap-2 overflow-auto pr-1">
+                                <label
+                                    v-for="unit in shareSpecificUnitOptions"
+                                    :key="`share-specific-${unit.id}`"
+                                    class="flex cursor-pointer items-center gap-2"
+                                >
+                                    <Checkbox
+                                        :model-value="
+                                            shareSpecificUnitIds.includes(
+                                                unit.id,
+                                            )
+                                        "
+                                        @update:model-value="
+                                            toggleShareSpecificUnit(
+                                                unit.id,
+                                                $event,
+                                            )
+                                        "
+                                    />
+                                    <span class="text-sm">{{ unit.name }}</span>
+                                    <span
+                                        v-if="unit.code"
+                                        class="font-mono text-xs text-muted-foreground"
+                                        >{{ unit.code }}</span
+                                    >
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter class="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="shrink-0"
+                            @click="closeShareDialog"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            class="shrink-0"
+                            @click="confirmShareDialog"
+                        >
+                            Share
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <!-- Upload file + metadata (session mock; visibility & sharing are managed elsewhere). -->
+            <Dialog v-model:open="uploadDialogOpen">
+                <DialogContent class="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Upload file</DialogTitle>
+                        <DialogDescription>
+                            One file per upload. PDF, Word, Excel, or PowerPoint
+                            — maximum 10 MB. Library is the page you are on.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div class="grid gap-3 py-2">
+                        <div class="grid gap-1.5">
+                            <Label for="drive-upload-browse">File</Label>
+                            <div class="flex min-w-0 items-center gap-2">
+                                <div
+                                    class="min-w-0 flex-1 cursor-pointer rounded-md ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring/55 focus-visible:ring-offset-2"
+                                    role="button"
+                                    tabindex="0"
+                                    aria-label="Select file for upload"
+                                    @click="fileInputRef?.click()"
+                                    @keydown.enter.prevent="
+                                        fileInputRef?.click()
+                                    "
+                                    @keydown.space.prevent="
+                                        fileInputRef?.click()
+                                    "
+                                >
+                                    <InputGroup
+                                        class="min-h-9 w-full items-center"
+                                    >
+                                        <InputGroupAddon align="inline-start">
+                                            <FileText
+                                                class="text-muted-foreground"
+                                                aria-hidden="true"
+                                            />
+                                        </InputGroupAddon>
+                                        <div
+                                            class="flex min-w-0 flex-1 items-center border-0 bg-transparent py-1.5 pr-2 pl-1.5"
+                                        >
+                                            <p
+                                                class="min-w-0 flex-1 truncate text-left text-sm"
+                                            >
+                                                <template
+                                                    v-if="uploadPendingFile"
+                                                >
+                                                    <span
+                                                        class="text-foreground"
+                                                        >{{
+                                                            uploadPendingFile.name
+                                                        }}</span
+                                                    >
+                                                    <span
+                                                        class="text-muted-foreground"
+                                                    >
+                                                        ·
+                                                        {{
+                                                            formatBytes(
+                                                                uploadPendingFile.size,
+                                                            )
+                                                        }}
+                                                    </span>
+                                                </template>
+                                                <span
+                                                    v-else
+                                                    class="text-muted-foreground"
+                                                >
+                                                    No file selected
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </InputGroup>
+                                </div>
+                                <Button
+                                    id="drive-upload-browse"
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="inline-flex h-9 shrink-0 items-center gap-1.5"
+                                    @click="fileInputRef?.click()"
+                                >
+                                    <Upload class="size-4" aria-hidden="true" />
+                                    Upload
+                                </Button>
+                            </div>
+                        </div>
+                        <div class="grid gap-1.5">
+                            <Label for="drive-upload-tags-input"
+                                >Tags (optional)</Label
+                            >
+                            <div
+                                class="flex min-h-9 cursor-text flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-2 py-1 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30"
+                                role="group"
+                                aria-label="Tags"
+                                @click="uploadTagInputRef?.focus()"
+                            >
+                                <Badge
+                                    v-for="(tag, idx) in uploadTags"
+                                    :key="`${tag}-${idx}`"
+                                    variant="secondary"
+                                    class="inline-flex max-w-full items-center gap-0.5 py-0.5 pr-0.5 pl-2 font-normal"
+                                >
+                                    <span class="max-w-48 truncate">{{
+                                        tag
+                                    }}</span>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        class="size-6 shrink-0 rounded-sm text-muted-foreground hover:text-foreground"
+                                        :aria-label="`Remove tag ${tag}`"
+                                        @click.stop="removeUploadTag(idx)"
+                                    >
+                                        <X
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                    </Button>
+                                </Badge>
+                                <input
+                                    id="drive-upload-tags-input"
+                                    ref="uploadTagInputRef"
+                                    v-model="uploadTagDraft"
+                                    type="text"
+                                    class="min-w-24 flex-1 border-0 bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground"
+                                    :placeholder="
+                                        uploadTags.length === 0
+                                            ? 'Type a tag, comma or Enter…'
+                                            : 'Add another…'
+                                    "
+                                    autocomplete="off"
+                                    @keydown="onUploadTagInputKeydown"
+                                    @paste="onUploadTagPaste"
+                                />
+                            </div>
+                            <p class="text-xs text-muted-foreground">
+                                Comma or Enter adds tags. Up to
+                                {{ UPLOAD_TAGS_MAX }}.
+                            </p>
+                        </div>
+                        <div class="grid gap-1.5">
+                            <Label for="drive-upload-notes"
+                                >Notes (optional)</Label
+                            >
+                            <Textarea
+                                id="drive-upload-notes"
+                                v-model="uploadNotes"
+                                class="min-h-20"
+                                placeholder="Optional context for approvers or your records (session mock)"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter class="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="shrink-0"
+                            @click="resetUploadDialogDraft"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            class="shrink-0"
+                            :disabled="uploadPendingFile === null"
+                            @click="confirmUploadWithMetadata"
+                        >
+                            Upload
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog v-model:open="aiSearchDialogOpen">
+                <DialogContent class="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle class="flex items-center gap-2">
+                            <Sparkles
+                                class="size-4 text-violet-600 dark:text-violet-300"
+                            />
+                            Smart Search AI
+                        </DialogTitle>
+                        <DialogDescription>
+                            Mock design preview for semantic document search in
+                            Company Documents. This is UI-only for now.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div class="grid gap-4 py-1">
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            <label
+                                class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
+                            >
+                                <Checkbox
+                                    :model-value="aiSearchMode === 'keywords'"
+                                    @update:model-value="
+                                        (next) => {
+                                            if (next === true) {
+                                                aiSearchMode = 'keywords';
+                                            }
+                                        }
+                                    "
+                                />
+                                <div class="grid gap-0.5">
+                                    <span class="text-sm font-medium"
+                                        >Keyword search</span
+                                    >
+                                    <span class="text-xs text-muted-foreground">
+                                        Add terms like policy names, tags, or
+                                        document themes.
+                                    </span>
+                                </div>
+                            </label>
+                            <label
+                                class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
+                            >
+                                <Checkbox
+                                    :model-value="aiSearchMode === 'prompt'"
+                                    @update:model-value="
+                                        (next) => {
+                                            if (next === true) {
+                                                aiSearchMode = 'prompt';
+                                            }
+                                        }
+                                    "
+                                />
+                                <div class="grid gap-0.5">
+                                    <span class="text-sm font-medium"
+                                        >Prompt search</span
+                                    >
+                                    <span class="text-xs text-muted-foreground">
+                                        Describe what you need in natural
+                                        language.
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div
+                            v-if="aiSearchMode === 'keywords'"
+                            class="grid gap-2 rounded-md border p-3"
+                        >
+                            <Label for="company-ai-keywords">Keywords</Label>
+                            <Input
+                                id="company-ai-keywords"
+                                v-model="aiKeywordDraft"
+                                placeholder="Type keyword and press Enter or comma"
+                                @keydown="onAiKeywordInputKeydown"
+                            />
+                            <div class="flex flex-wrap gap-2">
+                                <Badge
+                                    v-for="(tag, idx) in aiKeywords"
+                                    :key="`${tag}-${idx}`"
+                                    variant="secondary"
+                                    class="inline-flex items-center gap-1"
+                                >
+                                    {{ tag }}
                                     <button
                                         type="button"
-                                        class="text-left text-sm font-medium text-foreground hover:underline"
-                                        @click="openAiResult(result)"
+                                        class="rounded-sm p-0.5 hover:bg-muted"
+                                        :aria-label="`Remove keyword ${tag}`"
+                                        @click="removeAiKeyword(idx)"
                                     >
-                                        {{ result.title }}
+                                        <X class="size-3" />
                                     </button>
-                                    <Badge
-                                        variant="secondary"
-                                        class="whitespace-nowrap text-[11px]"
+                                </Badge>
+                                <span
+                                    v-if="aiKeywords.length === 0"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    No keywords yet.
+                                </span>
+                            </div>
+                        </div>
+
+                        <div v-else class="grid gap-2 rounded-md border p-3">
+                            <Label for="company-ai-prompt">Prompt</Label>
+                            <Textarea
+                                id="company-ai-prompt"
+                                v-model="aiPromptDraft"
+                                placeholder="Example: Find approved company policy updates related to leave, attendance, and onboarding."
+                                class="min-h-24"
+                            />
+                        </div>
+
+                        <div class="grid gap-2 rounded-md border p-3">
+                            <div
+                                class="flex items-center justify-between gap-2"
+                            >
+                                <p class="text-sm font-medium">AI results</p>
+                                <Badge variant="outline">
+                                    {{ aiSearchResults.length }} match{{
+                                        aiSearchResults.length === 1 ? '' : 'es'
+                                    }}
+                                </Badge>
+                            </div>
+                            <div
+                                v-if="aiSearching"
+                                class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+                            >
+                                Searching documents...
+                            </div>
+                            <div
+                                v-else-if="
+                                    aiSearchExecuted &&
+                                    aiSearchResults.length === 0
+                                "
+                                class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+                            >
+                                No documents matched your search terms.
+                            </div>
+                            <div v-else class="grid gap-2">
+                                <div
+                                    v-for="result in aiSearchResults"
+                                    :key="result.id"
+                                    class="rounded-md border bg-muted/20 p-3"
+                                >
+                                    <div
+                                        class="flex items-start justify-between gap-3"
                                     >
-                                        {{ result.confidence }}
-                                    </Badge>
-                                </div>
-                                <p class="mt-1 text-xs text-muted-foreground">
-                                    {{ result.snippet }}
-                                </p>
-                                <div class="mt-2 flex flex-wrap gap-1.5">
-                                    <Badge
-                                        v-for="tag in result.tags"
-                                        :key="`${result.id}-${tag}`"
-                                        variant="outline"
-                                        class="text-[10px]"
+                                        <button
+                                            type="button"
+                                            class="text-left text-sm font-medium text-foreground hover:underline"
+                                            @click="openAiResult(result)"
+                                        >
+                                            {{ result.title }}
+                                        </button>
+                                        <Badge
+                                            variant="secondary"
+                                            class="text-[11px] whitespace-nowrap"
+                                        >
+                                            {{ result.confidence }}
+                                        </Badge>
+                                    </div>
+                                    <p
+                                        class="mt-1 text-xs text-muted-foreground"
                                     >
-                                        {{ tag }}
-                                    </Badge>
+                                        {{ result.snippet }}
+                                    </p>
+                                    <div class="mt-2 flex flex-wrap gap-1.5">
+                                        <Badge
+                                            v-for="tag in result.tags"
+                                            :key="`${result.id}-${tag}`"
+                                            variant="outline"
+                                            class="text-[10px]"
+                                        >
+                                            {{ tag }}
+                                        </Badge>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <DialogFooter class="gap-2 sm:justify-end">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        @click="aiSearchDialogOpen = false"
-                    >
-                        Close
-                    </Button>
-                    <Button type="button" @click="runAiSearch">
-                        <Sparkles class="size-4" />
-                        Search
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <DialogFooter class="gap-2 sm:justify-end">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="aiSearchDialogOpen = false"
+                        >
+                            Close
+                        </Button>
+                        <Button type="button" @click="runAiSearch">
+                            <Sparkles class="size-4" />
+                            Search
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-        <Dialog v-model:open="internalMetadataDialogOpen">
-            <DialogContent class="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Internal metadata edit</DialogTitle>
-                    <DialogDescription>
-                        Super admin tool for internal timestamp and metadata corrections.
-                    </DialogDescription>
-                </DialogHeader>
-                <div class="grid gap-4 py-2 sm:grid-cols-2">
-                    <div class="space-y-2">
-                        <Label for="internal-created-at">Created at</Label>
-                        <Input id="internal-created-at" v-model="internalMetadataDraft.createdAt" type="datetime-local" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="internal-updated-at">Updated at</Label>
-                        <Input id="internal-updated-at" v-model="internalMetadataDraft.updatedAt" type="datetime-local" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="internal-submitted-at">Uploaded/submitted at</Label>
-                        <Input id="internal-submitted-at" v-model="internalMetadataDraft.submittedAt" type="datetime-local" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="internal-decided-at">Decided at</Label>
-                        <Input id="internal-decided-at" v-model="internalMetadataDraft.decidedAt" type="datetime-local" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="internal-status">Status</Label>
-                        <NativeSelect id="internal-status" v-model="internalMetadataDraft.status">
-                            <option value="approved">Approved</option>
-                            <option value="pending">Pending</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="cancelled">Cancelled</option>
-                        </NativeSelect>
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="internal-access-mode">Access mode</Label>
-                        <NativeSelect id="internal-access-mode" v-model="internalMetadataDraft.accessMode">
-                            <option value="private">Private</option>
-                            <option value="public">Public</option>
-                        </NativeSelect>
-                    </div>
-                    <div class="space-y-2 sm:col-span-2">
-                        <Label for="internal-tags">Tags (comma-separated)</Label>
-                        <Input id="internal-tags" v-model="internalMetadataDraft.tags" type="text" />
-                    </div>
-                    <div class="space-y-2 sm:col-span-2">
-                        <Label for="internal-notes">Notes</Label>
-                        <Textarea id="internal-notes" v-model="internalMetadataDraft.notes" rows="3" />
-                    </div>
-                    <div class="space-y-2 sm:col-span-2">
-                        <Label for="internal-decision-note">Decision note</Label>
-                        <Textarea id="internal-decision-note" v-model="internalMetadataDraft.decisionNote" rows="3" />
-                    </div>
-                </div>
-                <DialogFooter class="gap-2">
-                    <Button variant="outline" :disabled="internalMetadataSaving" @click="internalMetadataDialogOpen = false">
-                        Cancel
-                    </Button>
-                    <Button :disabled="internalMetadataSaving" @click="saveInternalMetadata">
-                        {{ internalMetadataSaving ? 'Saving...' : 'Save internal metadata' }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <!-- Rename -->
-        <Dialog v-model:open="renameOpen">
-            <DialogContent class="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Rename</DialogTitle>
-                    <DialogDescription>
-                        Changes apply only in this browser session.
-                    </DialogDescription>
-                </DialogHeader>
-                <div class="grid gap-2 py-2">
-                    <Label for="drive-rename-input">Name</Label>
-                    <Input
-                        id="drive-rename-input"
-                        v-model="renameValue"
-                        autocomplete="off"
-                        @keydown.enter.prevent="confirmRename"
-                    />
-                </div>
-                <DialogFooter class="gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        class="shrink-0"
-                        @click="renameOpen = false"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        class="shrink-0"
-                        @click="confirmRename"
-                    >
-                        Save
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <!-- Move -->
-        <Dialog v-model:open="moveOpen">
-            <DialogContent class="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Move to</DialogTitle>
-                    <DialogDescription>
-                        Choose a destination folder. Root is “Home”.
-                    </DialogDescription>
-                </DialogHeader>
-                <div class="grid gap-2 py-2">
-                    <Label for="drive-move-dest">Destination</Label>
-                    <Select
-                        :model-value="
-                            moveDestinationId === null
-                                ? '__root__'
-                                : moveDestinationId
-                        "
-                        @update:model-value="
-                            (v) => {
-                                moveDestinationId =
-                                    v === '__root__' ? null : String(v);
-                            }
-                        "
-                    >
-                        <SelectTrigger id="drive-move-dest">
-                            <SelectValue placeholder="Select folder" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="__root__"
-                                >Home (root)</SelectItem
+            <Dialog v-model:open="internalMetadataDialogOpen">
+                <DialogContent class="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Internal metadata edit</DialogTitle>
+                        <DialogDescription>
+                            Super admin tool for internal timestamp and metadata
+                            corrections.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div class="grid gap-4 py-2 sm:grid-cols-2">
+                        <div class="space-y-2">
+                            <Label for="internal-created-at">Created at</Label>
+                            <Input
+                                id="internal-created-at"
+                                v-model="internalMetadataDraft.createdAt"
+                                type="datetime-local"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="internal-updated-at">Updated at</Label>
+                            <Input
+                                id="internal-updated-at"
+                                v-model="internalMetadataDraft.updatedAt"
+                                type="datetime-local"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="internal-submitted-at"
+                                >Uploaded/submitted at</Label
                             >
-                            <SelectItem
-                                v-for="f in moveDestinationOptions"
-                                :key="f.id"
-                                :value="f.id"
+                            <Input
+                                id="internal-submitted-at"
+                                v-model="internalMetadataDraft.submittedAt"
+                                type="datetime-local"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="internal-decided-at">Decided at</Label>
+                            <Input
+                                id="internal-decided-at"
+                                v-model="internalMetadataDraft.decidedAt"
+                                type="datetime-local"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="internal-status">Status</Label>
+                            <NativeSelect
+                                id="internal-status"
+                                v-model="internalMetadataDraft.status"
                             >
-                                {{ f.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <DialogFooter class="gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        class="shrink-0"
-                        @click="moveOpen = false"
-                    >
-                        Cancel
-                    </Button>
-                    <Button type="button" class="shrink-0" @click="confirmMove">
-                        Move here
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <!-- New folder -->
-        <Dialog v-model:open="newFolderOpen">
-            <DialogContent class="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>New folder</DialogTitle>
-                    <DialogDescription>
-                        Created under the current folder (session only).
-                    </DialogDescription>
-                </DialogHeader>
-                <div class="grid gap-2 py-2">
-                    <Label for="drive-new-folder">Folder name</Label>
-                    <Input
-                        id="drive-new-folder"
-                        v-model="newFolderName"
-                        autocomplete="off"
-                        placeholder="Untitled folder"
-                        @keydown.enter.prevent="confirmNewFolder"
-                    />
-                </div>
-                <DialogFooter class="gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        class="shrink-0"
-                        @click="newFolderOpen = false"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        class="shrink-0"
-                        @click="confirmNewFolder"
-                    >
-                        Create
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <!-- Move to Trash -->
-        <AlertDialog v-model:open="deleteOpen">
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Move to Trash?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        {{ deleteTargetIds.length }} item<span
-                            v-if="deleteTargetIds.length !== 1"
-                            >s</span
+                                <option value="approved">Approved</option>
+                                <option value="pending">Pending</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="cancelled">Cancelled</option>
+                            </NativeSelect>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="internal-access-mode"
+                                >Access mode</Label
+                            >
+                            <NativeSelect
+                                id="internal-access-mode"
+                                v-model="internalMetadataDraft.accessMode"
+                            >
+                                <option value="private">Private</option>
+                                <option value="public">Public</option>
+                            </NativeSelect>
+                        </div>
+                        <div class="space-y-2 sm:col-span-2">
+                            <Label for="internal-tags"
+                                >Tags (comma-separated)</Label
+                            >
+                            <Input
+                                id="internal-tags"
+                                v-model="internalMetadataDraft.tags"
+                                type="text"
+                            />
+                        </div>
+                        <div class="space-y-2 sm:col-span-2">
+                            <Label for="internal-notes">Notes</Label>
+                            <Textarea
+                                id="internal-notes"
+                                v-model="internalMetadataDraft.notes"
+                                rows="3"
+                            />
+                        </div>
+                        <div class="space-y-2 sm:col-span-2">
+                            <Label for="internal-decision-note"
+                                >Decision note</Label
+                            >
+                            <Textarea
+                                id="internal-decision-note"
+                                v-model="internalMetadataDraft.decisionNote"
+                                rows="3"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter class="gap-2">
+                        <Button
+                            variant="outline"
+                            :disabled="internalMetadataSaving"
+                            @click="internalMetadataDialogOpen = false"
                         >
-                        will move to Trash. You can restore from Documents →
-                        Trash while this browser session lasts. Nothing is
-                        deleted on the server.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="shrink-0"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction class="shrink-0" @click="confirmDelete">
-                        Move to Trash
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <!-- Restore from Trash -->
-        <AlertDialog v-model:open="restoreOpen">
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Restore items?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This restores
-                        {{ restoreBatchIds.length }} deleted group<span
-                            v-if="restoreBatchIds.length !== 1"
-                            >s</span
+                            Cancel
+                        </Button>
+                        <Button
+                            :disabled="internalMetadataSaving"
+                            @click="saveInternalMetadata"
                         >
-                        to their document libraries (session storage only).
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="shrink-0"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="shrink-0"
-                        @click="confirmRestoreBatches"
-                    >
-                        Restore
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                            {{
+                                internalMetadataSaving
+                                    ? 'Saving...'
+                                    : 'Save internal metadata'
+                            }}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-        <!-- Delete forever (Trash) -->
-        <AlertDialog v-model:open="purgeOpen">
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Delete forever?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Permanently remove
-                        {{ purgeBatchIds.length }} group<span
-                            v-if="purgeBatchIds.length !== 1"
-                            >s</span
+            <!-- Rename -->
+            <Dialog v-model:open="renameOpen">
+                <DialogContent class="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Rename</DialogTitle>
+                        <DialogDescription>
+                            Changes apply only in this browser session.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div class="grid gap-2 py-2">
+                        <Label for="drive-rename-input">Name</Label>
+                        <Input
+                            id="drive-rename-input"
+                            v-model="renameValue"
+                            autocomplete="off"
+                            @keydown.enter.prevent="confirmRename"
+                        />
+                    </div>
+                    <DialogFooter class="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="shrink-0"
+                            @click="renameOpen = false"
                         >
-                        from Trash. Uploaded PDF previews in this session will
-                        be revoked. This cannot be undone in the browser.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="shrink-0"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="shrink-0 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        @click="confirmPurgeBatches"
-                    >
-                        Delete forever
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            class="shrink-0"
+                            @click="confirmRename"
+                        >
+                            Save
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <!-- Move -->
+            <Dialog v-model:open="moveOpen">
+                <DialogContent class="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Move to</DialogTitle>
+                        <DialogDescription>
+                            Choose a destination folder. Root is “Home”.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div class="grid gap-2 py-2">
+                        <Label for="drive-move-dest">Destination</Label>
+                        <Select
+                            :model-value="
+                                moveDestinationId === null
+                                    ? '__root__'
+                                    : moveDestinationId
+                            "
+                            @update:model-value="
+                                (v) => {
+                                    moveDestinationId =
+                                        v === '__root__' ? null : String(v);
+                                }
+                            "
+                        >
+                            <SelectTrigger id="drive-move-dest">
+                                <SelectValue placeholder="Select folder" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="__root__"
+                                    >Home (root)</SelectItem
+                                >
+                                <SelectItem
+                                    v-for="f in moveDestinationOptions"
+                                    :key="f.id"
+                                    :value="f.id"
+                                >
+                                    {{ f.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter class="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="shrink-0"
+                            @click="moveOpen = false"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            class="shrink-0"
+                            @click="confirmMove"
+                        >
+                            Move here
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <!-- New folder -->
+            <Dialog v-model:open="newFolderOpen">
+                <DialogContent class="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>New folder</DialogTitle>
+                        <DialogDescription>
+                            Created under the current folder (session only).
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div class="grid gap-2 py-2">
+                        <Label for="drive-new-folder">Folder name</Label>
+                        <Input
+                            id="drive-new-folder"
+                            v-model="newFolderName"
+                            autocomplete="off"
+                            placeholder="Untitled folder"
+                            @keydown.enter.prevent="confirmNewFolder"
+                        />
+                    </div>
+                    <DialogFooter class="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="shrink-0"
+                            @click="newFolderOpen = false"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            class="shrink-0"
+                            @click="confirmNewFolder"
+                        >
+                            Create
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <!-- Move to Trash -->
+            <AlertDialog v-model:open="deleteOpen">
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Move to Trash?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {{ deleteTargetIds.length }} item<span
+                                v-if="deleteTargetIds.length !== 1"
+                                >s</span
+                            >
+                            will move to Trash. You can restore from Documents →
+                            Trash while this browser session lasts. Nothing is
+                            deleted on the server.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel class="shrink-0"
+                            >Cancel</AlertDialogCancel
+                        >
+                        <AlertDialogAction
+                            class="shrink-0"
+                            @click="confirmDelete"
+                        >
+                            Move to Trash
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <!-- Restore from Trash -->
+            <AlertDialog v-model:open="restoreOpen">
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Restore items?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This restores
+                            {{ restoreBatchIds.length }} deleted group<span
+                                v-if="restoreBatchIds.length !== 1"
+                                >s</span
+                            >
+                            to their document libraries (session storage only).
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel class="shrink-0"
+                            >Cancel</AlertDialogCancel
+                        >
+                        <AlertDialogAction
+                            class="shrink-0"
+                            @click="confirmRestoreBatches"
+                        >
+                            Restore
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <!-- Delete forever (Trash) -->
+            <AlertDialog v-model:open="purgeOpen">
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete forever?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Permanently remove
+                            {{ purgeBatchIds.length }} group<span
+                                v-if="purgeBatchIds.length !== 1"
+                                >s</span
+                            >
+                            from Trash. Uploaded PDF previews in this session
+                            will be revoked. This cannot be undone in the
+                            browser.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel class="shrink-0"
+                            >Cancel</AlertDialogCancel
+                        >
+                        <AlertDialogAction
+                            class="shrink-0 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            @click="confirmPurgeBatches"
+                        >
+                            Delete forever
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     </TooltipProvider>
 </template>

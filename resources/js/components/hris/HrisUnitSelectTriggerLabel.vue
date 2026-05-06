@@ -72,7 +72,7 @@ const hasCode = computed((): boolean => {
         <span class="truncate text-sm">{{ selected.label }}</span>
         <template v-if="hasCode">
             <span
-                class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground"
+                class="shrink-0 font-mono text-xs text-muted-foreground tabular-nums"
             >
                 {{ selected.code }}
             </span>

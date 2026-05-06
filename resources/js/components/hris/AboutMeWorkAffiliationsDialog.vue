@@ -117,18 +117,16 @@ function isoToCalendarValue(iso: string): DateValue | undefined {
 
 function isoTriggerLabel(iso: string): string {
     const v = isoToCalendarValue(iso);
-    if (
-        v === undefined ||
-        !('toDate' in v) ||
-        typeof v.toDate !== 'function'
-    ) {
+    if (v === undefined || !('toDate' in v) || typeof v.toDate !== 'function') {
         return '';
     }
 
     return formatCalendarTriggerFromDate(v.toDate(getLocalTimeZone()));
 }
 
-const hireCalendarMin = computed(() => isoToCalendarValue(props.work?.hire_date ?? ''));
+const hireCalendarMin = computed(() =>
+    isoToCalendarValue(props.work?.hire_date ?? ''),
+);
 
 type PositionPersistedRowPayload = {
     id: number;
@@ -146,7 +144,9 @@ type AffiliationRowPayload = {
     is_primary: boolean;
 };
 
-function positionsPayloadFromWork(w: AboutMeWorkPayload): PositionPersistedRowPayload[] {
+function positionsPayloadFromWork(
+    w: AboutMeWorkPayload,
+): PositionPersistedRowPayload[] {
     return w.positions.map((row) => ({
         id: row.id,
         position_id: row.position_id,
@@ -166,8 +166,7 @@ function resetDraftsFromWork(): void {
     affiliationDrafts.value = props.work.affiliations.map((row) => ({
         key: newRowKey('aff'),
         dbId: row.id,
-        rootUnitId:
-            row.root_unit_id !== null ? String(row.root_unit_id) : '',
+        rootUnitId: row.root_unit_id !== null ? String(row.root_unit_id) : '',
         startDate: row.start_date,
         endDate: row.end_date ?? '',
         isPrimary: row.is_primary,
@@ -219,7 +218,11 @@ function setPrimaryAffiliation(index: number, checked: unknown): void {
     });
 }
 
-function onAffiliationStart(index: number, value: unknown, close: () => void): void {
+function onAffiliationStart(
+    index: number,
+    value: unknown,
+    close: () => void,
+): void {
     const row = affiliationDrafts.value[index];
     if (
         row === undefined ||
@@ -243,7 +246,11 @@ function onAffiliationStart(index: number, value: unknown, close: () => void): v
     close();
 }
 
-function onAffiliationEnd(index: number, value: unknown, close: () => void): void {
+function onAffiliationEnd(
+    index: number,
+    value: unknown,
+    close: () => void,
+): void {
     const row = affiliationDrafts.value[index];
     if (
         row === undefined ||
@@ -285,7 +292,10 @@ function spanStartCalendarMaxAt(index: number): DateValue | undefined {
 }
 
 function affiliationSelectModel(row: AffiliationDraftRow): string {
-    if (row.rootUnitId === '' && (props.work?.allow_org_wide_affiliation ?? false)) {
+    if (
+        row.rootUnitId === '' &&
+        (props.work?.allow_org_wide_affiliation ?? false)
+    ) {
         return ORG_WIDE_VALUE;
     }
 
@@ -294,7 +304,11 @@ function affiliationSelectModel(row: AffiliationDraftRow): string {
 
 function affiliationSelectCommit(row: AffiliationDraftRow, v: unknown): void {
     row.rootUnitId =
-        String(v) === ORG_WIDE_VALUE ? '' : v === undefined || v === null ? '' : String(v);
+        String(v) === ORG_WIDE_VALUE
+            ? ''
+            : v === undefined || v === null
+              ? ''
+              : String(v);
 }
 
 function buildPayload(): RequestPayload {
@@ -331,8 +345,7 @@ function buildPayload(): RequestPayload {
 function clientValidate(): PageErrorsBag {
     const err: PageErrorsBag = {};
 
-    const hireIso =
-        props.work?.hire_date.trim().slice(0, 10) ?? '';
+    const hireIso = props.work?.hire_date.trim().slice(0, 10) ?? '';
 
     affiliationDrafts.value.forEach((row, index) => {
         const allowOw = props.work?.allow_org_wide_affiliation ?? false;
@@ -432,9 +445,7 @@ function submit(): void {
                     typeof pageErrors === 'object' &&
                     Object.keys(pageErrors).length === 0
                 ) {
-                    appToast.error(
-                        'Could not save changes. Please try again.',
-                    );
+                    appToast.error('Could not save changes. Please try again.');
                 }
             },
         },
@@ -450,18 +461,21 @@ function submit(): void {
                 <DialogDescription>
                     Branch or org-wide affiliations for
                     {{
-                        work?.affiliation_organization?.name ?? 'your organization'
+                        work?.affiliation_organization?.name ??
+                        'your organization'
                     }}
                     on your current employment. Positions stay as-is unless you
-                    edit them in the positions dialog. Unit placements on the org
-                    chart are managed separately.
+                    edit them in the positions dialog. Unit placements on the
+                    org chart are managed separately.
                 </DialogDescription>
             </DialogHeader>
 
             <ScrollArea v-if="work" :class="dialogScrollAreaClass">
                 <div class="grid gap-6 px-1 py-1">
                     <section class="space-y-4">
-                        <div class="flex flex-wrap items-end justify-between gap-2">
+                        <div
+                            class="flex flex-wrap items-end justify-between gap-2"
+                        >
                             <div class="space-y-1">
                                 <p class="text-xs text-muted-foreground">
                                     At least one primary and one active
@@ -481,7 +495,7 @@ function submit(): void {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                class="rounded-md gap-1"
+                                class="gap-1 rounded-md"
                                 @click="addAffiliationRow"
                             >
                                 <Plus class="size-3.5" aria-hidden="true" />
@@ -494,7 +508,9 @@ function submit(): void {
                             :key="row.key"
                             class="rounded-lg border border-border/70 bg-muted/10 p-4"
                         >
-                            <div class="flex flex-wrap items-start justify-between gap-3 pb-4">
+                            <div
+                                class="flex flex-wrap items-start justify-between gap-3 pb-4"
+                            >
                                 <div class="flex items-center gap-2">
                                     <Checkbox
                                         :id="`amaw_aff_primary_${row.key}`"
@@ -505,7 +521,7 @@ function submit(): void {
                                     />
                                     <Label
                                         :for="`amaw_aff_primary_${row.key}`"
-                                        class="cursor-pointer inline-flex flex-wrap items-center gap-2"
+                                        class="inline-flex cursor-pointer flex-wrap items-center gap-2"
                                     >
                                         <Badge>Primary</Badge>
                                     </Label>
@@ -528,7 +544,9 @@ function submit(): void {
                                 <div class="grid gap-2 md:col-span-5">
                                     <Label>Assigned branch</Label>
                                     <Select
-                                        :model-value="affiliationSelectModel(row)"
+                                        :model-value="
+                                            affiliationSelectModel(row)
+                                        "
                                         @update:model-value="
                                             affiliationSelectCommit(row, $event)
                                         "
@@ -543,7 +561,9 @@ function submit(): void {
                                                 )
                                             "
                                         >
-                                            <SelectValue placeholder="Select branch" />
+                                            <SelectValue
+                                                placeholder="Select branch"
+                                            />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem
@@ -602,7 +622,8 @@ function submit(): void {
                                                         'w-full justify-between gap-2 font-normal',
                                                         fieldErrors[
                                                             `affiliations.${index}.start_date`
-                                                        ] && 'border-destructive',
+                                                        ] &&
+                                                            'border-destructive',
                                                     )
                                                 "
                                             >
@@ -643,7 +664,9 @@ function submit(): void {
                                                 "
                                                 :min-value="hireCalendarMin"
                                                 :max-value="
-                                                    spanStartCalendarMaxAt(index)
+                                                    spanStartCalendarMaxAt(
+                                                        index,
+                                                    )
                                                 "
                                                 @update:model-value="
                                                     onAffiliationStart(
@@ -683,7 +706,7 @@ function submit(): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            class="size-6 rounded-md ml-auto shrink-0"
+                                            class="ml-auto size-6 shrink-0 rounded-md"
                                             aria-label="Clear end date"
                                             @click="row.endDate = ''"
                                         >

@@ -158,7 +158,8 @@ const employmentStateChipOptions: Array<{
 ];
 
 const inactiveStatusFilterOptions = EMPLOYMENT_STATUS_VALUES.filter(
-    (value): value is Exclude<EmploymentStatusApi, 'active'> => value !== 'active',
+    (value): value is Exclude<EmploymentStatusApi, 'active'> =>
+        value !== 'active',
 ).map((value) => ({
     value,
     label: EMPLOYMENT_STATUS_LABEL[value],
@@ -181,9 +182,7 @@ function userInitials(name: string): string {
     return (tokens[0][0] + tokens[tokens.length - 1][0]).toUpperCase();
 }
 
-function employmentStateChipClass(
-    value: AdminEmploymentStateFilter,
-): string {
+function employmentStateChipClass(value: AdminEmploymentStateFilter): string {
     const selected = props.filters.employment_state === value;
     if (!selected) {
         return '';
@@ -206,7 +205,9 @@ function accountStatusChipClass(value: AdminAccountStatusFilter): string {
 }
 
 /** Matches server filter: linked employee record on the user (employee_id). */
-function accountStatusForUser(row: AdminUserRow): 'with_account' | 'without_account' {
+function accountStatusForUser(
+    row: AdminUserRow,
+): 'with_account' | 'without_account' {
     return row.has_account ? 'with_account' : 'without_account';
 }
 
@@ -408,7 +409,9 @@ const isHrManagerSelected = computed(
     () => selectedRoleForEdit.value?.code === 'hr_manager',
 );
 
-const isViewerRoleManagerRestricted = computed(() => !props.viewerCanManageRoles);
+const isViewerRoleManagerRestricted = computed(
+    () => !props.viewerCanManageRoles,
+);
 
 const editUserPasswordPolicyChecks = computed(() => {
     const p = editUserPassword.value;
@@ -425,7 +428,10 @@ const editUserPasswordMeetsPolicy = computed(() => {
     const checks = editUserPasswordPolicyChecks.value;
 
     return (
-        checks.minLength && checks.hasUpper && checks.hasLower && checks.hasDigit
+        checks.minLength &&
+        checks.hasUpper &&
+        checks.hasLower &&
+        checks.hasDigit
     );
 });
 
@@ -440,10 +446,11 @@ const isEditUserSaveDisabled = computed(
         editUserEmailAvailability.value.status === 'checking' ||
         editUserEmailAvailability.value.status === 'taken' ||
         editUserEmailAvailability.value.status === 'invalid' ||
-        (isEditNoAccountFlow.value || editUserPassword.value.trim() !== '') &&
-            !editUserPasswordMeetsPolicy.value ||
+        ((isEditNoAccountFlow.value || editUserPassword.value.trim() !== '') &&
+            !editUserPasswordMeetsPolicy.value) ||
         editUserPasswordConfirmationInvalid.value ||
-        (editUserAttemptedSave.value && editUserPasswordRequiredAndMissing.value),
+        (editUserAttemptedSave.value &&
+            editUserPasswordRequiredAndMissing.value),
 );
 
 const editUserPasswordConfirmationInvalid = computed(() => {
@@ -484,12 +491,7 @@ function userRoleBadgeClass(roleCode: string): string {
 }
 
 function preferredRoleIdForUser(user: AdminUserRow): number | null {
-    const preference = [
-        'hr_head',
-        'hr_manager',
-        'super_admin',
-        'employee',
-    ];
+    const preference = ['hr_head', 'hr_manager', 'super_admin', 'employee'];
 
     for (const code of preference) {
         const role = user.roles.find((item) => item.code === code);
@@ -820,11 +822,7 @@ const rolesColumns: ColumnDef<AdminRoleRow>[] = [
             cellClass: 'align-middle',
         },
         header: () =>
-            h(
-                'span',
-                { class: 'font-medium text-muted-foreground' },
-                'Users',
-            ),
+            h('span', { class: 'font-medium text-muted-foreground' }, 'Users'),
         cell: ({ row }) =>
             h(
                 'span',
@@ -1074,7 +1072,9 @@ const usersColumns: ColumnDef<AdminUserRow>[] = [
                       showCheckIcon: false,
                       contentClass: 'w-auto min-w-48 p-2',
                       clearAriaLabel: 'Clear status filter',
-                      'onUpdate:modelValue': (value: string | number | null) => {
+                      'onUpdate:modelValue': (
+                          value: string | number | null,
+                      ) => {
                           applyQuery({
                               employment_status:
                                   value === null
@@ -1477,20 +1477,17 @@ watch(
                 </p>
                 <p v-if="organization" class="text-sm text-muted-foreground">
                     {{ organization.name }}
-                    <span class="text-muted-foreground/80"
-                        > ({{ organization.code }})</span
+                    <span class="text-muted-foreground/80">
+                        ({{ organization.code }})</span
                     >
                 </p>
-                <p
-                    v-if="branchScope"
-                    class="text-sm text-muted-foreground"
-                >
+                <p v-if="branchScope" class="text-sm text-muted-foreground">
                     Showing users for
                     <span class="font-medium text-foreground">{{
                         branchScope.name
                     }}</span>
-                    <span class="text-muted-foreground/80"
-                        > ({{ branchScope.code }})</span
+                    <span class="text-muted-foreground/80">
+                        ({{ branchScope.code }})</span
                     >.
                 </p>
             </div>
@@ -1528,7 +1525,9 @@ watch(
                         />
                     </InputGroup>
                 </div>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div
+                    class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                >
                     <div class="flex min-w-0 flex-wrap items-center gap-2">
                         <template
                             v-for="opt in employmentStateChipOptions"
@@ -1606,7 +1605,9 @@ watch(
                                     <template #default="{ modelValue }">
                                         <HrisUnitSelectTriggerLabel
                                             :select-model-value="modelValue"
-                                            :options="adminUsersToolbarUnitFilterOptions"
+                                            :options="
+                                                adminUsersToolbarUnitFilterOptions
+                                            "
                                         />
                                     </template>
                                 </SelectValue>
@@ -2035,13 +2036,11 @@ watch(
                                 non-branch-limited scope.
                             </p>
                             <div class="grid gap-2">
-                                <Label for="edit-user-password"
-                                    >{{
-                                        isEditNoAccountFlow
-                                            ? 'Password'
-                                            : 'New password'
-                                    }}</Label
-                                >
+                                <Label for="edit-user-password">{{
+                                    isEditNoAccountFlow
+                                        ? 'Password'
+                                        : 'New password'
+                                }}</Label>
                                 <Input
                                     id="edit-user-password"
                                     v-model="editUserPassword"
@@ -2053,8 +2052,12 @@ watch(
                                             : 'Leave blank to keep current password'
                                     "
                                 />
-                                <div class="rounded-md border border-border/60 bg-muted/30 p-2">
-                                    <p class="text-xs font-medium text-foreground">
+                                <div
+                                    class="rounded-md border border-border/60 bg-muted/30 p-2"
+                                >
+                                    <p
+                                        class="text-xs font-medium text-foreground"
+                                    >
                                         Password requirements
                                     </p>
                                     <ul class="mt-1 space-y-1 text-xs">
@@ -2147,9 +2150,7 @@ watch(
                             @click="submitEditUserDialog"
                         >
                             {{
-                                isEditNoAccountFlow
-                                    ? 'Create account'
-                                    : 'Save'
+                                isEditNoAccountFlow ? 'Create account' : 'Save'
                             }}
                         </Button>
                     </DialogFooter>

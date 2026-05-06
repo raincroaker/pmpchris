@@ -71,7 +71,9 @@ function buildQuery(
 ): Record<string, string | number> {
     const f: JobHistoryFilters = { ...props.filters, ...overrides };
     const page =
-        overrides.page !== undefined ? overrides.page : props.jobHistory.current_page;
+        overrides.page !== undefined
+            ? overrides.page
+            : props.jobHistory.current_page;
 
     const q: Record<string, string | number> = {
         history_type: f.history_type,
@@ -284,7 +286,8 @@ const columns: ColumnDef<JobHistoryRow>[] = [
                     'span',
                     { class: 'truncate font-medium text-foreground' },
                     props.filters.history_type === 'unit_assignments'
-                        ? (row.original.organizational_unit?.name ?? 'Organization')
+                        ? (row.original.organizational_unit?.name ??
+                              'Organization')
                         : (row.original.position?.title ?? '—'),
                 ),
                 h(
@@ -402,7 +405,9 @@ const columns: ColumnDef<JobHistoryRow>[] = [
                 Badge,
                 {
                     variant: 'default',
-                    class: employmentStatusBadgeClass(row.original.employment_status),
+                    class: employmentStatusBadgeClass(
+                        row.original.employment_status,
+                    ),
                 },
                 () => EMPLOYMENT_STATUS_LABEL[row.original.employment_status],
             ),
@@ -421,13 +426,18 @@ const columns: ColumnDef<JobHistoryRow>[] = [
             h('div', { class: 'flex flex-col gap-0.5' }, [
                 h(
                     'span',
-                    { class: 'text-sm font-medium tabular-nums text-foreground' },
+                    {
+                        class: 'text-sm font-medium tabular-nums text-foreground',
+                    },
                     `${row.original.total_days} day${row.original.total_days === 1 ? '' : 's'}`,
                 ),
                 h(
                     'span',
                     { class: 'text-xs text-muted-foreground' },
-                    formatTenureDays(row.original.start_date, row.original.end_date),
+                    formatTenureDays(
+                        row.original.start_date,
+                        row.original.end_date,
+                    ),
                 ),
             ]),
         enableSorting: false,
@@ -463,11 +473,13 @@ const table = useVueTable({
             class="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 lg:px-16"
         >
             <div>
-                <h1 class="text-xl font-semibold text-foreground">Job history</h1>
+                <h1 class="text-xl font-semibold text-foreground">
+                    Job history
+                </h1>
                 <p v-if="organization" class="text-sm text-muted-foreground">
                     {{ organization.name }}
-                    <span class="text-muted-foreground/80"
-                        > ({{ organization.code }})</span
+                    <span class="text-muted-foreground/80">
+                        ({{ organization.code }})</span
                     >
                 </p>
                 <p v-else class="text-sm text-muted-foreground">
@@ -482,8 +494,8 @@ const table = useVueTable({
                     <span class="font-medium text-foreground">{{
                         branchScope.name
                     }}</span>
-                    <span class="text-muted-foreground/80"
-                        > ({{ branchScope.code }})</span
+                    <span class="text-muted-foreground/80">
+                        ({{ branchScope.code }})</span
                     >.
                 </p>
             </div>
@@ -512,7 +524,9 @@ const table = useVueTable({
                     </InputGroup>
                 </template>
                 <template #end>
-                    <div class="inline-flex items-center rounded-md border bg-background p-1">
+                    <div
+                        class="inline-flex items-center rounded-md border bg-background p-1"
+                    >
                         <Button
                             type="button"
                             size="sm"
@@ -540,13 +554,15 @@ const table = useVueTable({
                             type="button"
                             size="sm"
                             :variant="
-                                props.filters.history_type === 'unit_assignments'
+                                props.filters.history_type ===
+                                'unit_assignments'
                                     ? 'default'
                                     : 'ghost'
                             "
                             class="h-8 rounded-md px-3"
                             :class="
-                                props.filters.history_type === 'unit_assignments'
+                                props.filters.history_type ===
+                                'unit_assignments'
                                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                                     : 'text-muted-foreground hover:text-foreground'
                             "
@@ -576,7 +592,9 @@ const table = useVueTable({
                     :last-page="jobHistory.last_page"
                     :per-page="jobHistory.per_page"
                     :can-previous-page="jobHistory.current_page > 1"
-                    :can-next-page="jobHistory.current_page < jobHistory.last_page"
+                    :can-next-page="
+                        jobHistory.current_page < jobHistory.last_page
+                    "
                     @update:per-page="onPerPageChange"
                     @go-first="applyQuery({ page: 1 })"
                     @go-prev="applyQuery({ page: jobHistory.current_page - 1 })"

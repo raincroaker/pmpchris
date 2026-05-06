@@ -187,18 +187,12 @@ function structuredSeed(
                 : 'Philippines',
         province: typeof block.province === 'string' ? block.province : '',
         provinceCode:
-            typeof block.province_code === 'string'
-                ? block.province_code
-                : '',
+            typeof block.province_code === 'string' ? block.province_code : '',
         city: typeof block.city === 'string' ? block.city : '',
-        cityCode:
-            typeof block.city_code === 'string' ? block.city_code : '',
-        barangay:
-            typeof block.barangay === 'string' ? block.barangay : '',
+        cityCode: typeof block.city_code === 'string' ? block.city_code : '',
+        barangay: typeof block.barangay === 'string' ? block.barangay : '',
         barangayCode:
-            typeof block.barangay_code === 'string'
-                ? block.barangay_code
-                : '',
+            typeof block.barangay_code === 'string' ? block.barangay_code : '',
         zipCode: typeof block.zip_code === 'string' ? block.zip_code : '',
         isPrimary: Boolean(block.is_primary),
     };
@@ -213,7 +207,12 @@ function linesToAddressSeed(lines: string[] | undefined): Partial<AddressForm> {
     return {
         addressLine1: l[0] ?? '',
         addressLine2:
-            l.length > 1 ? l.slice(1).map((x) => x.trim()).join(', ') : '',
+            l.length > 1
+                ? l
+                      .slice(1)
+                      .map((x) => x.trim())
+                      .join(', ')
+                : '',
     };
 }
 
@@ -228,10 +227,7 @@ function draftHasContent(addr: AddressForm): boolean {
     );
 }
 
-function assignAddress(
-    target: AddressForm,
-    seed: Partial<AddressForm>,
-): void {
+function assignAddress(target: AddressForm, seed: Partial<AddressForm>): void {
     Object.assign(target, emptyAddress(), seed);
 }
 
@@ -409,8 +405,7 @@ const permInvalid = computed(() => {
     }
 
     return {
-        addressLine1:
-            req && has && permanentAddress.addressLine1.trim() === '',
+        addressLine1: req && has && permanentAddress.addressLine1.trim() === '',
         provinceCode: req && has && permanentAddress.provinceCode === '',
         cityCode: req && has && permanentAddress.cityCode === '',
         barangayCode: req && has && permanentAddress.barangayCode === '',
@@ -515,8 +510,7 @@ function addressApiPayload(addr: AddressForm): {
         barangay_code:
             addr.barangayCode.trim() === '' ? null : addr.barangayCode.trim(),
         city: addr.city.trim(),
-        city_code:
-            addr.cityCode.trim() === '' ? null : addr.cityCode.trim(),
+        city_code: addr.cityCode.trim() === '' ? null : addr.cityCode.trim(),
         province: addr.province.trim(),
         province_code:
             addr.provinceCode.trim() === '' ? null : addr.provinceCode.trim(),
@@ -578,11 +572,8 @@ function onSave(): void {
         syncEmployeeAboutMeAddresses.url(props.profile.employee_id),
         {
             permanent:
-                sendingPerm !== null
-                    ? addressApiPayload(sendingPerm)
-                    : null,
-            current:
-                sendingCur !== null ? addressApiPayload(sendingCur) : null,
+                sendingPerm !== null ? addressApiPayload(sendingPerm) : null,
+            current: sendingCur !== null ? addressApiPayload(sendingCur) : null,
         },
         {
             preserveScroll: true,
@@ -694,8 +685,9 @@ function onOpenChange(value: boolean): void {
                                                     aboutMeMaxSmOneLineTruncateClass
                                                 "
                                             >
-                                                Primary residence on file for IDs,
-                                                payroll, and HR correspondence.
+                                                Primary residence on file for
+                                                IDs, payroll, and HR
+                                                correspondence.
                                             </p>
                                         </div>
                                         <Button
@@ -703,7 +695,9 @@ function onOpenChange(value: boolean): void {
                                             variant="outline"
                                             size="icon"
                                             class="shrink-0 cursor-pointer border-border bg-background/80 hover:border-foreground/40 hover:bg-muted/60"
-                                            :aria-expanded="showPermanentAddress"
+                                            :aria-expanded="
+                                                showPermanentAddress
+                                            "
                                             aria-controls="about-me-perm-fields"
                                             :aria-label="
                                                 showPermanentAddress
@@ -737,7 +731,9 @@ function onOpenChange(value: boolean): void {
                                     <Checkbox
                                         id="about_me_perm_primary"
                                         class="shrink-0"
-                                        :model-value="permanentAddress.isPrimary"
+                                        :model-value="
+                                            permanentAddress.isPrimary
+                                        "
                                         aria-labelledby="about_me_perm_primary_lbl"
                                         @update:model-value="
                                             setPermanentAddressPrimary
@@ -780,7 +776,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear address line 1"
                                             @click="
                                                 permanentAddress.addressLine1 =
@@ -797,9 +795,7 @@ function onOpenChange(value: boolean): void {
                                         maxlength="255"
                                         autocomplete="address-line1"
                                         placeholder="Street, building, or unit"
-                                        :aria-invalid="
-                                            permInvalid.addressLine1
-                                        "
+                                        :aria-invalid="permInvalid.addressLine1"
                                     />
                                 </div>
                                 <div class="grid gap-3">
@@ -819,7 +815,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear address line 2"
                                             @click="
                                                 permanentAddress.addressLine2 =
@@ -857,7 +855,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Reset country"
                                             @click="
                                                 permanentAddress.country =
@@ -916,7 +916,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear province"
                                             @click="clearProvince"
                                         >
@@ -969,7 +971,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear city"
                                             @click="clearCity"
                                         >
@@ -1023,7 +1027,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear barangay"
                                             @click="clearBarangay"
                                         >
@@ -1079,7 +1085,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear ZIP code"
                                             @click="
                                                 permanentAddress.zipCode = ''
@@ -1146,7 +1154,8 @@ function onOpenChange(value: boolean): void {
                                                 "
                                             >
                                                 Where you live or receive mail
-                                                today — may differ from permanent.
+                                                today — may differ from
+                                                permanent.
                                             </p>
                                         </div>
                                         <Button
@@ -1240,7 +1249,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear address line 1"
                                             @click="
                                                 currentAddress.addressLine1 = ''
@@ -1256,9 +1267,7 @@ function onOpenChange(value: boolean): void {
                                         maxlength="255"
                                         autocomplete="address-line1"
                                         placeholder="Street, building, or unit"
-                                        :aria-invalid="
-                                            curInvalid.addressLine1
-                                        "
+                                        :aria-invalid="curInvalid.addressLine1"
                                     />
                                 </div>
                                 <div class="grid gap-3">
@@ -1278,7 +1287,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear address line 2"
                                             @click="
                                                 currentAddress.addressLine2 = ''
@@ -1315,7 +1326,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Reset country"
                                             @click="
                                                 currentAddress.country =
@@ -1374,7 +1387,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear province"
                                             @click="clearCurrentProvince"
                                         >
@@ -1429,7 +1444,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear city"
                                             @click="clearCurrentCity"
                                         >
@@ -1485,7 +1502,9 @@ function onOpenChange(value: boolean): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear barangay"
                                             @click="clearCurrentBarangay"
                                         >
@@ -1537,13 +1556,13 @@ function onOpenChange(value: boolean): void {
                                             >Required</Badge
                                         >
                                         <Button
-                                            v-if="
-                                                currentAddress.zipCode !== ''
-                                            "
+                                            v-if="currentAddress.zipCode !== ''"
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            :class="aboutMeClearFieldButtonClass"
+                                            :class="
+                                                aboutMeClearFieldButtonClass
+                                            "
                                             aria-label="Clear ZIP code"
                                             @click="currentAddress.zipCode = ''"
                                         >

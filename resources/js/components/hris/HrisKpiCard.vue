@@ -85,7 +85,11 @@ function onClick(): void {
                 class="flex size-11 shrink-0 items-center justify-center rounded-lg"
                 :class="toneStyles.iconWrap"
             >
-                <component :is="icon" class="size-5 shrink-0" aria-hidden="true" />
+                <component
+                    :is="icon"
+                    class="size-5 shrink-0"
+                    aria-hidden="true"
+                />
             </div>
             <div class="min-w-0 flex-1">
                 <p

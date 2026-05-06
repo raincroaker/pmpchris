@@ -20,7 +20,10 @@ const OWNER_YOU = 'You';
 export function resolveDriveItemAccessMode(
     item: Pick<DriveItem, 'accessMode' | 'visibilityLabel'>,
 ): DriveItemAccessMode {
-    const raw = item.accessMode as DriveItemAccessMode | 'access_request' | undefined;
+    const raw = item.accessMode as
+        | DriveItemAccessMode
+        | 'access_request'
+        | undefined;
     if (raw === 'access_request') {
         return 'private';
     }

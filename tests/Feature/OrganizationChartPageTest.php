@@ -43,7 +43,6 @@ test('organization chart defaults to first selectable branch root when user has 
     (new DemoCooperativeSeeder)->run();
 
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
-    $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     $defaultRoot = app(BranchContextService::class)->defaultChartRoot($organization);
     expect($defaultRoot)->not->toBeNull()
         ->and($defaultRoot->code)->toBe('PAN');

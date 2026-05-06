@@ -59,7 +59,11 @@ const processing = ref(false);
 const fieldErrors = ref<PageErrorsBag>({});
 
 const previewDisplayName = computed(() =>
-    formatEmployeeDisplayName(firstName.value, middleName.value, lastName.value),
+    formatEmployeeDisplayName(
+        firstName.value,
+        middleName.value,
+        lastName.value,
+    ),
 );
 
 const previewInitials = computed(() =>
@@ -185,9 +189,7 @@ function onSave(): void {
                     typeof pageErrors === 'object' &&
                     Object.keys(pageErrors).length === 0
                 ) {
-                    appToast.error(
-                        'Could not save profile. Please try again.',
-                    );
+                    appToast.error('Could not save profile. Please try again.');
                 }
             },
         },
@@ -211,8 +213,8 @@ const genericFormError = computed((): string | null => {
             <DialogHeader>
                 <DialogTitle>Edit profile</DialogTitle>
                 <DialogDescription>
-                    Update how this employee appears in the directory. Changes are
-                    saved to HR records immediately.
+                    Update how this employee appears in the directory. Changes
+                    are saved to HR records immediately.
                 </DialogDescription>
             </DialogHeader>
 
@@ -224,245 +226,266 @@ const genericFormError = computed((): string | null => {
                     >
                         {{ genericFormError }}
                     </p>
-                <div class="grid min-w-0 gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
                     <div
-                        class="overflow-hidden rounded-xl border border-border/70 bg-muted/30 shadow-sm"
+                        class="grid min-w-0 gap-4 sm:grid-cols-[auto_1fr] sm:items-start"
                     >
-                        <Avatar class="size-28 rounded-none sm:size-32">
-                            <AvatarImage
-                                v-if="avatarImageSrc"
-                                :src="avatarImageSrc"
-                                alt="Profile photo preview"
-                                class="h-full w-full object-cover object-center"
+                        <div
+                            class="overflow-hidden rounded-xl border border-border/70 bg-muted/30 shadow-sm"
+                        >
+                            <Avatar class="size-28 rounded-none sm:size-32">
+                                <AvatarImage
+                                    v-if="avatarImageSrc"
+                                    :src="avatarImageSrc"
+                                    alt="Profile photo preview"
+                                    class="h-full w-full object-cover object-center"
+                                />
+                                <AvatarFallback
+                                    class="rounded-none bg-muted text-base font-semibold text-foreground"
+                                >
+                                    {{ previewInitials }}
+                                </AvatarFallback>
+                            </Avatar>
+                        </div>
+                        <div class="grid min-w-0 gap-3">
+                            <Label
+                                for="about_me_profile_photo"
+                                :class="aboutMeLabelRowClass"
+                            >
+                                <span>Profile photo</span>
+                                <Badge variant="outline"> Optional </Badge>
+                                <Button
+                                    v-if="
+                                        draftAvatarFile !== null ||
+                                        (!removeAvatar && profile.avatar_url)
+                                    "
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    :class="aboutMeClearFieldButtonClass"
+                                    aria-label="Clear selected profile photo"
+                                    @click="clearAvatarSelection"
+                                >
+                                    <X class="size-3.5" />
+                                </Button>
+                            </Label>
+                            <input
+                                id="about_me_profile_photo"
+                                ref="avatarInputRef"
+                                type="file"
+                                accept=".jpg,.jpeg,.png,.webp"
+                                autocomplete="off"
+                                class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30"
+                                @change="onAvatarFileChange"
                             />
-                            <AvatarFallback
-                                class="rounded-none bg-muted text-base font-semibold text-foreground"
+                            <p class="text-xs text-muted-foreground">
+                                {{ profilePhotoHintText }}
+                            </p>
+                            <p
+                                v-if="fieldErrors.avatar"
+                                class="text-xs text-destructive"
                             >
-                                {{ previewInitials }}
-                            </AvatarFallback>
-                        </Avatar>
+                                {{ fieldErrors.avatar }}
+                            </p>
+                        </div>
                     </div>
-                    <div class="grid min-w-0 gap-3">
-                        <Label
-                            for="about_me_profile_photo"
-                            :class="aboutMeLabelRowClass"
-                        >
-                            <span>Profile photo</span>
-                            <Badge variant="outline"> Optional </Badge>
-                            <Button
-                                v-if="
-                                    draftAvatarFile !== null ||
-                                    (!removeAvatar && profile.avatar_url)
+
+                    <div
+                        class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-2 lg:grid-cols-3"
+                    >
+                        <div class="grid gap-3">
+                            <Label
+                                for="about_me_first_name"
+                                :class="aboutMeLabelRowClass"
+                            >
+                                <span>First name</span>
+                                <Badge
+                                    v-if="firstInvalid"
+                                    variant="destructive"
+                                >
+                                    Required
+                                </Badge>
+                                <Button
+                                    v-if="firstName !== ''"
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    :class="aboutMeClearFieldButtonClass"
+                                    aria-label="Clear first name"
+                                    @click="firstName = ''"
+                                >
+                                    <X class="size-3.5" />
+                                </Button>
+                            </Label>
+                            <Input
+                                id="about_me_first_name"
+                                v-model="firstName"
+                                class="w-full"
+                                autocomplete="given-name"
+                                placeholder="e.g. Juan"
+                                :aria-invalid="
+                                    firstInvalid ||
+                                    Boolean(fieldErrors.first_name)
                                 "
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                :class="aboutMeClearFieldButtonClass"
-                                aria-label="Clear selected profile photo"
-                                @click="clearAvatarSelection"
+                            />
+                            <p
+                                v-if="fieldErrors.first_name"
+                                class="text-xs text-destructive"
                             >
-                                <X class="size-3.5" />
-                            </Button>
-                        </Label>
-                        <input
-                            id="about_me_profile_photo"
-                            ref="avatarInputRef"
-                            type="file"
-                            accept=".jpg,.jpeg,.png,.webp"
-                            autocomplete="off"
-                            class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30"
-                            @change="onAvatarFileChange"
-                        />
-                        <p class="text-xs text-muted-foreground">
-                            {{ profilePhotoHintText }}
-                        </p>
-                        <p
-                            v-if="fieldErrors.avatar"
-                            class="text-xs text-destructive"
-                        >
-                            {{ fieldErrors.avatar }}
-                        </p>
+                                {{ fieldErrors.first_name }}
+                            </p>
+                        </div>
+                        <div class="grid gap-3">
+                            <Label
+                                for="about_me_last_name"
+                                :class="aboutMeLabelRowClass"
+                            >
+                                <span>Last name</span>
+                                <Badge v-if="lastInvalid" variant="destructive">
+                                    Required
+                                </Badge>
+                                <Button
+                                    v-if="lastName !== ''"
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    :class="aboutMeClearFieldButtonClass"
+                                    aria-label="Clear last name"
+                                    @click="lastName = ''"
+                                >
+                                    <X class="size-3.5" />
+                                </Button>
+                            </Label>
+                            <Input
+                                id="about_me_last_name"
+                                v-model="lastName"
+                                class="w-full"
+                                autocomplete="family-name"
+                                placeholder="e.g. Dela Cruz"
+                                :aria-invalid="
+                                    lastInvalid ||
+                                    Boolean(fieldErrors.last_name)
+                                "
+                            />
+                            <p
+                                v-if="fieldErrors.last_name"
+                                class="text-xs text-destructive"
+                            >
+                                {{ fieldErrors.last_name }}
+                            </p>
+                        </div>
+                        <div class="grid gap-3 md:col-span-2 lg:col-span-1">
+                            <Label
+                                for="about_me_middle_name"
+                                :class="aboutMeLabelRowClass"
+                            >
+                                <span>Middle name</span>
+                                <Badge variant="secondary"> Optional </Badge>
+                                <Button
+                                    v-if="middleName !== ''"
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    :class="aboutMeClearFieldButtonClass"
+                                    aria-label="Clear middle name"
+                                    @click="middleName = ''"
+                                >
+                                    <X class="size-3.5" />
+                                </Button>
+                            </Label>
+                            <Input
+                                id="about_me_middle_name"
+                                v-model="middleName"
+                                class="w-full"
+                                autocomplete="additional-name"
+                                placeholder="e.g. Santos"
+                            />
+                            <p
+                                v-if="fieldErrors.middle_name"
+                                class="text-xs text-destructive"
+                            >
+                                {{ fieldErrors.middle_name }}
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                <div
-                    class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-2 lg:grid-cols-3"
-                >
-                    <div class="grid gap-3">
-                        <Label for="about_me_first_name" :class="aboutMeLabelRowClass">
-                            <span>First name</span>
-                            <Badge v-if="firstInvalid" variant="destructive">
-                                Required
-                            </Badge>
-                            <Button
-                                v-if="firstName !== ''"
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                :class="aboutMeClearFieldButtonClass"
-                                aria-label="Clear first name"
-                                @click="firstName = ''"
+                    <div
+                        class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-2"
+                    >
+                        <div class="grid gap-3">
+                            <Label
+                                for="about_me_id_number"
+                                :class="aboutMeLabelRowClass"
                             >
-                                <X class="size-3.5" />
-                            </Button>
-                        </Label>
-                        <Input
-                            id="about_me_first_name"
-                            v-model="firstName"
-                            class="w-full"
-                            autocomplete="given-name"
-                            placeholder="e.g. Juan"
-                            :aria-invalid="firstInvalid || Boolean(fieldErrors.first_name)"
-                        />
-                        <p
-                            v-if="fieldErrors.first_name"
-                            class="text-xs text-destructive"
-                        >
-                            {{ fieldErrors.first_name }}
-                        </p>
-                    </div>
-                    <div class="grid gap-3">
-                        <Label for="about_me_last_name" :class="aboutMeLabelRowClass">
-                            <span>Last name</span>
-                            <Badge v-if="lastInvalid" variant="destructive">
-                                Required
-                            </Badge>
-                            <Button
-                                v-if="lastName !== ''"
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                :class="aboutMeClearFieldButtonClass"
-                                aria-label="Clear last name"
-                                @click="lastName = ''"
+                                <span>ID number</span>
+                                <Badge v-if="idInvalid" variant="destructive">
+                                    Required
+                                </Badge>
+                                <Button
+                                    v-if="idNumber !== ''"
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    :class="aboutMeClearFieldButtonClass"
+                                    aria-label="Clear ID number"
+                                    @click="idNumber = ''"
+                                >
+                                    <X class="size-3.5" />
+                                </Button>
+                            </Label>
+                            <Input
+                                id="about_me_id_number"
+                                v-model="idNumber"
+                                class="w-full"
+                                maxlength="50"
+                                autocomplete="off"
+                                placeholder="e.g. EMP-001"
+                                :aria-invalid="
+                                    idInvalid || Boolean(fieldErrors.id_number)
+                                "
+                            />
+                            <p
+                                v-if="fieldErrors.id_number"
+                                class="text-xs text-destructive"
                             >
-                                <X class="size-3.5" />
-                            </Button>
-                        </Label>
-                        <Input
-                            id="about_me_last_name"
-                            v-model="lastName"
-                            class="w-full"
-                            autocomplete="family-name"
-                            placeholder="e.g. Dela Cruz"
-                            :aria-invalid="lastInvalid || Boolean(fieldErrors.last_name)"
-                        />
-                        <p
-                            v-if="fieldErrors.last_name"
-                            class="text-xs text-destructive"
-                        >
-                            {{ fieldErrors.last_name }}
-                        </p>
-                    </div>
-                    <div class="grid gap-3 md:col-span-2 lg:col-span-1">
-                        <Label
-                            for="about_me_middle_name"
-                            :class="aboutMeLabelRowClass"
-                        >
-                            <span>Middle name</span>
-                            <Badge variant="secondary"> Optional </Badge>
-                            <Button
-                                v-if="middleName !== ''"
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                :class="aboutMeClearFieldButtonClass"
-                                aria-label="Clear middle name"
-                                @click="middleName = ''"
+                                {{ fieldErrors.id_number }}
+                            </p>
+                        </div>
+                        <div class="grid gap-3">
+                            <Label
+                                for="about_me_attendance_id"
+                                :class="aboutMeLabelRowClass"
                             >
-                                <X class="size-3.5" />
-                            </Button>
-                        </Label>
-                        <Input
-                            id="about_me_middle_name"
-                            v-model="middleName"
-                            class="w-full"
-                            autocomplete="additional-name"
-                            placeholder="e.g. Santos"
-                        />
-                        <p
-                            v-if="fieldErrors.middle_name"
-                            class="text-xs text-destructive"
-                        >
-                            {{ fieldErrors.middle_name }}
-                        </p>
+                                <span>Attendance ID</span>
+                                <Badge variant="secondary"> Optional </Badge>
+                                <Button
+                                    v-if="attendanceId !== ''"
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    :class="aboutMeClearFieldButtonClass"
+                                    aria-label="Clear Attendance ID"
+                                    @click="attendanceId = ''"
+                                >
+                                    <X class="size-3.5" />
+                                </Button>
+                            </Label>
+                            <Input
+                                id="about_me_attendance_id"
+                                v-model="attendanceId"
+                                class="w-full"
+                                maxlength="50"
+                                autocomplete="off"
+                                placeholder="e.g. ZK-10042, RFID, or device code"
+                            />
+                            <p
+                                v-if="fieldErrors.attendance_id"
+                                class="text-xs text-destructive"
+                            >
+                                {{ fieldErrors.attendance_id }}
+                            </p>
+                        </div>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-2">
-                    <div class="grid gap-3">
-                        <Label
-                            for="about_me_id_number"
-                            :class="aboutMeLabelRowClass"
-                        >
-                            <span>ID number</span>
-                            <Badge v-if="idInvalid" variant="destructive">
-                                Required
-                            </Badge>
-                            <Button
-                                v-if="idNumber !== ''"
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                :class="aboutMeClearFieldButtonClass"
-                                aria-label="Clear ID number"
-                                @click="idNumber = ''"
-                            >
-                                <X class="size-3.5" />
-                            </Button>
-                        </Label>
-                        <Input
-                            id="about_me_id_number"
-                            v-model="idNumber"
-                            class="w-full"
-                            maxlength="50"
-                            autocomplete="off"
-                            placeholder="e.g. EMP-001"
-                            :aria-invalid="idInvalid || Boolean(fieldErrors.id_number)"
-                        />
-                        <p
-                            v-if="fieldErrors.id_number"
-                            class="text-xs text-destructive"
-                        >
-                            {{ fieldErrors.id_number }}
-                        </p>
-                    </div>
-                    <div class="grid gap-3">
-                        <Label
-                            for="about_me_attendance_id"
-                            :class="aboutMeLabelRowClass"
-                        >
-                            <span>Attendance ID</span>
-                            <Badge variant="secondary"> Optional </Badge>
-                            <Button
-                                v-if="attendanceId !== ''"
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                :class="aboutMeClearFieldButtonClass"
-                                aria-label="Clear Attendance ID"
-                                @click="attendanceId = ''"
-                            >
-                                <X class="size-3.5" />
-                            </Button>
-                        </Label>
-                        <Input
-                            id="about_me_attendance_id"
-                            v-model="attendanceId"
-                            class="w-full"
-                            maxlength="50"
-                            autocomplete="off"
-                            placeholder="e.g. ZK-10042, RFID, or device code"
-                        />
-                        <p
-                            v-if="fieldErrors.attendance_id"
-                            class="text-xs text-destructive"
-                        >
-                            {{ fieldErrors.attendance_id }}
-                        </p>
-                    </div>
-                </div>
-            </div>
             </ScrollArea>
 
             <DialogFooter class="gap-2">

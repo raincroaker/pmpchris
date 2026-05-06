@@ -202,8 +202,6 @@ export const appNavigationTree: NavTreeEntry[] = [
         title: 'Administration',
         icon: Settings,
         adminOnly: true,
-        items: [
-            { title: 'Users & Roles', href: () => users() },
-        ],
+        items: [{ title: 'Users & Roles', href: () => users() }],
     },
 ];

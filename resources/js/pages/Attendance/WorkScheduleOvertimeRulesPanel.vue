@@ -66,10 +66,13 @@ const patternHint = computed(() =>
                     <p class="text-sm font-medium text-foreground">
                         Overtime (preview)
                     </p>
-                    <WorkScheduleFormFieldHint ariaLabel="About overtime on work schedules">
-                        Model overtime as its own scheduled time in and time out. Gross OT
-                        minutes come from that span—no separate OT caps here. Premium rates
-                        and approvals stay on Overtime Policies.
+                    <WorkScheduleFormFieldHint
+                        ariaLabel="About overtime on work schedules"
+                    >
+                        Model overtime as its own scheduled time in and time
+                        out. Gross OT minutes come from that span—no separate OT
+                        caps here. Premium rates and approvals stay on Overtime
+                        Policies.
                         {{ patternHint }}
                     </WorkScheduleFormFieldHint>
                 </div>
@@ -85,8 +88,8 @@ const patternHint = computed(() =>
                     <WorkScheduleFormFieldHint
                         ariaLabel="About scheduling an overtime block"
                     >
-                        Turn off if this template has no fixed OT window (engine may treat
-                        OT-only elsewhere later).
+                        Turn off if this template has no fixed OT window (engine
+                        may treat OT-only elsewhere later).
                     </WorkScheduleFormFieldHint>
                 </div>
                 <Switch v-model="rules.otBlockEnabled" class="shrink-0" />
@@ -99,10 +102,7 @@ const patternHint = computed(() =>
                 <div
                     class="col-span-12 flex min-w-0 flex-col gap-1.5 sm:col-span-6"
                 >
-                    <Label
-                        :class="fieldLabelClass"
-                        :for="`${idPrefix}-ot-in`"
-                    >
+                    <Label :class="fieldLabelClass" :for="`${idPrefix}-ot-in`">
                         <span>OT time in</span>
                         <WorkScheduleFormFieldHint ariaLabel="About OT time in">
                             Start of the scheduled overtime block (wall clock).
@@ -119,15 +119,15 @@ const patternHint = computed(() =>
                 <div
                     class="col-span-12 flex min-w-0 flex-col gap-1.5 sm:col-span-6"
                 >
-                    <Label
-                        :class="fieldLabelClass"
-                        :for="`${idPrefix}-ot-out`"
-                    >
+                    <Label :class="fieldLabelClass" :for="`${idPrefix}-ot-out`">
                         <span>OT time out</span>
-                        <WorkScheduleFormFieldHint ariaLabel="About OT time out">
-                            End of the scheduled overtime block. Duration is derived from
-                            in/out. Use Overnight OT span only when the regular schedule is
-                            an overnight shift and this OT block crosses midnight.
+                        <WorkScheduleFormFieldHint
+                            ariaLabel="About OT time out"
+                        >
+                            End of the scheduled overtime block. Duration is
+                            derived from in/out. Use Overnight OT span only when
+                            the regular schedule is an overnight shift and this
+                            OT block crosses midnight.
                         </WorkScheduleFormFieldHint>
                     </Label>
                     <Input
@@ -158,15 +158,20 @@ const patternHint = computed(() =>
                     v-if="regularScheduleOvernight"
                     class="col-span-12 w-full text-xs text-muted-foreground"
                 >
-                    Enable when OT time out is on the next calendar day after OT time in.
-                    Shown only when the Schedule tab uses an overnight regular shift.
+                    Enable when OT time out is on the next calendar day after OT
+                    time in. Shown only when the Schedule tab uses an overnight
+                    regular shift.
                 </p>
                 <div
                     v-if="otSpanPreviewLabel"
                     class="col-span-12 rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-sm text-foreground"
                 >
-                    <span class="text-muted-foreground">Scheduled OT span:</span>
-                    <span class="ms-1 tabular-nums">{{ otSpanPreviewLabel }}</span>
+                    <span class="text-muted-foreground"
+                        >Scheduled OT span:</span
+                    >
+                    <span class="ms-1 tabular-nums">{{
+                        otSpanPreviewLabel
+                    }}</span>
                 </div>
             </div>
 
@@ -180,10 +185,11 @@ const patternHint = computed(() =>
                     <WorkScheduleFormFieldHint
                         ariaLabel="About continuous regular and OT"
                     >
-                        When on, regular working time and this OT block are treated as one
-                        continuous story for policy (e.g. no artificial gap required between
-                        Session 2 end and OT start). Turn off if OT must be explicitly
-                        separated from regular hours.
+                        When on, regular working time and this OT block are
+                        treated as one continuous story for policy (e.g. no
+                        artificial gap required between Session 2 end and OT
+                        start). Turn off if OT must be explicitly separated from
+                        regular hours.
                     </WorkScheduleFormFieldHint>
                 </div>
                 <Switch
@@ -200,22 +206,25 @@ const patternHint = computed(() =>
                 class="text-xs text-muted-foreground"
             >
                 Regular net from Schedule tab:
-                <span class="tabular-nums text-foreground">{{
+                <span class="text-foreground tabular-nums">{{
                     formatWorkScheduleNetHours(scheduledNetHours)
                 }}</span>
                 hours
             </p>
 
             <div class="grid w-full grid-cols-12 gap-3">
-                <div class="col-span-12 flex min-w-0 flex-col gap-1.5 sm:col-span-6">
+                <div
+                    class="col-span-12 flex min-w-0 flex-col gap-1.5 sm:col-span-6"
+                >
                     <Label
                         :class="fieldLabelClass"
                         :for="`${idPrefix}-ot-grace`"
                     >
                         <span>OT boundary grace (minutes)</span>
                         <WorkScheduleFormFieldHint ariaLabel="About OT grace">
-                            Minutes ignored at the OT start boundary before credited OT time
-                            begins (placeholder for rules engine).
+                            Minutes ignored at the OT start boundary before
+                            credited OT time begins (placeholder for rules
+                            engine).
                         </WorkScheduleFormFieldHint>
                     </Label>
                     <Input

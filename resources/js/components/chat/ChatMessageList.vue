@@ -3,7 +3,12 @@ import { computed } from 'vue';
 import type { ChatMessage } from '@/components/chat/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const props = defineProps<{
     messages: ChatMessage[];
@@ -23,7 +28,10 @@ function initials(name: string): string {
     return `${parts[0].slice(0, 1)}${parts[parts.length - 1].slice(0, 1)}`.toUpperCase();
 }
 
-function shouldShowSenderAvatar(messages: ChatMessage[], index: number): boolean {
+function shouldShowSenderAvatar(
+    messages: ChatMessage[],
+    index: number,
+): boolean {
     const current = messages[index];
     if (!current || current.role !== 'them') {
         return false;
@@ -48,16 +56,26 @@ function shouldShowSenderAvatar(messages: ChatMessage[], index: number): boolean
                     :class="msg.role === 'me' ? 'justify-end' : 'justify-start'"
                 >
                     <div v-if="msg.role === 'them'" class="w-7 shrink-0">
-                        <Tooltip v-if="shouldShowSenderAvatar(activeMessages, index)">
+                        <Tooltip
+                            v-if="shouldShowSenderAvatar(activeMessages, index)"
+                        >
                             <TooltipTrigger as-child>
-                                <Avatar class="size-7 cursor-default transition hover:ring-2 hover:ring-primary/30">
+                                <Avatar
+                                    class="size-7 cursor-default transition hover:ring-2 hover:ring-primary/30"
+                                >
                                     <AvatarImage
                                         v-if="msg.senderAvatarUrl"
                                         :src="msg.senderAvatarUrl"
-                                        :alt="msg.senderLabel ?? 'Sender avatar'"
+                                        :alt="
+                                            msg.senderLabel ?? 'Sender avatar'
+                                        "
                                     />
                                     <AvatarFallback class="text-[10px]">
-                                        {{ initials(msg.senderLabel ?? 'Sender') }}
+                                        {{
+                                            initials(
+                                                msg.senderLabel ?? 'Sender',
+                                            )
+                                        }}
                                     </AvatarFallback>
                                 </Avatar>
                             </TooltipTrigger>
@@ -68,7 +86,11 @@ function shouldShowSenderAvatar(messages: ChatMessage[], index: number): boolean
                     </div>
                     <div
                         class="max-w-[min(100%,28rem)] rounded-2xl px-3 py-2 text-sm shadow-sm"
-                        :class="msg.role === 'me' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'"
+                        :class="
+                            msg.role === 'me'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-foreground'
+                        "
                     >
                         <p
                             v-if="msg.role === 'them' && msg.senderLabel"
@@ -76,10 +98,16 @@ function shouldShowSenderAvatar(messages: ChatMessage[], index: number): boolean
                         >
                             {{ msg.senderLabel }}
                         </p>
-                        <p class="wrap-break-word whitespace-pre-wrap">{{ msg.text }}</p>
+                        <p class="wrap-break-word whitespace-pre-wrap">
+                            {{ msg.text }}
+                        </p>
                         <p
                             class="mt-1 text-[10px] opacity-80"
-                            :class="msg.role === 'me' ? 'text-primary-foreground/80' : 'text-muted-foreground'"
+                            :class="
+                                msg.role === 'me'
+                                    ? 'text-primary-foreground/80'
+                                    : 'text-muted-foreground'
+                            "
                         >
                             {{ msg.createdLabel }}
                         </p>

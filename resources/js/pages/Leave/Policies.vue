@@ -967,10 +967,7 @@ const table = useVueTable({
                                             v as LeavePolicyUnit)
                                 "
                             >
-                                <SelectTrigger
-                                    id="lp-unit"
-                                    class="h-9 w-full"
-                                >
+                                <SelectTrigger id="lp-unit" class="h-9 w-full">
                                     <SelectValue placeholder="Unit" />
                                 </SelectTrigger>
                                 <SelectContent>

@@ -13,7 +13,10 @@ function csrfToken(): string {
     return token ?? '';
 }
 
-async function parseJsonError(response: Response, fallback: string): Promise<Error> {
+async function parseJsonError(
+    response: Response,
+    fallback: string,
+): Promise<Error> {
     let payload: JsonValidationError | null = null;
     try {
         payload = (await response.json()) as JsonValidationError;
@@ -36,8 +39,32 @@ async function parseJsonError(response: Response, fallback: string): Promise<Err
     return new Error(message);
 }
 
-export async function fetchCompanyDocumentsItems(): Promise<DriveItem[]> {
-    const response = await fetch('/documents/company/items', {
+export async function fetchCompanyDocumentsItems(params?: {
+    q?: string;
+    sortKey?: 'name' | 'modified';
+    sortOrder?: 'asc' | 'desc';
+    type?: 'all' | 'folder' | 'pdf' | 'docx' | 'xlsx' | 'pptx';
+}): Promise<DriveItem[]> {
+    const query = new URLSearchParams();
+    if (params?.q !== undefined && params.q.trim() !== '') {
+        query.set('q', params.q.trim());
+    }
+    if (params?.sortKey !== undefined) {
+        query.set('sort_key', params.sortKey);
+    }
+    if (params?.sortOrder !== undefined) {
+        query.set('sort_order', params.sortOrder);
+    }
+    if (params?.type !== undefined) {
+        query.set('type', params.type);
+    }
+
+    const url =
+        query.size > 0
+            ? `/documents/company/items?${query.toString()}`
+            : '/documents/company/items';
+
+    const response = await fetch(url, {
         credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
@@ -46,7 +73,10 @@ export async function fetchCompanyDocumentsItems(): Promise<DriveItem[]> {
     });
 
     if (!response.ok) {
-        throw await parseJsonError(response, 'Unable to load company documents.');
+        throw await parseJsonError(
+            response,
+            'Unable to load company documents.',
+        );
     }
 
     const payload = (await response.json()) as { data?: DriveItem[] };
@@ -232,14 +262,18 @@ export async function updateCompanyDocumentInternalMetadata(
                 ...(payload.updatedAt !== undefined
                     ? { updated_at: payload.updatedAt }
                     : {}),
-                ...(payload.status !== undefined ? { status: payload.status } : {}),
+                ...(payload.status !== undefined
+                    ? { status: payload.status }
+                    : {}),
                 ...(payload.accessMode !== undefined
                     ? { access_mode: payload.accessMode }
                     : {}),
                 ...(payload.decisionNote !== undefined
                     ? { decision_note: payload.decisionNote }
                     : {}),
-                ...(payload.notes !== undefined ? { notes: payload.notes } : {}),
+                ...(payload.notes !== undefined
+                    ? { notes: payload.notes }
+                    : {}),
                 ...(payload.tags !== undefined ? { tags: payload.tags } : {}),
             }),
         },

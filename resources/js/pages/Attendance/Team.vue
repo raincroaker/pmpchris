@@ -4,8 +4,14 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { getCoreRowModel, useVueTable } from '@tanstack/vue-table';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { StackedBar } from '@unovis/ts';
-import { VisAxis, VisStackedBar, VisTooltip, VisXYContainer } from '@unovis/vue';
 import {
+    VisAxis,
+    VisStackedBar,
+    VisTooltip,
+    VisXYContainer,
+} from '@unovis/vue';
+import {
+    FileSpreadsheet,
     Info,
     ListFilter,
     Plus,
@@ -258,8 +264,10 @@ function normalizedAttendanceFilters(): AttendanceTeamFiltersProp {
         date_from: f.date_from ?? isoFirstDayOfMonth(new Date()),
         date_to: f.date_to ?? isoLastDayOfMonth(new Date()),
         status: (f.status ?? 'all') as TeamAttendanceStatusFilter,
-        punctuality: (f.punctuality ?? 'all') as TeamAttendancePunctualityFilter,
-        recording_style: (f.recording_style ?? 'all') as TeamAttendanceRecordingStyleFilter,
+        punctuality: (f.punctuality ??
+            'all') as TeamAttendancePunctualityFilter,
+        recording_style: (f.recording_style ??
+            'all') as TeamAttendanceRecordingStyleFilter,
         chart_half:
             (f.chart_half ?? 'first_half') === 'second_half'
                 ? 'second_half'
@@ -343,7 +351,10 @@ function applyQuery(
     );
 }
 
-const halfMonthOptions: Array<{ value: 'first_half' | 'second_half'; label: string }> = [
+const halfMonthOptions: Array<{
+    value: 'first_half' | 'second_half';
+    label: string;
+}> = [
     { value: 'first_half', label: '1st half (1-15)' },
     { value: 'second_half', label: '2nd half (16-end)' },
 ];
@@ -621,7 +632,9 @@ function syncActiveDraftRecordStatus(): void {
         return;
     }
 
-    d.status = deriveTeamAttendanceRecordStatus(normalizeDraftSegments(d.segments));
+    d.status = deriveTeamAttendanceRecordStatus(
+        normalizeDraftSegments(d.segments),
+    );
 }
 
 watch(
@@ -743,7 +756,6 @@ const employeeAttendanceSetupHint = computed((): string | null => {
 
 const deleteDialogOpen = ref(false);
 const deleteTarget = ref<TeamAttendanceRow | null>(null);
-
 
 async function ensureBranchUnitsLoaded(): Promise<void> {
     if (branchUnitsLoading.value) {
@@ -1167,8 +1179,7 @@ const punctualityHeaderFilterOptions = computed(() =>
 
 const punctualityColumnFilterAriaLabel = computed(() => {
     const cur = props.attendanceTeamFilters.punctuality ?? 'all';
-    const summary =
-        cur === 'all' ? 'All' : punctualityLabel(cur);
+    const summary = cur === 'all' ? 'All' : punctualityLabel(cur);
 
     return `Punctuality filter for team attendance entries: ${summary}. Open to choose on time, late, N/A, or all.`;
 });
@@ -1189,8 +1200,7 @@ function onPunctualityHeaderFilterUpdate(v: string | number | null): void {
 
 const statusColumnFilterAriaLabel = computed(() => {
     const cur = props.attendanceTeamFilters.status ?? 'all';
-    const summary =
-        cur === 'all' ? 'All' : attendanceStatusLabel(cur);
+    const summary = cur === 'all' ? 'All' : attendanceStatusLabel(cur);
 
     return `Status filter for team attendance entries: ${summary}. Open to choose complete, ongoing, incomplete, or all.`;
 });
@@ -1223,6 +1233,22 @@ const toRow = computed(() => props.teamAttendanceDays.to);
 const lastPage = computed(() =>
     Math.max(1, props.teamAttendanceDays.last_page),
 );
+
+function generateTeamDtrExcel(): void {
+    const query = new URLSearchParams({
+        mode: 'team',
+        date_from: toolbarDateFromModel.value,
+        date_to: toolbarDateToModel.value,
+    });
+
+    if (props.attendanceTeamFilters.unit_id != null) {
+        query.set('unit_id', String(props.attendanceTeamFilters.unit_id));
+    }
+
+    window.location.assign(
+        `/attendance/reports/dtr-mock-sample?${query.toString()}`,
+    );
+}
 
 function setActualIn(
     index: number,
@@ -1301,219 +1327,236 @@ const columns = computed((): ColumnDef<TeamAttendanceRow>[] => {
     const mut = canAddTeamAttendanceRecords.value;
 
     return [
-    {
-        id: 'employee',
-        meta: { headClass: 'min-w-[11rem]', cellClass: 'align-middle' },
-        header: () => h('span', { class: tablePlainHeadClass }, 'Employee'),
-        cell: ({ row }) => {
-            const r = row.original;
+        {
+            id: 'employee',
+            meta: { headClass: 'min-w-[11rem]', cellClass: 'align-middle' },
+            header: () => h('span', { class: tablePlainHeadClass }, 'Employee'),
+            cell: ({ row }) => {
+                const r = row.original;
 
-            return h('div', { class: 'flex items-center gap-3 py-0.5' }, [
-                h(
-                    Avatar,
-                    {
-                        class: 'size-9 shrink-0 border border-border/70 bg-muted/30',
-                    },
-                    {
-                        default: () => [
-                            h(AvatarImage, {
-                                src: r.employee.avatar_url ?? '',
-                                alt: r.employee.display_name,
-                            }),
+                return h('div', { class: 'flex items-center gap-3 py-0.5' }, [
+                    h(
+                        Avatar,
+                        {
+                            class: 'size-9 shrink-0 border border-border/70 bg-muted/30',
+                        },
+                        {
+                            default: () => [
+                                h(AvatarImage, {
+                                    src: r.employee.avatar_url ?? '',
+                                    alt: r.employee.display_name,
+                                }),
+                                h(
+                                    AvatarFallback,
+                                    {
+                                        class: 'text-[11px] font-medium text-muted-foreground',
+                                    },
+                                    () =>
+                                        employeeInitials(
+                                            r.employee.display_name,
+                                        ),
+                                ),
+                            ],
+                        },
+                    ),
+                    h(
+                        'div',
+                        { class: 'min-w-0 flex-1 flex flex-col gap-0.5' },
+                        [
                             h(
-                                AvatarFallback,
+                                'span',
                                 {
-                                    class: 'text-[11px] font-medium text-muted-foreground',
+                                    class: 'truncate font-medium text-foreground',
                                 },
-                                () => employeeInitials(r.employee.display_name),
+                                r.employee.display_name,
+                            ),
+                            h(
+                                'span',
+                                {
+                                    class: 'font-mono text-xs text-muted-foreground',
+                                },
+                                r.employee.id_number,
                             ),
                         ],
-                    },
-                ),
-                h('div', { class: 'min-w-0 flex-1 flex flex-col gap-0.5' }, [
-                    h(
-                        'span',
-                        { class: 'truncate font-medium text-foreground' },
-                        r.employee.display_name,
                     ),
-                    h(
-                        'span',
-                        { class: 'font-mono text-xs text-muted-foreground' },
-                        r.employee.id_number,
-                    ),
-                ]),
-            ]);
+                ]);
+            },
         },
-    },
-    {
-        id: 'attendance_id',
-        meta: {
-            headClass: 'min-w-[7rem]',
-            cellClass:
-                'align-middle font-mono text-sm tabular-nums text-muted-foreground',
-        },
-        header: () =>
-            h('span', { class: tablePlainHeadClass }, 'Attendance ID'),
-        cell: ({ row }) => {
-            const r = row.original;
-            const profile = r.attendance_id?.trim();
-            const ingest = r.ingest_key?.trim();
+        {
+            id: 'attendance_id',
+            meta: {
+                headClass: 'min-w-[7rem]',
+                cellClass:
+                    'align-middle font-mono text-sm tabular-nums text-muted-foreground',
+            },
+            header: () =>
+                h('span', { class: tablePlainHeadClass }, 'Attendance ID'),
+            cell: ({ row }) => {
+                const r = row.original;
+                const profile = r.attendance_id?.trim();
+                const ingest = r.ingest_key?.trim();
 
-            return h('span', { class: 'block py-0.5' }, [
+                return h('span', { class: 'block py-0.5' }, [
+                    h(
+                        'span',
+                        {
+                            class: profile
+                                ? 'text-foreground'
+                                : 'text-muted-foreground',
+                        },
+                        profile || '—',
+                    ),
+                    ingest
+                        ? h(
+                              'span',
+                              {
+                                  class: 'mt-0.5 block text-[11px] leading-tight text-muted-foreground',
+                              },
+                              ingest,
+                          )
+                        : null,
+                ]);
+            },
+        },
+        {
+            id: 'work_date',
+            header: () =>
+                h(TeamTableSortHeader, {
+                    columnTitle: 'Work date',
+                    sortDirection: sortDirectionFor('work_date'),
+                    onToggleSort: () => toggleSort('work_date'),
+                }),
+            cell: ({ row }) =>
                 h(
                     'span',
-                    {
-                        class: profile
-                            ? 'text-foreground'
-                            : 'text-muted-foreground',
-                    },
-                    profile || '—',
+                    { class: 'text-sm tabular-nums text-foreground' },
+                    new Date(
+                        `${row.original.work_date}T12:00:00`,
+                    ).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                    }),
                 ),
-                ingest
-                    ? h(
-                          'span',
-                          {
-                              class:
-                                  'mt-0.5 block text-[11px] leading-tight text-muted-foreground',
-                          },
-                          ingest,
-                      )
-                    : null,
-            ]);
         },
-    },
-    {
-        id: 'work_date',
-        header: () =>
-            h(TeamTableSortHeader, {
-                columnTitle: 'Work date',
-                sortDirection: sortDirectionFor('work_date'),
-                onToggleSort: () => toggleSort('work_date'),
-            }),
-        cell: ({ row }) =>
-            h(
-                'span',
-                { class: 'text-sm tabular-nums text-foreground' },
-                new Date(
-                    `${row.original.work_date}T12:00:00`,
-                ).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                }),
-            ),
-    },
-    {
-        id: 'time_clock',
-        meta: {
-            headClass: 'min-w-[9rem]',
-            cellClass:
-                'align-middle max-w-[16rem] font-mono text-sm tabular-nums whitespace-pre-line leading-snug text-foreground',
-        },
-        header: () =>
-            h('span', { class: tablePlainHeadClass }, 'Time (clock in / out)'),
-        cell: ({ row }) => {
-            const r = row.original;
+        {
+            id: 'time_clock',
+            meta: {
+                headClass: 'min-w-[9rem]',
+                cellClass:
+                    'align-middle max-w-[16rem] font-mono text-sm tabular-nums whitespace-pre-line leading-snug text-foreground',
+            },
+            header: () =>
+                h(
+                    'span',
+                    { class: tablePlainHeadClass },
+                    'Time (clock in / out)',
+                ),
+            cell: ({ row }) => {
+                const r = row.original;
 
-            return h(
-                'span',
-                { class: 'block py-0.5' },
-                clockInOutDisplay(r.clock_pattern, r.segments),
-            );
+                return h(
+                    'span',
+                    { class: 'block py-0.5' },
+                    clockInOutDisplay(r.clock_pattern, r.segments),
+                );
+            },
         },
-    },
-    {
-        id: 'net_time',
-        meta: {
-            headClass: 'min-w-[6.5rem]',
-            cellClass: 'align-middle text-sm tabular-nums text-foreground',
-        },
-        header: () => h(AttendanceGrossNetColumnHeader, { metric: 'net' }),
-        cell: ({ row }) =>
-            h(
-                'span',
-                { class: 'block py-0.5 font-mono' },
-                attendanceNetWithinScheduledOverlapDisplay(
-                    row.original.segments,
-                    row.original.punctuality,
-                    {
-                        clockPattern: row.original.clock_pattern,
-                        unpaidBreakMinutesFromTemplate:
-                            row.original.unpaid_break_minutes ?? 0,
-                    },
+        {
+            id: 'net_time',
+            meta: {
+                headClass: 'min-w-[6.5rem]',
+                cellClass: 'align-middle text-sm tabular-nums text-foreground',
+            },
+            header: () => h(AttendanceGrossNetColumnHeader, { metric: 'net' }),
+            cell: ({ row }) =>
+                h(
+                    'span',
+                    { class: 'block py-0.5 font-mono' },
+                    attendanceNetWithinScheduledOverlapDisplay(
+                        row.original.segments,
+                        row.original.punctuality,
+                        {
+                            clockPattern: row.original.clock_pattern,
+                            unpaidBreakMinutesFromTemplate:
+                                row.original.unpaid_break_minutes ?? 0,
+                        },
+                    ),
                 ),
-            ),
-    },
-    {
-        id: 'punctuality',
-        meta: { headClass: 'min-w-[8rem]', cellClass: 'align-middle' },
-        header: () =>
-            h(HrisColumnFilterPopover, {
-                label: 'Punctuality',
-                triggerAriaLabel: punctualityColumnFilterAriaLabel.value,
-                modelValue: props.attendanceTeamFilters.punctuality,
-                options: punctualityHeaderFilterOptions.value,
-                isActive: props.attendanceTeamFilters.punctuality !== 'all',
-                searchable: false,
-                showAllOption: false,
-                showCheckIcon: false,
-                contentClass: 'w-auto min-w-48 p-2',
-                'onUpdate:modelValue': onPunctualityHeaderFilterUpdate,
-            }),
-        cell: ({ row }) =>
-            h(
-                Badge,
-                {
-                    variant: 'outline',
-                    class: punctualityBadgeClass(row.original.punctuality),
-                },
-                () => punctualityLabel(row.original.punctuality),
-            ),
-    },
-    {
-        id: 'status',
-        meta: { headClass: 'min-w-[8rem]', cellClass: 'align-middle' },
-        header: () =>
-            h(HrisColumnFilterPopover, {
-                label: 'Status',
-                triggerAriaLabel: statusColumnFilterAriaLabel.value,
-                modelValue: props.attendanceTeamFilters.status,
-                options: attendanceStatusHeaderFilterOptions.value,
-                isActive: props.attendanceTeamFilters.status !== 'all',
-                searchable: false,
-                showAllOption: false,
-                showCheckIcon: false,
-                contentClass: 'w-auto min-w-48 p-2',
-                'onUpdate:modelValue': onAttendanceStatusHeaderFilterUpdate,
-            }),
-        cell: ({ row }) =>
-            h(
-                Badge,
-                {
-                    variant: 'outline',
-                    class: attendanceStatusBadgeClass(row.original.status),
-                },
-                () => attendanceStatusLabel(row.original.status),
-            ),
-    },
-    {
-        id: 'actions',
-        meta: { headClass: 'w-[72px] text-center', cellClass: 'text-center' },
-        header: () =>
-            h(
-                'div',
-                { class: `w-full text-center ${tablePlainHeadClass}` },
-                'Actions',
-            ),
-        cell: ({ row }) =>
-            h(AttendanceTeamRowActionsMenu, {
-                row: row.original,
-                canMutate: mut,
-                onView: openView,
-                onEdit: openEdit,
-                onRemove: openDeleteConfirm,
-            }),
-    },
+        },
+        {
+            id: 'punctuality',
+            meta: { headClass: 'min-w-[8rem]', cellClass: 'align-middle' },
+            header: () =>
+                h(HrisColumnFilterPopover, {
+                    label: 'Punctuality',
+                    triggerAriaLabel: punctualityColumnFilterAriaLabel.value,
+                    modelValue: props.attendanceTeamFilters.punctuality,
+                    options: punctualityHeaderFilterOptions.value,
+                    isActive: props.attendanceTeamFilters.punctuality !== 'all',
+                    searchable: false,
+                    showAllOption: false,
+                    showCheckIcon: false,
+                    contentClass: 'w-auto min-w-48 p-2',
+                    'onUpdate:modelValue': onPunctualityHeaderFilterUpdate,
+                }),
+            cell: ({ row }) =>
+                h(
+                    Badge,
+                    {
+                        variant: 'outline',
+                        class: punctualityBadgeClass(row.original.punctuality),
+                    },
+                    () => punctualityLabel(row.original.punctuality),
+                ),
+        },
+        {
+            id: 'status',
+            meta: { headClass: 'min-w-[8rem]', cellClass: 'align-middle' },
+            header: () =>
+                h(HrisColumnFilterPopover, {
+                    label: 'Status',
+                    triggerAriaLabel: statusColumnFilterAriaLabel.value,
+                    modelValue: props.attendanceTeamFilters.status,
+                    options: attendanceStatusHeaderFilterOptions.value,
+                    isActive: props.attendanceTeamFilters.status !== 'all',
+                    searchable: false,
+                    showAllOption: false,
+                    showCheckIcon: false,
+                    contentClass: 'w-auto min-w-48 p-2',
+                    'onUpdate:modelValue': onAttendanceStatusHeaderFilterUpdate,
+                }),
+            cell: ({ row }) =>
+                h(
+                    Badge,
+                    {
+                        variant: 'outline',
+                        class: attendanceStatusBadgeClass(row.original.status),
+                    },
+                    () => attendanceStatusLabel(row.original.status),
+                ),
+        },
+        {
+            id: 'actions',
+            meta: {
+                headClass: 'w-[72px] text-center',
+                cellClass: 'text-center',
+            },
+            header: () =>
+                h(
+                    'div',
+                    { class: `w-full text-center ${tablePlainHeadClass}` },
+                    'Actions',
+                ),
+            cell: ({ row }) =>
+                h(AttendanceTeamRowActionsMenu, {
+                    row: row.original,
+                    canMutate: mut,
+                    onView: openView,
+                    onEdit: openEdit,
+                    onRemove: openDeleteConfirm,
+                }),
+        },
     ];
 });
 
@@ -1526,7 +1569,6 @@ const table = useVueTable({
     },
     getCoreRowModel: getCoreRowModel(),
 });
-
 </script>
 
 <template>
@@ -1557,12 +1599,19 @@ const table = useVueTable({
                     @click="openKpiDialog(card.key)"
                 >
                     <div class="flex items-start justify-between gap-2">
-                        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             {{ card.title }}
                         </p>
-                        <ListFilter class="size-4 shrink-0 text-muted-foreground transition group-hover:text-foreground" />
+                        <ListFilter
+                            class="size-4 shrink-0 text-muted-foreground transition group-hover:text-foreground"
+                        />
                     </div>
-                    <p class="mt-1 text-2xl font-semibold tabular-nums" :class="card.valueClass">
+                    <p
+                        class="mt-1 text-2xl font-semibold tabular-nums"
+                        :class="card.valueClass"
+                    >
                         {{ card.value }}
                     </p>
                     <p class="mt-1 text-xs text-muted-foreground">
@@ -1585,7 +1634,8 @@ const table = useVueTable({
                             {{ chartMonthLabel }} • {{ halfMonthLabel }}
                         </p>
                         <p class="mt-1 text-xs text-muted-foreground">
-                            Stacked daily totals for on-time, late, and absent employees.
+                            Stacked daily totals for on-time, late, and absent
+                            employees.
                         </p>
                     </div>
                     <Select
@@ -1736,6 +1786,18 @@ const table = useVueTable({
                             </SelectContent>
                         </Select>
                         <Button
+                            type="button"
+                            variant="outline"
+                            class="h-9 shrink-0 border-primary/60 text-primary hover:bg-primary/10 hover:text-primary dark:border-primary/70 dark:hover:bg-primary/15"
+                            @click="generateTeamDtrExcel"
+                        >
+                            <FileSpreadsheet
+                                class="size-4"
+                                aria-hidden="true"
+                            />
+                            <span class="mr-1">Generate DTR</span>
+                        </Button>
+                        <Button
                             v-if="canAddTeamAttendanceRecords"
                             type="button"
                             class="h-9 shrink-0"
@@ -1801,14 +1863,15 @@ const table = useVueTable({
                     :last-page="lastPage"
                     :per-page="teamAttendanceDays.per_page"
                     :can-previous-page="teamAttendanceDays.current_page > 1"
-                    :can-next-page="
-                        teamAttendanceDays.current_page < lastPage
-                    "
+                    :can-next-page="teamAttendanceDays.current_page < lastPage"
                     @update:per-page="onPerPageChange"
                     @go-first="applyQuery({ page: 1 })"
                     @go-prev="
                         applyQuery({
-                            page: Math.max(1, teamAttendanceDays.current_page - 1),
+                            page: Math.max(
+                                1,
+                                teamAttendanceDays.current_page - 1,
+                            ),
                         })
                     "
                     @go-next="
@@ -1855,7 +1918,10 @@ const table = useVueTable({
                     {{ activeKpiMeta?.title ?? 'KPI employees' }}
                 </DialogTitle>
                 <DialogDescription>
-                    {{ activeKpiMeta?.subtitle ?? 'Employees for this KPI result.' }}
+                    {{
+                        activeKpiMeta?.subtitle ??
+                        'Employees for this KPI result.'
+                    }}
                 </DialogDescription>
             </DialogHeader>
 
@@ -1864,7 +1930,8 @@ const table = useVueTable({
                     v-if="activeKpiEmployees.length === 0"
                     class="rounded-lg border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground"
                 >
-                    No employees matched this KPI for the current workspace and filters.
+                    No employees matched this KPI for the current workspace and
+                    filters.
                 </div>
                 <div v-else class="grid gap-2">
                     <div
@@ -1873,7 +1940,9 @@ const table = useVueTable({
                         class="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 px-3 py-2"
                     >
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-medium text-foreground">
+                            <p
+                                class="truncate text-sm font-medium text-foreground"
+                            >
                                 {{ employee.display_name }}
                             </p>
                             <p class="font-mono text-xs text-muted-foreground">
@@ -1920,91 +1989,154 @@ const table = useVueTable({
                         {{ TEAM_ATTENDANCE_FORM_HEADER_TOOLTIP }}
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea
-                    v-if="activeDraft"
-                    :class="dialogScrollAreaClass"
-                >
+                <ScrollArea v-if="activeDraft" :class="dialogScrollAreaClass">
                     <div class="grid gap-4 px-1 py-1">
-                    <p
-                        v-if="branchUnitsLoadError"
-                        class="text-xs text-amber-700 dark:text-amber-300"
-                    >
-                        {{ branchUnitsLoadError }}
-                    </p>
-                    <p
-                        v-if="chartBranchId === null"
-                        class="text-xs text-destructive"
-                    >
-                        Select a workspace branch (header) to load units and
-                        search employees.
-                    </p>
-                    <div class="grid gap-2">
-                        <Label for="att-unit">Unit</Label>
-                        <TeamHrUnitCombobox
-                            id="att-unit"
-                            :units="branchUnits"
-                            :model-value="activeDraft.organizational_unit_id"
-                            :loading="branchUnitsLoading"
-                            :disabled="
-                                chartBranchId === null ||
-                                branchUnits.length === 0
-                            "
-                            placeholder="Search or choose unit…"
-                            @update:model-value="onFormUnitChange"
-                        />
                         <p
-                            v-if="branchUnitsLoading"
-                            class="text-xs text-muted-foreground"
+                            v-if="branchUnitsLoadError"
+                            class="text-xs text-amber-700 dark:text-amber-300"
                         >
-                            Loading units…
+                            {{ branchUnitsLoadError }}
                         </p>
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="att-emp">Employee</Label>
-                        <TeamHrEmployeeCombobox
-                            v-if="activeDraft !== null"
-                            id="att-emp"
-                            v-model="selectedEmployeeHitModel"
-                            :chart-branch-id="chartBranchId"
-                            :unit-id="activeDraft.organizational_unit_id"
-                            :disabled="
-                                chartBranchId === null ||
-                                activeDraft.organizational_unit_id === null
-                            "
-                        />
-                    </div>
-                    <div
-                        v-if="employeeAttendanceSetupHint"
-                        class="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:border-amber-400/30 dark:bg-amber-500/12 dark:text-amber-50"
-                        role="status"
-                    >
-                        <span>{{ employeeAttendanceSetupHint }}</span>
-                        <Link
-                            class="ms-1 font-medium underline underline-offset-2"
-                            :href="employeeSchedules()"
-                            >Open Employee Schedules</Link
+                        <p
+                            v-if="chartBranchId === null"
+                            class="text-xs text-destructive"
                         >
-                        <span class="text-muted-foreground">.</span>
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
+                            Select a workspace branch (header) to load units and
+                            search employees.
+                        </p>
                         <div class="grid gap-2">
-                            <Label for="att-work-date">Work date</Label>
-                            <TeamFormIsoDatePicker
-                                id="att-work-date"
-                                v-model="activeDraft.work_date"
-                                ariaLabel="Work date"
+                            <Label for="att-unit">Unit</Label>
+                            <TeamHrUnitCombobox
+                                id="att-unit"
+                                :units="branchUnits"
+                                :model-value="
+                                    activeDraft.organizational_unit_id
+                                "
+                                :loading="branchUnitsLoading"
+                                :disabled="
+                                    chartBranchId === null ||
+                                    branchUnits.length === 0
+                                "
+                                placeholder="Search or choose unit…"
+                                @update:model-value="onFormUnitChange"
                             />
+                            <p
+                                v-if="branchUnitsLoading"
+                                class="text-xs text-muted-foreground"
+                            >
+                                Loading units…
+                            </p>
                         </div>
                         <div class="grid gap-2">
-                            <div class="flex h-6 min-h-6 shrink-0 items-center gap-1.5">
-                                <Label for="att-record-status">Status</Label>
+                            <Label for="att-emp">Employee</Label>
+                            <TeamHrEmployeeCombobox
+                                v-if="activeDraft !== null"
+                                id="att-emp"
+                                v-model="selectedEmployeeHitModel"
+                                :chart-branch-id="chartBranchId"
+                                :unit-id="activeDraft.organizational_unit_id"
+                                :disabled="
+                                    chartBranchId === null ||
+                                    activeDraft.organizational_unit_id === null
+                                "
+                            />
+                        </div>
+                        <div
+                            v-if="employeeAttendanceSetupHint"
+                            class="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:border-amber-400/30 dark:bg-amber-500/12 dark:text-amber-50"
+                            role="status"
+                        >
+                            <span>{{ employeeAttendanceSetupHint }}</span>
+                            <Link
+                                class="ms-1 font-medium underline underline-offset-2"
+                                :href="employeeSchedules()"
+                                >Open Employee Schedules</Link
+                            >
+                            <span class="text-muted-foreground">.</span>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="att-work-date">Work date</Label>
+                                <TeamFormIsoDatePicker
+                                    id="att-work-date"
+                                    v-model="activeDraft.work_date"
+                                    ariaLabel="Work date"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <div
+                                    class="flex h-6 min-h-6 shrink-0 items-center gap-1.5"
+                                >
+                                    <Label for="att-record-status"
+                                        >Status</Label
+                                    >
+                                    <Tooltip>
+                                        <TooltipTrigger as-child>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                                aria-label="Explain status"
+                                            >
+                                                <Info
+                                                    class="size-3.5 shrink-0"
+                                                    aria-hidden="true"
+                                                />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent
+                                            side="top"
+                                            class="max-w-xs text-pretty"
+                                        >
+                                            {{
+                                                TEAM_ATTENDANCE_FORM_STATUS_TOOLTIP
+                                            }}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <div
+                                    id="att-record-status"
+                                    class="flex min-h-9 flex-col justify-center gap-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                                >
+                                    <Badge
+                                        v-if="activeDraft.employee_id !== null"
+                                        variant="outline"
+                                        class="w-fit font-normal"
+                                        :class="
+                                            attendanceStatusBadgeClass(
+                                                activeDraft.status,
+                                            )
+                                        "
+                                    >
+                                        {{
+                                            attendanceStatusLabel(
+                                                activeDraft.status,
+                                            )
+                                        }}
+                                    </Badge>
+                                    <p
+                                        v-else
+                                        class="text-sm text-muted-foreground"
+                                    >
+                                        —
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid gap-2">
+                            <div
+                                class="flex h-6 min-h-6 shrink-0 items-center gap-1.5"
+                            >
+                                <Label for="att-sched-name"
+                                    >Work schedule</Label
+                                >
                                 <Tooltip>
                                     <TooltipTrigger as-child>
                                         <Button
                                             type="button"
                                             variant="ghost"
                                             class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
-                                            aria-label="Explain status"
+                                            aria-label="Explain work schedule field"
                                         >
                                             <Info
                                                 class="size-3.5 shrink-0"
@@ -2016,319 +2148,276 @@ const table = useVueTable({
                                         side="top"
                                         class="max-w-xs text-pretty"
                                     >
-                                        {{ TEAM_ATTENDANCE_FORM_STATUS_TOOLTIP }}
+                                        {{
+                                            TEAM_ATTENDANCE_FORM_WORK_SCHEDULE_TOOLTIP
+                                        }}
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
-                            <div
-                                id="att-record-status"
-                                class="flex min-h-9 flex-col justify-center gap-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2"
+                            <p
+                                id="att-sched-name"
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
                             >
-                                <Badge
-                                    v-if="activeDraft.employee_id !== null"
-                                    variant="outline"
-                                    class="w-fit font-normal"
-                                    :class="
-                                        attendanceStatusBadgeClass(
-                                            activeDraft.status,
-                                        )
-                                    "
+                                {{
+                                    activeDraft.work_schedule_name.trim() !== ''
+                                        ? activeDraft.work_schedule_name
+                                        : '—'
+                                }}
+                            </p>
+                        </div>
+                        <div class="grid gap-2">
+                            <div
+                                class="flex h-6 min-h-6 shrink-0 items-center gap-1.5"
+                            >
+                                <Label for="att-external-id"
+                                    >Attendance ID</Label
                                 >
+                                <Tooltip>
+                                    <TooltipTrigger as-child>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                            aria-label="Explain attendance ID field"
+                                        >
+                                            <Info
+                                                class="size-3.5 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                        side="top"
+                                        class="max-w-xs text-pretty"
+                                    >
+                                        {{
+                                            TEAM_ATTENDANCE_FORM_PROFILE_ATTENDANCE_ID_TOOLTIP
+                                        }}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                            <p
+                                id="att-external-id"
+                                class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 font-mono text-sm tabular-nums"
+                            >
+                                {{ activeDraft.attendance_id.trim() || '—' }}
+                            </p>
+                        </div>
+                        <div
+                            v-if="activeDraft.employee_id !== null"
+                            class="grid gap-2"
+                        >
+                            <div
+                                class="flex h-6 min-h-6 shrink-0 items-center gap-1.5"
+                            >
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
+                                    Recording style
+                                </p>
+                                <Tooltip>
+                                    <TooltipTrigger as-child>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                            aria-label="Explain recording style"
+                                        >
+                                            <Info
+                                                class="size-3.5 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                        side="top"
+                                        class="max-w-xs text-pretty"
+                                    >
+                                        {{
+                                            TEAM_ATTENDANCE_FORM_RECORDING_STYLE_TOOLTIP
+                                        }}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <Badge variant="outline" class="font-normal">
                                     {{
-                                        attendanceStatusLabel(
-                                            activeDraft.status,
+                                        clockPatternBadgeLabel(
+                                            activeDraft.clock_pattern,
                                         )
                                     }}
                                 </Badge>
-                                <p
-                                    v-else
-                                    class="text-sm text-muted-foreground"
+                                <Badge
+                                    v-if="activeDraft.is_overnight_schedule"
+                                    variant="outline"
+                                    class="font-normal"
                                 >
-                                    —
-                                </p>
+                                    Overnight
+                                </Badge>
                             </div>
                         </div>
-                    </div>
-                    <div class="grid gap-2">
-                        <div class="flex h-6 min-h-6 shrink-0 items-center gap-1.5">
-                            <Label for="att-sched-name">Work schedule</Label>
-                            <Tooltip>
-                                <TooltipTrigger as-child>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
-                                        aria-label="Explain work schedule field"
-                                    >
-                                        <Info
-                                            class="size-3.5 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent
-                                    side="top"
-                                    class="max-w-xs text-pretty"
-                                >
-                                    {{ TEAM_ATTENDANCE_FORM_WORK_SCHEDULE_TOOLTIP }}
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-                        <p
-                            id="att-sched-name"
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm"
+                        <Separator />
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-2"
                         >
-                            {{
-                                activeDraft.work_schedule_name.trim() !== ''
-                                    ? activeDraft.work_schedule_name
-                                    : '—'
-                            }}
-                        </p>
-                    </div>
-                    <div class="grid gap-2">
-                        <div class="flex h-6 min-h-6 shrink-0 items-center gap-1.5">
-                            <Label for="att-external-id">Attendance ID</Label>
-                            <Tooltip>
-                                <TooltipTrigger as-child>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
-                                        aria-label="Explain attendance ID field"
+                            <div class="flex min-h-8 items-center gap-1.5">
+                                <p class="text-sm font-medium text-foreground">
+                                    Clock times
+                                </p>
+                                <Tooltip>
+                                    <TooltipTrigger as-child>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                            aria-label="Explain clock times fields"
+                                        >
+                                            <Info
+                                                class="size-3.5 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                        side="top"
+                                        class="max-w-xs text-pretty"
                                     >
-                                        <Info
-                                            class="size-3.5 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent
-                                    side="top"
-                                    class="max-w-xs text-pretty"
-                                >
-                                    {{
-                                        TEAM_ATTENDANCE_FORM_PROFILE_ATTENDANCE_ID_TOOLTIP
-                                    }}
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-                        <p
-                            id="att-external-id"
-                            class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 font-mono text-sm tabular-nums"
-                        >
-                            {{ activeDraft.attendance_id.trim() || '—' }}
-                        </p>
-                    </div>
-                    <div
-                        v-if="activeDraft.employee_id !== null"
-                        class="grid gap-2"
-                    >
-                        <div class="flex h-6 min-h-6 shrink-0 items-center gap-1.5">
-                            <p
-                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                            >
-                                Recording style
-                            </p>
-                            <Tooltip>
-                                <TooltipTrigger as-child>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
-                                        aria-label="Explain recording style"
-                                    >
-                                        <Info
-                                            class="size-3.5 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent
-                                    side="top"
-                                    class="max-w-xs text-pretty"
-                                >
-                                    {{
-                                        TEAM_ATTENDANCE_FORM_RECORDING_STYLE_TOOLTIP
-                                    }}
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <Badge variant="outline" class="font-normal">
-                                {{
-                                    clockPatternBadgeLabel(
-                                        activeDraft.clock_pattern,
-                                    )
-                                }}
-                            </Badge>
-                            <Badge
-                                v-if="activeDraft.is_overnight_schedule"
-                                variant="outline"
-                                class="font-normal"
-                            >
-                                Overnight
-                            </Badge>
-                        </div>
-                    </div>
-                    <Separator />
-                    <div
-                        class="flex flex-wrap items-center justify-between gap-2"
-                    >
-                        <div class="flex min-h-8 items-center gap-1.5">
-                            <p class="text-sm font-medium text-foreground">
-                                Clock times
-                            </p>
-                            <Tooltip>
-                                <TooltipTrigger as-child>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        class="size-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
-                                        aria-label="Explain clock times fields"
-                                    >
-                                        <Info
-                                            class="size-3.5 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent
-                                    side="top"
-                                    class="max-w-xs text-pretty"
-                                >
-                                    {{ clockTimesMutateFormTooltip }}
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-                        <Button
-                            v-if="
-                                activeDraft.clock_pattern ===
-                                    'split_sessions' && !scheduleFieldsLocked
-                            "
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            class="h-8"
-                            :disabled="activeDraft.segments.length >= 3"
-                            @click="addSessionSegment"
-                        >
-                            Add session
-                        </Button>
-                    </div>
-                    <div
-                        v-for="(seg, idx) in activeDraft.segments"
-                        :key="`${seg.label}-${idx}`"
-                        class="space-y-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-3"
-                    >
-                        <div class="flex items-center justify-between gap-2">
-                            <Label :for="`att-seg-${idx}-label`"
-                                >Segment label</Label
-                            >
+                                        {{ clockTimesMutateFormTooltip }}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
                             <Button
                                 v-if="
                                     activeDraft.clock_pattern ===
                                         'split_sessions' &&
-                                    !scheduleFieldsLocked &&
-                                    activeDraft.segments.length > 2 &&
-                                    idx === activeDraft.segments.length - 1
+                                    !scheduleFieldsLocked
                                 "
                                 type="button"
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
-                                class="h-7 text-destructive"
-                                @click="removeLastSessionSegment"
+                                class="h-8"
+                                :disabled="activeDraft.segments.length >= 3"
+                                @click="addSessionSegment"
                             >
-                                Remove
+                                Add session
                             </Button>
                         </div>
-                        <Input
-                            :id="`att-seg-${idx}-label`"
-                            v-model="seg.label"
-                            class="h-9"
-                            autocomplete="off"
-                            :disabled="scheduleFieldsLocked"
-                        />
-                        <div class="grid gap-2 sm:grid-cols-2">
-                            <div class="grid gap-2">
-                                <Label :for="`att-seg-${idx}-si`"
-                                    >Scheduled in</Label
+                        <div
+                            v-for="(seg, idx) in activeDraft.segments"
+                            :key="`${seg.label}-${idx}`"
+                            class="space-y-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-3"
+                        >
+                            <div
+                                class="flex items-center justify-between gap-2"
+                            >
+                                <Label :for="`att-seg-${idx}-label`"
+                                    >Segment label</Label
                                 >
-                                <Input
-                                    :id="`att-seg-${idx}-si`"
-                                    v-model="seg.scheduled_in"
-                                    class="h-9 font-mono tabular-nums"
-                                    placeholder="08:30"
-                                    autocomplete="off"
-                                    :disabled="scheduleFieldsLocked"
-                                />
+                                <Button
+                                    v-if="
+                                        activeDraft.clock_pattern ===
+                                            'split_sessions' &&
+                                        !scheduleFieldsLocked &&
+                                        activeDraft.segments.length > 2 &&
+                                        idx === activeDraft.segments.length - 1
+                                    "
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    class="h-7 text-destructive"
+                                    @click="removeLastSessionSegment"
+                                >
+                                    Remove
+                                </Button>
                             </div>
-                            <div class="grid gap-2">
-                                <Label :for="`att-seg-${idx}-so`"
-                                    >Scheduled out</Label
-                                >
-                                <Input
-                                    :id="`att-seg-${idx}-so`"
-                                    v-model="seg.scheduled_out"
-                                    class="h-9 font-mono tabular-nums"
-                                    placeholder="17:00"
-                                    autocomplete="off"
-                                    :disabled="scheduleFieldsLocked"
-                                />
+                            <Input
+                                :id="`att-seg-${idx}-label`"
+                                v-model="seg.label"
+                                class="h-9"
+                                autocomplete="off"
+                                :disabled="scheduleFieldsLocked"
+                            />
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <div class="grid gap-2">
+                                    <Label :for="`att-seg-${idx}-si`"
+                                        >Scheduled in</Label
+                                    >
+                                    <Input
+                                        :id="`att-seg-${idx}-si`"
+                                        v-model="seg.scheduled_in"
+                                        class="h-9 font-mono tabular-nums"
+                                        placeholder="08:30"
+                                        autocomplete="off"
+                                        :disabled="scheduleFieldsLocked"
+                                    />
+                                </div>
+                                <div class="grid gap-2">
+                                    <Label :for="`att-seg-${idx}-so`"
+                                        >Scheduled out</Label
+                                    >
+                                    <Input
+                                        :id="`att-seg-${idx}-so`"
+                                        v-model="seg.scheduled_out"
+                                        class="h-9 font-mono tabular-nums"
+                                        placeholder="17:00"
+                                        autocomplete="off"
+                                        :disabled="scheduleFieldsLocked"
+                                    />
+                                </div>
+                            </div>
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <div class="grid gap-2">
+                                    <Label :for="`att-seg-${idx}-ai`"
+                                        >Actual in</Label
+                                    >
+                                    <Input
+                                        :id="`att-seg-${idx}-ai`"
+                                        class="h-9 font-mono tabular-nums"
+                                        placeholder="Optional"
+                                        autocomplete="off"
+                                        :model-value="seg.actual_in ?? ''"
+                                        @update:model-value="
+                                            (v) => setActualIn(idx, v)
+                                        "
+                                    />
+                                </div>
+                                <div class="grid gap-2">
+                                    <Label :for="`att-seg-${idx}-ao`"
+                                        >Actual out</Label
+                                    >
+                                    <Input
+                                        :id="`att-seg-${idx}-ao`"
+                                        class="h-9 font-mono tabular-nums"
+                                        placeholder="Optional"
+                                        autocomplete="off"
+                                        :model-value="seg.actual_out ?? ''"
+                                        @update:model-value="
+                                            (v) => setActualOut(idx, v)
+                                        "
+                                    />
+                                </div>
                             </div>
                         </div>
-                        <div class="grid gap-2 sm:grid-cols-2">
-                            <div class="grid gap-2">
-                                <Label :for="`att-seg-${idx}-ai`"
-                                    >Actual in</Label
-                                >
-                                <Input
-                                    :id="`att-seg-${idx}-ai`"
-                                    class="h-9 font-mono tabular-nums"
-                                    placeholder="Optional"
-                                    autocomplete="off"
-                                    :model-value="seg.actual_in ?? ''"
-                                    @update:model-value="
-                                        (v) => setActualIn(idx, v)
-                                    "
-                                />
-                            </div>
-                            <div class="grid gap-2">
-                                <Label :for="`att-seg-${idx}-ao`"
-                                    >Actual out</Label
-                                >
-                                <Input
-                                    :id="`att-seg-${idx}-ao`"
-                                    class="h-9 font-mono tabular-nums"
-                                    placeholder="Optional"
-                                    autocomplete="off"
-                                    :model-value="seg.actual_out ?? ''"
-                                    @update:model-value="
-                                        (v) => setActualOut(idx, v)
-                                    "
-                                />
-                            </div>
-                        </div>
+                        <p v-if="formError" class="text-sm text-destructive">
+                            {{ formError }}
+                        </p>
                     </div>
-                    <p v-if="formError" class="text-sm text-destructive">
-                        {{ formError }}
-                    </p>
-                </div>
-            </ScrollArea>
-            <DialogFooter class="gap-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    @click="mutateDialogOpen = false"
-                    >Cancel</Button
-                >
-                <Button
-                    type="button"
-                    :disabled="employeeAttendanceSetupHint !== null"
-                    @click="applyMutate"
-                >
-                    {{ isEditing ? 'Save changes' : 'Add Entry' }}
-                </Button>
-            </DialogFooter>
+                </ScrollArea>
+                <DialogFooter class="gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="mutateDialogOpen = false"
+                        >Cancel</Button
+                    >
+                    <Button
+                        type="button"
+                        :disabled="employeeAttendanceSetupHint !== null"
+                        @click="applyMutate"
+                    >
+                        {{ isEditing ? 'Save changes' : 'Add Entry' }}
+                    </Button>
+                </DialogFooter>
             </TooltipProvider>
         </DialogContent>
     </Dialog>

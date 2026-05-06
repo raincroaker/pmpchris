@@ -67,12 +67,13 @@ const currentPasswordConfirmation = ref('');
 const fieldErrors = ref<PageErrorsBag>({});
 const processing = ref(false);
 
-const pickerPositions = computed((): EmployeePositionOption[] =>
-    props.work?.positions_catalog.map((p) => ({
-        id: p.id,
-        code: p.code,
-        title: p.title,
-    })) ?? [],
+const pickerPositions = computed(
+    (): EmployeePositionOption[] =>
+        props.work?.positions_catalog.map((p) => ({
+            id: p.id,
+            code: p.code,
+            title: p.title,
+        })) ?? [],
 );
 
 const todayLocal = computed(() => today(getLocalTimeZone()));
@@ -97,18 +98,16 @@ function isoToCalendarValue(iso: string): DateValue | undefined {
 
 function isoTriggerLabel(iso: string): string {
     const v = isoToCalendarValue(iso);
-    if (
-        v === undefined ||
-        !('toDate' in v) ||
-        typeof v.toDate !== 'function'
-    ) {
+    if (v === undefined || !('toDate' in v) || typeof v.toDate !== 'function') {
         return '';
     }
 
     return formatCalendarTriggerFromDate(v.toDate(getLocalTimeZone()));
 }
 
-const hireCalendarMin = computed(() => isoToCalendarValue(props.work?.hire_date ?? ''));
+const hireCalendarMin = computed(() =>
+    isoToCalendarValue(props.work?.hire_date ?? ''),
+);
 
 type AffiliationRowPayload = {
     id: number;
@@ -126,7 +125,9 @@ type PositionRowPayload = {
     id?: number;
 };
 
-function affiliationsPayloadFromWork(w: AboutMeWorkPayload): AffiliationRowPayload[] {
+function affiliationsPayloadFromWork(
+    w: AboutMeWorkPayload,
+): AffiliationRowPayload[] {
     return w.affiliations.map((row) => ({
         id: row.id,
         root_unit_id: row.root_unit_id,
@@ -198,7 +199,11 @@ function setPrimaryPosition(index: number, checked: unknown): void {
     });
 }
 
-function onPositionStart(index: number, value: unknown, close: () => void): void {
+function onPositionStart(
+    index: number,
+    value: unknown,
+    close: () => void,
+): void {
     const row = positionDrafts.value[index];
     if (
         row === undefined ||
@@ -394,9 +399,7 @@ function submit(): void {
                     typeof pageErrors === 'object' &&
                     Object.keys(pageErrors).length === 0
                 ) {
-                    appToast.error(
-                        'Could not save changes. Please try again.',
-                    );
+                    appToast.error('Could not save changes. Please try again.');
                 }
             },
         },
@@ -412,7 +415,8 @@ function submit(): void {
                 <DialogDescription>
                     Catalog-linked titles for your current employment at
                     {{
-                        work?.affiliation_organization?.name ?? 'your organization'
+                        work?.affiliation_organization?.name ??
+                        'your organization'
                     }}. Affiliations are unchanged unless you edit them in the
                     separate affiliation dialog.
                 </DialogDescription>
@@ -421,7 +425,9 @@ function submit(): void {
             <ScrollArea v-if="work" :class="dialogScrollAreaClass">
                 <div class="grid gap-6 px-1 py-1">
                     <section class="space-y-4">
-                        <div class="flex flex-wrap items-end justify-between gap-2">
+                        <div
+                            class="flex flex-wrap items-end justify-between gap-2"
+                        >
                             <div class="space-y-1">
                                 <p class="text-xs text-muted-foreground">
                                     Mapped to HR reporting roles — at least one
@@ -430,7 +436,8 @@ function submit(): void {
                                 </p>
                                 <p
                                     v-if="
-                                        typeof fieldErrors.positions === 'string'
+                                        typeof fieldErrors.positions ===
+                                        'string'
                                     "
                                     class="text-sm text-destructive"
                                 >
@@ -441,7 +448,7 @@ function submit(): void {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                class="rounded-md gap-1"
+                                class="gap-1 rounded-md"
                                 @click="addPositionRow"
                             >
                                 <Plus class="size-3.5" aria-hidden="true" />
@@ -454,7 +461,9 @@ function submit(): void {
                             :key="row.key"
                             class="rounded-lg border border-border/70 bg-muted/10 p-4"
                         >
-                            <div class="flex flex-wrap items-start justify-between gap-3 pb-4">
+                            <div
+                                class="flex flex-wrap items-start justify-between gap-3 pb-4"
+                            >
                                 <div class="flex items-center gap-2">
                                     <Checkbox
                                         :id="`ampw_pos_primary_${row.key}`"
@@ -465,7 +474,7 @@ function submit(): void {
                                     />
                                     <Label
                                         :for="`ampw_pos_primary_${row.key}`"
-                                        class="cursor-pointer inline-flex flex-wrap items-center gap-2"
+                                        class="inline-flex cursor-pointer flex-wrap items-center gap-2"
                                     >
                                         <Badge>Primary</Badge>
                                     </Label>
@@ -526,7 +535,8 @@ function submit(): void {
                                                         'w-full justify-between gap-2 font-normal',
                                                         fieldErrors[
                                                             `positions.${index}.start_date`
-                                                        ] && 'border-destructive',
+                                                        ] &&
+                                                            'border-destructive',
                                                     )
                                                 "
                                             >
@@ -567,7 +577,9 @@ function submit(): void {
                                                 "
                                                 :min-value="hireCalendarMin"
                                                 :max-value="
-                                                    spanStartCalendarMaxAt(index)
+                                                    spanStartCalendarMaxAt(
+                                                        index,
+                                                    )
                                                 "
                                                 @update:model-value="
                                                     onPositionStart(
@@ -607,7 +619,7 @@ function submit(): void {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            class="size-6 rounded-md ml-auto shrink-0"
+                                            class="ml-auto size-6 shrink-0 rounded-md"
                                             aria-label="Clear end date"
                                             @click="row.endDate = ''"
                                         >

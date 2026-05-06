@@ -2,7 +2,10 @@ import {
     collectSubtreeItemIds,
     findItem,
 } from '@/components/hris/documents/documentsDriveHelpers';
-import type { DocumentsScope, DriveItem } from '@/components/hris/documents/documentsDriveTypes';
+import type {
+    DocumentsScope,
+    DriveItem,
+} from '@/components/hris/documents/documentsDriveTypes';
 
 const DRIVE_KEY_PREFIX = 'pmpchris:documents:drive:v3:';
 const TOOLBAR_KEY_PREFIX = 'pmpchris:documents:toolbar:v1:';
@@ -67,8 +70,7 @@ export function loadToolbarPrefs(scope: DocumentsScope): DocumentsToolbarPrefs {
     const approvalQueueMode = parsed.approvalQueueMode === true;
     const rawView = parsed.requestTypeView;
     const requestTypeView =
-        typeof rawView === 'string' &&
-        REQUEST_TYPE_VIEW_VALUES.has(rawView)
+        typeof rawView === 'string' && REQUEST_TYPE_VIEW_VALUES.has(rawView)
             ? (rawView as DocumentsToolbarPrefs['requestTypeView'])
             : 'library';
 
@@ -83,13 +85,12 @@ export function saveToolbarPrefs(
         return;
     }
 
-    sessionStorage.setItem(
-        toolbarStorageKey(scope),
-        JSON.stringify(prefs),
-    );
+    sessionStorage.setItem(toolbarStorageKey(scope), JSON.stringify(prefs));
 }
 
-export function loadDriveFromSession(scope: DocumentsScope): DriveItem[] | null {
+export function loadDriveFromSession(
+    scope: DocumentsScope,
+): DriveItem[] | null {
     if (typeof sessionStorage === 'undefined') {
         return null;
     }
@@ -113,10 +114,7 @@ export function saveDriveToSession(
         return;
     }
 
-    sessionStorage.setItem(
-        driveStorageKey(scope),
-        JSON.stringify(items),
-    );
+    sessionStorage.setItem(driveStorageKey(scope), JSON.stringify(items));
 }
 
 export function loadTrashBatches(): TrashedBatch[] {
@@ -267,7 +265,12 @@ export function restoreTrashBatch(batchId: string): boolean {
 
     const restored: DriveItem[] = batch.items.map((item) => {
         const clone = stripTrashAnnotations(item);
-        if (Object.prototype.hasOwnProperty.call(batch.rootOriginalParents, clone.id)) {
+        if (
+            Object.prototype.hasOwnProperty.call(
+                batch.rootOriginalParents,
+                clone.id,
+            )
+        ) {
             clone.parentId = batch.rootOriginalParents[clone.id] ?? null;
         }
 

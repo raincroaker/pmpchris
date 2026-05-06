@@ -6,6 +6,7 @@ import {
     CheckCircle2,
     Clock3,
     Eye,
+    FileSpreadsheet,
     Timer,
     XCircle,
     Search,
@@ -134,8 +135,8 @@ function normalizedMyAttendanceFilters(): MyAttendanceFiltersProp {
         date_from: f.date_from ?? isoFirstDayOfMonth(new Date()),
         date_to: f.date_to ?? isoLastDayOfMonth(new Date()),
         status: (f.status ?? 'all') as TeamAttendanceStatusFilter,
-        recording_style:
-            (f.recording_style ?? 'simple') as TeamAttendanceRecordingStyleFilter,
+        recording_style: (f.recording_style ??
+            'simple') as TeamAttendanceRecordingStyleFilter,
         sort: 'work_date',
         direction: (f.direction ?? 'desc') === 'asc' ? 'asc' : 'desc',
     };
@@ -206,9 +207,7 @@ function applyQuery(
 function toggleSort(column: MyAttendanceFiltersProp['sort']): void {
     const same = props.myAttendanceFilters.sort === column;
     const nextDir =
-        same && props.myAttendanceFilters.direction === 'asc'
-            ? 'desc'
-            : 'asc';
+        same && props.myAttendanceFilters.direction === 'asc' ? 'desc' : 'asc';
     applyQuery({ sort: column, direction: nextDir, page: 1 });
 }
 
@@ -222,12 +221,17 @@ function sortDirectionFor(
     return props.myAttendanceFilters.direction;
 }
 
-const { localSearch, syncFromServerSearch, onSearchUpdate, onSearchKeyup, onSearchCommit } =
-    useDebouncedSearchInput({
-        initialValue: props.myAttendanceFilters.q ?? '',
-        debounceMs: 300,
-        onDebouncedSearch: (value) => applyQuery({ q: value, page: 1 }),
-    });
+const {
+    localSearch,
+    syncFromServerSearch,
+    onSearchUpdate,
+    onSearchKeyup,
+    onSearchCommit,
+} = useDebouncedSearchInput({
+    initialValue: props.myAttendanceFilters.q ?? '',
+    debounceMs: 300,
+    onDebouncedSearch: (value) => applyQuery({ q: value, page: 1 }),
+});
 
 watch(
     () => props.myAttendanceFilters.q,
@@ -299,7 +303,8 @@ const recordingStyleFilter = computed({
 const toolbarDateFromModel = computed({
     get(): string {
         return (
-            props.myAttendanceFilters.date_from ?? isoFirstDayOfMonth(new Date())
+            props.myAttendanceFilters.date_from ??
+            isoFirstDayOfMonth(new Date())
         );
     },
     set(iso: string): void {
@@ -364,6 +369,19 @@ const fromRow = computed(() => props.myAttendanceDays.from);
 const toRow = computed(() => props.myAttendanceDays.to);
 const lastPage = computed(() => Math.max(1, props.myAttendanceDays.last_page));
 
+function generateMyDtrExcel(): void {
+    const from = toolbarDateFromModel.value;
+    const to = toolbarDateToModel.value;
+    const query = new URLSearchParams({
+        mode: 'sample',
+        date_from: from,
+        date_to: to,
+    });
+    window.location.assign(
+        `/attendance/reports/dtr-mock-sample?${query.toString()}`,
+    );
+}
+
 function openView(row: TeamAttendanceRow): void {
     viewTarget.value = row;
     viewDialogOpen.value = true;
@@ -419,8 +437,7 @@ const columns = computed((): ColumnDef<TeamAttendanceRow>[] => [
                     ? h(
                           'span',
                           {
-                              class:
-                                  'mt-0.5 block text-[11px] leading-tight text-muted-foreground',
+                              class: 'mt-0.5 block text-[11px] leading-tight text-muted-foreground',
                           },
                           ingest,
                       )
@@ -678,6 +695,18 @@ const table = useVueTable({
                             compact-row
                             class="min-w-0"
                         />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="h-9 shrink-0 border-primary/60 text-primary hover:bg-primary/10 hover:text-primary dark:border-primary/70 dark:hover:bg-primary/15"
+                            @click="generateMyDtrExcel"
+                        >
+                            <FileSpreadsheet
+                                class="size-4"
+                                aria-hidden="true"
+                            />
+                            <span class="ml-1">Generate DTR</span>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -702,7 +731,10 @@ const table = useVueTable({
                     @go-first="applyQuery({ page: 1 })"
                     @go-prev="
                         applyQuery({
-                            page: Math.max(1, myAttendanceDays.current_page - 1),
+                            page: Math.max(
+                                1,
+                                myAttendanceDays.current_page - 1,
+                            ),
                         })
                     "
                     @go-next="
@@ -741,5 +773,4 @@ const table = useVueTable({
             </DialogFooter>
         </DialogContent>
     </Dialog>
-
 </template>

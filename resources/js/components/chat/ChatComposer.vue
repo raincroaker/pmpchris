@@ -47,7 +47,9 @@ function sendMessage(): void {
 </script>
 
 <template>
-    <div class="shrink-0 border-t border-sidebar-border/70 bg-background p-3 md:p-4">
+    <div
+        class="shrink-0 border-t border-sidebar-border/70 bg-background p-3 md:p-4"
+    >
         <form class="flex items-end gap-2" @submit.prevent="sendMessage">
             <Textarea
                 v-model="draft"
