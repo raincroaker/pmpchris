@@ -9,6 +9,7 @@ use App\Models\OrganizationalUnit;
 use App\Models\Role;
 use App\Models\UnitType;
 use App\Models\User;
+use Illuminate\Contracts\Session\Session;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -451,7 +452,7 @@ class BranchContextService
     /**
      * @return array{code: string, name: string}|null
      */
-    public function sessionBranchMeta(\Illuminate\Contracts\Session\Session $session): ?array
+    public function sessionBranchMeta(Session $session): ?array
     {
         $meta = $session->get(self::SESSION_BRANCH_META);
 
@@ -494,12 +495,6 @@ class BranchContextService
             return $query;
         }
 
-        if (! $this->canSwitchBranchContext($user)) {
-            $query->whereRaw('1 = 0');
-
-            return $query;
-        }
-
         if ($this->hasFullBranchAccess($user) || $this->isOrgWideUser($user)) {
             return $query;
         }
@@ -510,11 +505,23 @@ class BranchContextService
                 $this->affiliatedBranchRootIdsFor($user),
             )));
 
+            if ($pickerRootIds === []) {
+                $query->whereRaw('1 = 0');
+
+                return $query;
+            }
+
             return $this->applyRootIdScope($query, $pickerRootIds);
         }
 
         if ($this->hasMultiBranchAffiliations($user)) {
             return $this->applyRootIdScope($query, $this->affiliatedBranchRootIdsFor($user));
+        }
+
+        $affiliatedOnly = $this->affiliatedBranchRootIdsFor($user);
+
+        if ($affiliatedOnly !== []) {
+            return $this->applyRootIdScope($query, $affiliatedOnly);
         }
 
         $query->whereRaw('1 = 0');

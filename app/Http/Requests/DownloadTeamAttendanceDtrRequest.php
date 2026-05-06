@@ -42,4 +42,3 @@ class DownloadTeamAttendanceDtrRequest extends FormRequest
         $this->merge($merge);
     }
 }
-

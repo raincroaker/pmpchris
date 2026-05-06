@@ -22,6 +22,7 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { appToast } from '@/lib/app-toast-client';
 import { store } from '@/routes/login';
+import { inertiaRouteForm } from '@/wayfinder';
 
 const showPassword = ref(false);
 const isLoggingIn = ref(false);
@@ -140,7 +141,7 @@ defineProps<{
         </div>
 
         <Form
-            v-bind="store.form()"
+            v-bind="inertiaRouteForm(store())"
             :reset-on-success="['password']"
             :on-start="onLoginStart"
             :on-success="onLoginSuccess"

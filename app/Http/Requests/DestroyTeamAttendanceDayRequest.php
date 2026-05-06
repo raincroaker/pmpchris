@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Http\Requests\Concerns\AuthorizesTeamHrLeaveOvertimeRecords;
 use App\Models\EmployeeAttendanceDay;
 use App\Services\TeamAttendanceDayMutationService;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DestroyTeamAttendanceDayRequest extends FormRequest
@@ -35,7 +36,7 @@ class DestroyTeamAttendanceDayRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

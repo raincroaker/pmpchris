@@ -349,7 +349,7 @@ test('seeder throws when employee assignment unit has no matching affiliation', 
     ]);
 
     expect(fn () => (new DevelopmentEmployeePositionSeeder)->run())
-        ->toThrow(\RuntimeException::class);
+        ->toThrow(RuntimeException::class);
 });
 
 test('seeder allows assignment when employee has org-wide affiliation', function () {

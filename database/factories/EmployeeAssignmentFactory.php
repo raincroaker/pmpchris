@@ -3,12 +3,13 @@
 namespace Database\Factories;
 
 use App\Models\Employee;
+use App\Models\EmployeeAssignment;
 use App\Models\EmployeeEmployment;
 use App\Models\OrganizationalUnit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\EmployeeAssignment>
+ * @extends Factory<EmployeeAssignment>
  */
 class EmployeeAssignmentFactory extends Factory
 {

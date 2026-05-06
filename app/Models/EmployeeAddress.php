@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\EmployeeAddressFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class EmployeeAddress extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeeAddressFactory> */
+    /** @use HasFactory<EmployeeAddressFactory> */
     use HasFactory, SoftDeletes;
 
     /**
@@ -27,8 +28,11 @@ class EmployeeAddress extends Model
         'address_line_1',
         'address_line_2',
         'barangay',
+        'barangay_code',
         'city',
+        'city_code',
         'province',
+        'province_code',
         'zip_code',
         'country',
         'is_primary',

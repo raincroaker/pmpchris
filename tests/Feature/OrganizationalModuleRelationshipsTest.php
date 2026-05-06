@@ -4,8 +4,9 @@ use App\Models\Organization;
 use App\Models\OrganizationalUnit;
 use App\Models\Position;
 use App\Models\UnitType;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('organizational unit parent child and position branch relations resolve', function () {
     $organization = Organization::factory()->create();

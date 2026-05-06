@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { inertiaRouteForm } from '@/wayfinder';
 
 const passwordInput = useTemplateRef('passwordInput');
 </script>
@@ -45,7 +46,7 @@ const passwordInput = useTemplateRef('passwordInput');
                 </DialogTrigger>
                 <DialogContent>
                     <Form
-                        v-bind="ProfileController.destroy.form()"
+                        v-bind="inertiaRouteForm(ProfileController.destroy())"
                         reset-on-success
                         @error="() => passwordInput?.$el?.focus()"
                         :options="{

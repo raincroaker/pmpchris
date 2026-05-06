@@ -2,10 +2,11 @@
 
 namespace App\Support;
 
+use App\Models\WorkScheduleTemplate;
 use Illuminate\Support\Arr;
 
 /**
- * Validates JSON blobs for {@see \App\Models\WorkScheduleTemplate} attendance / overtime rule panels.
+ * Validates JSON blobs for {@see WorkScheduleTemplate} attendance / overtime rule panels.
  */
 final class WorkScheduleTemplateRulesValidator
 {

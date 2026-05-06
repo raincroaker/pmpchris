@@ -6,6 +6,7 @@ use App\Enums\LeavePolicyAccrualCadence;
 use App\Enums\LeavePolicyUnit;
 use App\Http\Requests\Concerns\AuthorizesLeaveOvertimePolicyManagement;
 use App\Models\LeavePolicy;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -33,7 +34,7 @@ class UpdateLeavePolicyRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

@@ -8,6 +8,7 @@ import HrisColumnFilterPopover from '@/components/hris/HrisColumnFilterPopover.v
 import HrisServerTablePagination from '@/components/hris/HrisServerTablePagination.vue';
 import HrisTanStackTable from '@/components/hris/HrisTanStackTable.vue';
 import HrisUnitSelectTriggerLabel from '@/components/hris/HrisUnitSelectTriggerLabel.vue';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,7 +46,6 @@ import { useDebouncedSearchInput } from '@/composables/useDebouncedSearchInput';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { appToast } from '@/lib/app-toast-client';
 import AdminUsersAssignedRolesHeader from '@/pages/Admin/AdminUsersAssignedRolesHeader.vue';
-import AdminUsersCountColumnHeader from '@/pages/Admin/AdminUsersCountColumnHeader.vue';
 import AdminUsersRoleColumnHeader from '@/pages/Admin/AdminUsersRoleColumnHeader.vue';
 import type {
     AdminAccountStatusFilter,
@@ -163,6 +163,23 @@ const inactiveStatusFilterOptions = EMPLOYMENT_STATUS_VALUES.filter(
     value,
     label: EMPLOYMENT_STATUS_LABEL[value],
 }));
+
+function userInitials(name: string): string {
+    const tokens = name
+        .trim()
+        .split(/\s+/)
+        .filter((token) => token.length > 0);
+
+    if (tokens.length === 0) {
+        return 'U';
+    }
+
+    if (tokens.length === 1) {
+        return tokens[0].slice(0, 2).toUpperCase();
+    }
+
+    return (tokens[0][0] + tokens[tokens.length - 1][0]).toUpperCase();
+}
 
 function employmentStateChipClass(
     value: AdminEmploymentStateFilter,
@@ -625,7 +642,7 @@ function buildQuery(
     if (f.view === 'users' && f.org_scope !== null) {
         q.org_scope = f.org_scope;
     }
-    if (f.view === 'users' && f.unit_id !== null) {
+    if (f.unit_id !== null) {
         q.unit_id = f.unit_id === 'unassigned' ? 'unassigned' : f.unit_id;
     }
     if (f.view === 'users' && f.account_status !== 'all') {
@@ -688,7 +705,6 @@ function onViewChange(value: string | number): void {
         page: 1,
         role_id: null,
         org_scope: null,
-        unit_id: null,
         employment_state: 'active',
         employment_status: null,
         ...(normalized === 'roles' ? { account_status: 'all' } : {}),
@@ -804,12 +820,11 @@ const rolesColumns: ColumnDef<AdminRoleRow>[] = [
             cellClass: 'align-middle',
         },
         header: () =>
-            h(AdminUsersCountColumnHeader, {
-                sort: props.filters.sort,
-                direction: props.filters.direction,
-                label: 'Users',
-                onSortBy: () => toggleSort('users_count'),
-            }),
+            h(
+                'span',
+                { class: 'font-medium text-muted-foreground' },
+                'Users',
+            ),
         cell: ({ row }) =>
             h(
                 'span',
@@ -1080,7 +1095,8 @@ const usersColumns: ColumnDef<AdminUserRow>[] = [
                       'Status',
                   ),
         cell: ({ row }) => {
-            if (row.original.employment_status === null) {
+            const status = row.original.employment_status;
+            if (status === null) {
                 return h('span', { class: 'text-muted-foreground' }, '—');
             }
 
@@ -1088,9 +1104,9 @@ const usersColumns: ColumnDef<AdminUserRow>[] = [
                 Badge,
                 {
                     variant: 'default',
-                    class: employmentStatusBadgeClass(row.original.employment_status),
+                    class: employmentStatusBadgeClass(status),
                 },
-                () => EMPLOYMENT_STATUS_LABEL[row.original.employment_status],
+                () => EMPLOYMENT_STATUS_LABEL[status],
             );
         },
         enableSorting: false,
@@ -1386,7 +1402,10 @@ watch(
                 const params = new URLSearchParams({
                     email: trimmed,
                 });
-                if (editUserTarget.value?.user_id !== null) {
+                if (
+                    editUserTarget.value !== null &&
+                    editUserTarget.value.user_id !== null
+                ) {
                     params.set(
                         'ignore_user_id',
                         String(editUserTarget.value.user_id),
@@ -1459,7 +1478,7 @@ watch(
                 <p v-if="organization" class="text-sm text-muted-foreground">
                     {{ organization.name }}
                     <span class="text-muted-foreground/80"
-                        >({{ organization.code }})</span
+                        > ({{ organization.code }})</span
                     >
                 </p>
                 <p
@@ -1471,7 +1490,7 @@ watch(
                         branchScope.name
                     }}</span>
                     <span class="text-muted-foreground/80"
-                        >({{ branchScope.code }})</span
+                        > ({{ branchScope.code }})</span
                     >.
                 </p>
             </div>
@@ -1509,62 +1528,70 @@ watch(
                         />
                     </InputGroup>
                 </div>
-                <div
-                    v-if="activeView === 'users'"
-                    class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                >
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 flex-wrap items-center gap-2">
-                        <Button
-                            v-if="props.viewerCanUseEmploymentStateFilter"
+                        <template
                             v-for="opt in employmentStateChipOptions"
                             :key="`state-${opt.value}`"
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            class="h-8 shrink-0 rounded-full px-3"
-                            :class="employmentStateChipClass(opt.value)"
-                            :aria-pressed="
-                                (props.filters.employment_state ?? 'active') ===
-                                opt.value
-                            "
-                            @click="
-                                applyQuery({
-                                    employment_state: opt.value,
-                                    employment_status: null,
-                                    unit_id:
-                                        opt.value === 'inactive'
-                                            ? null
-                                            : props.filters.unit_id,
-                                    page: 1,
-                                })
-                            "
                         >
-                            {{ opt.label }}
-                        </Button>
-                        <Button
-                            v-for="opt in accountChipOptions"
-                            :key="opt.value"
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            class="h-8 shrink-0 rounded-full px-3"
-                            :class="accountStatusChipClass(opt.value)"
-                            :aria-pressed="
-                                (props.filters.account_status ?? 'all') ===
-                                opt.value
-                            "
-                            @click="
-                                applyQuery({
-                                    account_status: opt.value,
-                                    page: 1,
-                                })
-                            "
-                        >
-                            {{ opt.label }}
-                        </Button>
+                            <Button
+                                v-if="
+                                    activeView === 'users' &&
+                                    props.viewerCanUseEmploymentStateFilter
+                                "
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                class="h-8 shrink-0 rounded-full px-3"
+                                :class="employmentStateChipClass(opt.value)"
+                                :aria-pressed="
+                                    (props.filters.employment_state ??
+                                        'active') === opt.value
+                                "
+                                @click="
+                                    applyQuery({
+                                        employment_state: opt.value,
+                                        employment_status: null,
+                                        unit_id:
+                                            opt.value === 'inactive'
+                                                ? null
+                                                : props.filters.unit_id,
+                                        page: 1,
+                                    })
+                                "
+                            >
+                                {{ opt.label }}
+                            </Button>
+                        </template>
+                        <template v-if="activeView === 'users'">
+                            <Button
+                                v-for="opt in accountChipOptions"
+                                :key="opt.value"
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                class="h-8 shrink-0 rounded-full px-3"
+                                :class="accountStatusChipClass(opt.value)"
+                                :aria-pressed="
+                                    (props.filters.account_status ?? 'all') ===
+                                    opt.value
+                                "
+                                @click="
+                                    applyQuery({
+                                        account_status: opt.value,
+                                        page: 1,
+                                    })
+                                "
+                            >
+                                {{ opt.label }}
+                            </Button>
+                        </template>
                     </div>
                     <div
-                        v-if="props.filters.employment_state !== 'inactive'"
+                        v-if="
+                            activeView === 'roles' ||
+                            props.filters.employment_state !== 'inactive'
+                        "
                         class="w-full sm:w-auto sm:shrink-0"
                     >
                         <Select
@@ -2174,11 +2201,32 @@ watch(
                                     :key="user.id"
                                     class="py-2 text-sm first:pt-0 last:pb-0"
                                 >
-                                    <div class="font-medium text-foreground">
-                                        {{ user.name }}
-                                    </div>
-                                    <div class="text-xs text-muted-foreground">
-                                        {{ user.email }}
+                                    <div class="flex items-center gap-3">
+                                        <Avatar
+                                            class="size-9 shrink-0 border border-border/70 bg-muted/30"
+                                        >
+                                            <AvatarImage
+                                                :src="user.avatar_url ?? ''"
+                                                :alt="user.name"
+                                            />
+                                            <AvatarFallback
+                                                class="text-[11px] font-medium text-muted-foreground"
+                                            >
+                                                {{ userInitials(user.name) }}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div class="min-w-0">
+                                            <div
+                                                class="truncate font-medium text-foreground"
+                                            >
+                                                {{ user.name }}
+                                            </div>
+                                            <div
+                                                class="truncate text-xs text-muted-foreground"
+                                            >
+                                                {{ user.email }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </li>
                             </ul>

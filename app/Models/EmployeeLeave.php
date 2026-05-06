@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EmployeeHrRecordStatus;
 use App\Models\Concerns\SoftDeletesWithDeletedByUser;
+use Database\Factories\EmployeeLeaveFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EmployeeLeave extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeeLeaveFactory> */
+    /** @use HasFactory<EmployeeLeaveFactory> */
     use HasFactory;
 
     use SoftDeletesWithDeletedByUser;

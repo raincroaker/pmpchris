@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\EmployeeAffiliationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,7 +21,7 @@ use InvalidArgumentException;
  */
 class EmployeeAffiliation extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeeAffiliationFactory> */
+    /** @use HasFactory<EmployeeAffiliationFactory> */
     use HasFactory, SoftDeletes;
 
     /**

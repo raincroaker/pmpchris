@@ -491,7 +491,7 @@ const table = useVueTable({
                 <p v-if="organization" class="text-sm text-muted-foreground">
                     {{ organization.name }}
                     <span class="text-muted-foreground/80"
-                        >({{ organization.code }})</span
+                        > ({{ organization.code }})</span
                     >
                 </p>
                 <p v-else class="text-sm text-muted-foreground">
@@ -507,7 +507,7 @@ const table = useVueTable({
                         branchScope.name
                     }}</span>
                     <span class="text-muted-foreground/80"
-                        >({{ branchScope.code }})</span
+                        > ({{ branchScope.code }})</span
                     >.
                 </p>
             </div>

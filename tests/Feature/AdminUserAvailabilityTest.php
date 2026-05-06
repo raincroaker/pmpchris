@@ -1,11 +1,11 @@
 <?php
 
-use App\Models\Role;
-use App\Models\User;
 use App\Models\BranchManager;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
+use App\Models\Role;
 use App\Models\UnitType;
+use App\Models\User;
 use App\Services\BranchContextService;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

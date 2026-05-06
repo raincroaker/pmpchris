@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Role;
 use App\Models\User;
 
@@ -9,7 +10,7 @@ class LeaveOvertimePolicyManagementAccess
 {
     /**
      * Users who may open Leave / Overtime policy index pages and view catalog rows
-     * (matches {@see \App\Http\Middleware\HandleInertiaRequests::canShowAdministrationNav} HR-admin roles;
+     * (matches {@see HandleInertiaRequests::canShowAdministrationNav} HR-admin roles;
      * policy nav uses `adminOnly`).
      */
     public function allows(?User $user): bool

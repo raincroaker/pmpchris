@@ -9,6 +9,17 @@ export const EMPLOYMENT_STATUS_VALUES = [
 
 export type EmploymentStatusApi = (typeof EMPLOYMENT_STATUS_VALUES)[number];
 
+/** Statuses allowed when recording separation (excludes Active). */
+export const EMPLOYMENT_SEPARATION_STATUS_VALUES = [
+    'resigned',
+    'terminated',
+    'retired',
+    'contract_ended',
+] as const;
+
+export type EmploymentSeparationStatusApi =
+    (typeof EMPLOYMENT_SEPARATION_STATUS_VALUES)[number];
+
 export const EMPLOYMENT_STATUS_LABEL: Record<EmploymentStatusApi, string> = {
     active: 'Active',
     resigned: 'Resigned',

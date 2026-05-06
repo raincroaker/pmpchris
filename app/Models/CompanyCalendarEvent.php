@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\CompanyCalendarEventFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CompanyCalendarEvent extends Model
 {
-    /** @use HasFactory<\Database\Factories\CompanyCalendarEventFactory> */
+    /** @use HasFactory<CompanyCalendarEventFactory> */
     use HasFactory, SoftDeletes;
 
     /**

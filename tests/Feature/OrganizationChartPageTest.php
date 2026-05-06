@@ -16,17 +16,18 @@ use Database\Seeders\OrganizationalStructureSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 uses(RefreshDatabase::class);
 
 test('guests are redirected to the login page', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $response = $this->get(route('organization-chart'));
     $response->assertRedirect(route('login'));
 });
 
 test('authenticated users can visit the organization chart page', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     /** @var User $user */
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -36,7 +37,7 @@ test('authenticated users can visit the organization chart page', function () {
 });
 
 test('organization chart defaults to first selectable branch root when user has no branch picker session', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
     config(['hris.default_organization_code' => 'PMPC']);
@@ -71,7 +72,7 @@ test('organization chart defaults to first selectable branch root when user has 
 });
 
 test('organization chart uses session branch root when user must select branch', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
@@ -105,7 +106,7 @@ test('organization chart uses session branch root when user must select branch',
 });
 
 test('organization chart supports chart-local branch switch via query without mutating session branch', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
@@ -137,7 +138,7 @@ test('organization chart supports chart-local branch switch via query without mu
 });
 
 test('organization chart marks managed branch capabilities for hr manager and denies unmanaged branch', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
@@ -173,7 +174,7 @@ test('organization chart marks managed branch capabilities for hr manager and de
 });
 
 test('organization chart overall scope returns multi-branch graph with read-only capabilities', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
@@ -210,7 +211,7 @@ test('organization chart overall scope returns multi-branch graph with read-only
 });
 
 test('organization chart supports active and all unit visibility modes', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
@@ -253,7 +254,7 @@ test('organization chart supports active and all unit visibility modes', functio
 });
 
 test('organization chart organization node includes org-level assigned employees', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();

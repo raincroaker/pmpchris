@@ -10,6 +10,7 @@ use App\Models\WorkScheduleTemplate;
 use App\Services\ScheduleAssignmentAccessService;
 use App\Support\EmployeeBranchDirectoryFilter;
 use App\Support\TeamAttendanceSegmentsTemplateValidator;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -30,7 +31,7 @@ class StoreTeamAttendanceDayRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

@@ -8,7 +8,6 @@ import ChatMessageList from '@/components/chat/ChatMessageList.vue';
 import ChatThreadHeader from '@/components/chat/ChatThreadHeader.vue';
 import type { ChatRoom } from '@/components/chat/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AppLayout from '@/layouts/AppLayout.vue';

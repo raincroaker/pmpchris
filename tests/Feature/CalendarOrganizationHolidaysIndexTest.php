@@ -4,8 +4,8 @@ use App\Models\User;
 use Database\Seeders\DemoCooperativeSeeder;
 use Database\Seeders\DevelopmentUserSeeder;
 use Database\Seeders\HolidayTypesSeeder;
-use Database\Seeders\OrganizationHolidaysSeeder;
 use Database\Seeders\OrganizationalStructureSeeder;
+use Database\Seeders\OrganizationHolidaysSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

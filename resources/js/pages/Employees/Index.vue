@@ -8,6 +8,8 @@ import HrisIndexToolbar from '@/components/hris/HrisIndexToolbar.vue';
 import HrisServerTablePagination from '@/components/hris/HrisServerTablePagination.vue';
 import HrisTanStackTable from '@/components/hris/HrisTanStackTable.vue';
 import HrisUnitSelectTriggerLabel from '@/components/hris/HrisUnitSelectTriggerLabel.vue';
+import TeamTableSubmittedDateFilterHeader from '@/components/hris/TeamTableSubmittedDateFilterHeader.vue';
+import type { SubmittedDateRange } from '@/components/hris/TeamTableSubmittedDateFilterHeader.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { useDebouncedSearchInput } from '@/composables/useDebouncedSearchInput';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { formatCalendarTriggerFromIsoYmd } from '@/lib/formatCalendarTriggerDate';
 import type {
     EmployeePositionFilterOption,
     EmployeeUnitFilterOption,
@@ -79,6 +82,8 @@ function buildQuery(
         position_id: number | null;
         unit_id: number | 'unassigned' | null;
         org_scope: EmployeeFilters['org_scope'];
+        hire_from: string | null;
+        hire_to: string | null;
     }> = {},
 ): Record<string, string | number> {
     const f: EmployeeFilters = { ...props.filters, ...overrides };
@@ -104,6 +109,10 @@ function buildQuery(
     if (f.org_scope !== null) {
         q.org_scope = f.org_scope;
     }
+    if (f.hire_from !== null && f.hire_to !== null) {
+        q.hire_from = f.hire_from;
+        q.hire_to = f.hire_to;
+    }
 
     return q;
 }
@@ -118,6 +127,8 @@ function applyQuery(
         position_id: number | null;
         unit_id: number | 'unassigned' | null;
         org_scope: EmployeeFilters['org_scope'];
+        hire_from: string | null;
+        hire_to: string | null;
     }> = {},
 ): void {
     router.get(
@@ -171,6 +182,43 @@ function toggleSort(column: EmployeeFilters['sort']): void {
     const same = props.filters.sort === column;
     const nextDir = same && props.filters.direction === 'asc' ? 'desc' : 'asc';
     applyQuery({ sort: column, direction: nextDir, page: 1 });
+}
+
+function sortDirectionFor(column: EmployeeFilters['sort']): 'asc' | 'desc' | null {
+    if (props.filters.sort !== column) {
+        return null;
+    }
+
+    return props.filters.direction;
+}
+
+function onHireDateFilterUpdate(v: SubmittedDateRange | null): void {
+    if (v === null) {
+        applyQuery({
+            hire_from: null,
+            hire_to: null,
+            page: 1,
+        });
+
+        return;
+    }
+
+    applyQuery({
+        hire_from: v.from,
+        hire_to: v.to,
+        page: 1,
+    });
+}
+
+function hireFilterModel(): SubmittedDateRange | null {
+    if (props.filters.hire_from !== null && props.filters.hire_to !== null) {
+        return {
+            from: props.filters.hire_from,
+            to: props.filters.hire_to,
+        };
+    }
+
+    return null;
 }
 
 const employeesToolbarUnitFilterOptions = computed(() => {
@@ -290,6 +338,36 @@ const columns: ColumnDef<EmployeeRow>[] = [
                     ),
                 ]),
             ]),
+        enableSorting: false,
+    },
+    {
+        id: 'hire_date',
+        meta: {
+            headClass: 'min-w-[12rem]',
+            cellClass: 'align-middle',
+        },
+        header: () =>
+            h(TeamTableSubmittedDateFilterHeader, {
+                columnTitle: 'Hire date',
+                modelValue: hireFilterModel(),
+                enableSort: true,
+                sortDirection: sortDirectionFor('hire_date'),
+                'onUpdate:modelValue': onHireDateFilterUpdate,
+                onToggleSort: () => toggleSort('hire_date'),
+            }),
+        cell: ({ row }) => {
+            const hire = row.original.current_employment?.hire_date ?? null;
+
+            return h(
+                'span',
+                {
+                    class: hire
+                        ? 'text-sm tabular-nums text-foreground'
+                        : 'text-sm text-muted-foreground',
+                },
+                hire ? formatCalendarTriggerFromIsoYmd(hire) : '—',
+            );
+        },
         enableSorting: false,
     },
     {
@@ -420,7 +498,7 @@ const table = useVueTable({
                 <p v-if="organization" class="text-sm text-muted-foreground">
                     {{ organization.name }}
                     <span class="text-muted-foreground/80"
-                        >({{ organization.code }})</span
+                        > ({{ organization.code }})</span
                     >
                 </p>
                 <p v-else class="text-sm text-muted-foreground">
@@ -436,7 +514,7 @@ const table = useVueTable({
                         branchScope.name
                     }}</span>
                     <span class="text-muted-foreground/80"
-                        >({{ branchScope.code }})</span
+                        > ({{ branchScope.code }})</span
                     >.
                 </p>
             </div>

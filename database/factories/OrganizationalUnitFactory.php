@@ -3,11 +3,12 @@
 namespace Database\Factories;
 
 use App\Models\Organization;
+use App\Models\OrganizationalUnit;
 use App\Models\UnitType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\OrganizationalUnit>
+ * @extends Factory<OrganizationalUnit>
  */
 class OrganizationalUnitFactory extends Factory
 {

@@ -2,12 +2,13 @@
 
 namespace App\Http\Requests\Concerns;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 
 trait ValidatesExplicitEmployeeLeaveDays
 {
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     protected function explicitEmployeeLeaveDaysRules(): array
     {

@@ -5,10 +5,11 @@ namespace App\Http\Requests;
 use App\Enums\WorkScheduleClockPattern;
 use App\Http\Requests\Concerns\AuthorizesTeamHrLeaveOvertimeRecords;
 use App\Models\EmployeeAttendanceDay;
-use App\Support\TeamAttendanceSegmentsTemplateValidator;
 use App\Models\WorkScheduleTemplate;
 use App\Services\ScheduleAssignmentAccessService;
 use App\Services\TeamAttendanceDayMutationService;
+use App\Support\TeamAttendanceSegmentsTemplateValidator;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -41,7 +42,7 @@ class UpdateTeamAttendanceDayRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

@@ -101,6 +101,9 @@ class DevelopmentEmployeePositionSeeder extends Seeder
         int $organizationId,
     ): void {
         $employmentId = $this->resolveCurrentEmploymentId((int) $employee->id);
+        /** @var EmployeeEmployment $employmentRecord */
+        $employmentRecord = EmployeeEmployment::query()->findOrFail($employmentId);
+        $hire = CarbonImmutable::parse((string) $employmentRecord->hire_date);
 
         foreach ($config['employee_positions'] as $spec) {
             /** @var Position $position */
@@ -109,29 +112,50 @@ class DevelopmentEmployeePositionSeeder extends Seeder
                 throw new \RuntimeException("Position code {$spec['code']} missing for development persona {$employee->id_number}.");
             }
 
+            $start = CarbonImmutable::parse($spec['start']);
+            if ($start->lt($hire)) {
+                $start = $hire;
+            }
+
+            /** @var CarbonImmutable|null $end */
+            $end = isset($spec['end']) ? CarbonImmutable::parse($spec['end']) : null;
+            if ($end !== null && $end->lt($start)) {
+                $end = $start;
+            }
+
             $this->upsertEmployeePosition(
                 $employee,
                 $employmentId,
                 $position,
-                CarbonImmutable::parse($spec['start']),
-                isset($spec['end']) ? CarbonImmutable::parse($spec['end']) : null,
+                $start,
+                $end,
                 $spec['is_primary'],
                 $spec['notes'] ?? 'Seeded position',
             );
         }
 
         foreach ($config['assignments'] as $spec) {
+            $assignmentStart = CarbonImmutable::parse($spec['start']);
+            if ($assignmentStart->lt($hire)) {
+                $assignmentStart = $hire;
+            }
+
+            $assignmentEnd = isset($spec['end']) ? CarbonImmutable::parse($spec['end']) : null;
+            if ($assignmentEnd !== null && $assignmentEnd->lt($assignmentStart)) {
+                $assignmentEnd = $assignmentStart;
+            }
+
             if (! empty($spec['org_level'])) {
                 EmployeeAssignment::query()->updateOrCreate(
                     [
                         'employee_id' => $employee->id,
                         'organization_id' => $organizationId,
-                        'start_date' => CarbonImmutable::parse($spec['start'])->toDateString(),
+                        'start_date' => $assignmentStart->toDateString(),
                     ],
                     [
                         'organizational_unit_id' => null,
                         'employee_employment_id' => $employmentId,
-                        'end_date' => isset($spec['end']) ? CarbonImmutable::parse($spec['end'])->toDateString() : null,
+                        'end_date' => $assignmentEnd?->toDateString(),
                         'is_primary' => $spec['is_primary'],
                         'is_head' => $spec['is_head'],
                     ]
@@ -146,18 +170,18 @@ class DevelopmentEmployeePositionSeeder extends Seeder
                 throw new \RuntimeException("Organizational unit {$spec['unit_code']} missing for development persona {$employee->id_number}.");
             }
 
-            $this->assertEmployeeCanBeAssignedToUnit($employee, $unit, CarbonImmutable::parse($spec['start'])->toDateString());
+            $this->assertEmployeeCanBeAssignedToUnit($employee, $unit, $assignmentStart->toDateString());
 
             EmployeeAssignment::query()->updateOrCreate(
                 [
                     'employee_id' => $employee->id,
                     'organizational_unit_id' => $unit->id,
-                    'start_date' => CarbonImmutable::parse($spec['start'])->toDateString(),
+                    'start_date' => $assignmentStart->toDateString(),
                 ],
                 [
                     'organization_id' => null,
                     'employee_employment_id' => $employmentId,
-                    'end_date' => isset($spec['end']) ? CarbonImmutable::parse($spec['end'])->toDateString() : null,
+                    'end_date' => $assignmentEnd?->toDateString(),
                     'is_primary' => $spec['is_primary'],
                     'is_head' => $spec['is_head'],
                 ]
@@ -366,6 +390,9 @@ class DevelopmentEmployeePositionSeeder extends Seeder
         array $roleCodes,
     ): void {
         $employmentId = $this->resolveCurrentEmploymentId((int) $employee->id);
+        /** @var EmployeeEmployment $employmentRecord */
+        $employmentRecord = EmployeeEmployment::query()->findOrFail($employmentId);
+        $hire = CarbonImmutable::parse((string) $employmentRecord->hire_date);
 
         $positionsByOrganization = $positions->where('organization_id', $organizationId)->values();
         if ($positionsByOrganization->isEmpty()) {
@@ -389,11 +416,16 @@ class DevelopmentEmployeePositionSeeder extends Seeder
         [$primaryPosition, $secondaryPosition] = $this->pickPositionsForEmployee($positionsByOrganization, $sequence, $roleCodes);
         [$primaryUnit, $secondaryUnit] = $this->pickUnitsForEmployee($eligibleUnits, $sequence);
 
+        $primaryPositionStart = CarbonImmutable::create(2023, 1, 1)->addMonths($sequence);
+        if ($primaryPositionStart->lt($hire)) {
+            $primaryPositionStart = $hire;
+        }
+
         $primaryEmployeePosition = $this->upsertEmployeePosition(
             $employee,
             $employmentId,
             $primaryPosition,
-            CarbonImmutable::create(2023, 1, 1)->addMonths($sequence),
+            $primaryPositionStart,
             null,
             true,
             'Primary current position'
@@ -401,18 +433,36 @@ class DevelopmentEmployeePositionSeeder extends Seeder
 
         $secondaryEmployeePosition = null;
         if ($sequence % 3 === 0 && $secondaryPosition !== null) {
-            $secondaryEmployeePosition = $this->upsertEmployeePosition(
-                $employee,
-                $employmentId,
-                $secondaryPosition,
-                CarbonImmutable::create(2021, 1, 1)->addMonths($sequence),
-                CarbonImmutable::create(2022, 12, 31)->addDays($sequence % 27),
-                false,
-                'Historical position'
-            );
+            $secondaryStart = CarbonImmutable::create(2021, 1, 1)->addMonths($sequence);
+            if ($secondaryStart->lt($hire)) {
+                $secondaryStart = $hire;
+            }
+
+            $secondaryEnd = CarbonImmutable::create(2022, 12, 31)->addDays($sequence % 27);
+            if ($secondaryEnd->gte($secondaryStart)) {
+                $secondaryEmployeePosition = $this->upsertEmployeePosition(
+                    $employee,
+                    $employmentId,
+                    $secondaryPosition,
+                    $secondaryStart,
+                    $secondaryEnd,
+                    false,
+                    'Historical position'
+                );
+            }
         }
 
-        $this->upsertAssignmentsAndLinks($employee, $sequence, $primaryUnit, $secondaryUnit, $primaryEmployeePosition, $secondaryEmployeePosition, $roleCodes, $employmentId);
+        $this->upsertAssignmentsAndLinks(
+            $employee,
+            $sequence,
+            $primaryUnit,
+            $secondaryEmployeePosition !== null ? $secondaryUnit : null,
+            $primaryEmployeePosition,
+            $secondaryEmployeePosition,
+            $roleCodes,
+            $employmentId,
+            $hire,
+        );
     }
 
     private function sequenceFromIdNumber(string $idNumber, int $fallbackId): int
@@ -638,10 +688,17 @@ class DevelopmentEmployeePositionSeeder extends Seeder
         EmployeePosition $primaryEmployeePosition,
         ?EmployeePosition $secondaryEmployeePosition,
         array $roleCodes,
-        int $employmentId
+        int $employmentId,
+        CarbonImmutable $hire,
     ): void {
         $isPrimaryHead = $this->shouldMarkAsHead($roleCodes, $sequence);
-        $primaryStartDate = CarbonImmutable::create(2023, 1, 1)->addMonths($sequence)->toDateString();
+
+        $primaryStart = CarbonImmutable::create(2023, 1, 1)->addMonths($sequence);
+        if ($primaryStart->lt($hire)) {
+            $primaryStart = $hire;
+        }
+        $primaryStartDate = $primaryStart->toDateString();
+
         $this->assertEmployeeCanBeAssignedToUnit($employee, $primaryUnit, $primaryStartDate);
 
         EmployeeAssignment::query()->updateOrCreate(
@@ -660,7 +717,17 @@ class DevelopmentEmployeePositionSeeder extends Seeder
         );
 
         if ($secondaryUnit !== null && $secondaryEmployeePosition !== null) {
-            $secondaryStartDate = CarbonImmutable::create(2021, 1, 1)->addMonths($sequence)->toDateString();
+            $secondaryStart = CarbonImmutable::create(2021, 1, 1)->addMonths($sequence);
+            if ($secondaryStart->lt($hire)) {
+                $secondaryStart = $hire;
+            }
+
+            $secondaryEnd = CarbonImmutable::create(2022, 12, 31)->addDays($sequence % 27);
+            if ($secondaryEnd->lt($secondaryStart)) {
+                $secondaryEnd = $secondaryStart;
+            }
+
+            $secondaryStartDate = $secondaryStart->toDateString();
             $this->assertEmployeeCanBeAssignedToUnit($employee, $secondaryUnit, $secondaryStartDate);
 
             EmployeeAssignment::query()->updateOrCreate(
@@ -672,7 +739,7 @@ class DevelopmentEmployeePositionSeeder extends Seeder
                 [
                     'organization_id' => null,
                     'employee_employment_id' => $employmentId,
-                    'end_date' => CarbonImmutable::create(2022, 12, 31)->addDays($sequence % 27)->toDateString(),
+                    'end_date' => $secondaryEnd->toDateString(),
                     'is_primary' => false,
                     'is_head' => false,
                 ]

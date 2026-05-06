@@ -4,11 +4,12 @@ namespace Database\Factories;
 
 use App\Models\Employee;
 use App\Models\EmployeeEmployment;
+use App\Models\EmployeePosition;
 use App\Models\Position;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\EmployeePosition>
+ * @extends Factory<EmployeePosition>
  */
 class EmployeePositionFactory extends Factory
 {

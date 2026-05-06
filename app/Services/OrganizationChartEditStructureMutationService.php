@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\OrganizationalUnit;
 use App\Models\UnitType;
 use App\Models\UnitTypeParent;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -98,7 +99,7 @@ class OrganizationChartEditStructureMutationService
 
         DB::transaction(function () use ($unitType): void {
             UnitTypeParent::query()
-                ->where(function (\Illuminate\Contracts\Database\Query\Builder $builder) use ($unitType): void {
+                ->where(function (Builder $builder) use ($unitType): void {
                     $builder
                         ->where('parent_unit_type_id', $unitType->id)
                         ->orWhere('child_unit_type_id', $unitType->id);

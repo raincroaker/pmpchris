@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Exports\DtrMockExport;
 use App\Exports\TeamAttendanceDtrWorkbookExport;
 use App\Http\Requests\DownloadTeamAttendanceDtrRequest;
+use App\Models\OrganizationalUnit;
 use App\Services\BranchContextService;
 use App\Services\TeamAttendanceDtrExportService;
+use Carbon\CarbonImmutable;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -58,11 +60,11 @@ class DownloadDtrMockExcelController extends Controller
         }
 
         $unitId = (int) ($validated['unit_id'] ?? 0);
-        $unit = \App\Models\OrganizationalUnit::query()->find($unitId);
+        $unit = OrganizationalUnit::query()->find($unitId);
         $unitCode = $unit?->code !== null && $unit->code !== ''
             ? preg_replace('/[^A-Za-z0-9_-]/', '', (string) $unit->code)
             : sprintf('UNIT%d', $unitId);
-        $periodCode = \Carbon\CarbonImmutable::parse((string) $validated['date_from'])->format('M-Y');
+        $periodCode = CarbonImmutable::parse((string) $validated['date_from'])->format('M-Y');
         $filename = sprintf('DTR_%s_%s.xlsx', $unitCode, $periodCode);
 
         return Excel::download(new TeamAttendanceDtrWorkbookExport($sheets), $filename);

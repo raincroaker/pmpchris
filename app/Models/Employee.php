@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EmployeeBirthdayVisibility;
+use Database\Factories\EmployeeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeeFactory> */
+    /** @use HasFactory<EmployeeFactory> */
     use HasFactory, SoftDeletes;
 
     /**
@@ -32,6 +33,7 @@ class Employee extends Model
         'civil_status',
         'nationality',
         'religion',
+        'religion_other',
     ];
 
     /**

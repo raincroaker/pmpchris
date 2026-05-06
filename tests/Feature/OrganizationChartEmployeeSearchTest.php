@@ -15,6 +15,7 @@ use Database\Seeders\DemoCooperativeSeeder;
 use Database\Seeders\OrganizationalStructureSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 uses(RefreshDatabase::class);
 
@@ -116,7 +117,7 @@ function createOrgWideEmployee(OrganizationalUnit $root, string $firstName, stri
 }
 
 test('hr head can search chart employees filtered by chart branch and query', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
@@ -147,7 +148,7 @@ test('hr head can search chart employees filtered by chart branch and query', fu
 });
 
 test('employee search endpoint forbids hr manager on unmanaged branch', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
@@ -174,7 +175,7 @@ test('employee search endpoint forbids hr manager on unmanaged branch', function
 });
 
 test('employee search endpoint returns 404 when node is outside chart root', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
@@ -196,7 +197,7 @@ test('employee search endpoint returns 404 when node is outside chart root', fun
 });
 
 test('employee search endpoint includes current user and excludes already assigned employees from selected unit', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();
@@ -231,7 +232,7 @@ test('employee search endpoint includes current user and excludes already assign
 });
 
 test('employee search includes branch and org-wide employees for hr head and branch manager', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
     (new DemoCooperativeSeeder)->run();

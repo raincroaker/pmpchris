@@ -8,8 +8,9 @@ use App\Models\UnitType;
 use App\Models\User;
 use App\Services\BranchContextService;
 use Database\Seeders\RoleSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     (new RoleSeeder)->run();

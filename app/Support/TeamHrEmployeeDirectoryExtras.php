@@ -2,14 +2,16 @@
 
 namespace App\Support;
 
+use App\Http\Controllers\ScheduleAssignmentController;
 use App\Models\Employee;
+use App\Models\EmployeeAttendanceDay;
 use App\Models\EmployeePosition;
 use App\Models\OrganizationalUnit;
 
 final class TeamHrEmployeeDirectoryExtras
 {
     /**
-     * Active employee positions for directory-style UI (aligned with {@see \App\Http\Controllers\ScheduleAssignmentController::mapEmployeeRow()}).
+     * Active employee positions for directory-style UI (aligned with {@see ScheduleAssignmentController::mapEmployeeRow()}).
      *
      * @return list<array{id: int, code: string, title: string, is_primary: bool}>
      */
@@ -101,7 +103,7 @@ final class TeamHrEmployeeDirectoryExtras
 
     /**
      * Same as {@see eagerLoadEmployeeForPresenters} plus {@see EmployeeAssignment::$organizationalUnit}
-     * for team attendance rows when {@see \App\Models\EmployeeAttendanceDay::$organizational_unit_id} is null.
+     * for team attendance rows when {@see EmployeeAttendanceDay::$organizational_unit_id} is null.
      *
      * @return \Closure(object): void
      */

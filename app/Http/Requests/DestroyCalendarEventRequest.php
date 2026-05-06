@@ -4,7 +4,9 @@ namespace App\Http\Requests;
 
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class DestroyCalendarEventRequest extends FormRequest
 {
@@ -20,7 +22,7 @@ class DestroyCalendarEventRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -38,9 +40,9 @@ class DestroyCalendarEventRequest extends FormRequest
         ]);
     }
 
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function (\Illuminate\Validation\Validator $validator): void {
+        $validator->after(function (Validator $validator): void {
             if ($this->applyTo() === 'single_occurrence' && $this->occurrenceDate() === null) {
                 $validator->errors()->add('occurrence_date', 'Occurrence date is required for single occurrence delete.');
             }

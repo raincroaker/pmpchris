@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\Employee;
 use App\Models\EmployeeAssignment;
 use App\Models\EmployeeEmployment;
+use App\Models\EmployeePosition;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
 use App\Models\User;
@@ -645,7 +646,7 @@ class OrganizationChartDataService
      */
     private function resolveEmployeePositionOptions(Employee $employee): array
     {
-        /** @var Collection<int, \App\Models\EmployeePosition> $positions */
+        /** @var Collection<int, EmployeePosition> $positions */
         $positions = $employee->positions;
 
         return $positions

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\EmployeePositionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use InvalidArgumentException;
 
 class EmployeePosition extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeePositionFactory> */
+    /** @use HasFactory<EmployeePositionFactory> */
     use HasFactory, SoftDeletes;
 
     /**

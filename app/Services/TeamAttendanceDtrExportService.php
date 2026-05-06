@@ -7,8 +7,10 @@ use App\Exports\DtrMockExport;
 use App\Models\Employee;
 use App\Models\EmployeeLeaveDay;
 use App\Models\EmployeeOvertime;
-use App\Models\OrganizationHoliday;
 use App\Models\OrganizationalUnit;
+use App\Models\OrganizationHoliday;
+use App\Support\AttendanceTemplateScheduledNetHours;
+use App\Support\OrganizationHolidayOccurrenceDates;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -197,17 +199,20 @@ class TeamAttendanceDtrExportService
 
             if ($isHoliday && ! $hasLogs) {
                 $rows->push($this->blankDayRow($d));
+
                 continue;
             }
 
             if ($isRestDay && ! $hasLogs) {
                 $rows->push($this->bandDayRow($d, 'REST DAY'));
+
                 continue;
             }
 
             if (! $hasLogs && ! $isOnLeave) {
                 $rows->push($this->bandDayRow($d, 'ABSENCE'));
                 $absenceCount++;
+
                 continue;
             }
 
@@ -295,7 +300,7 @@ class TeamAttendanceDtrExportService
         $rules = $this->holidayViewDataService
             ->organizationHolidayRulesIntersectingClosedRange($organizationId, $from->toDateString(), $to->toDateString());
 
-        $dates = \App\Support\OrganizationHolidayOccurrenceDates::occurrencesInClosedRange(
+        $dates = OrganizationHolidayOccurrenceDates::occurrencesInClosedRange(
             $rules,
             $from->toDateString(),
             $to->toDateString(),
@@ -564,7 +569,7 @@ class TeamAttendanceDtrExportService
         $days = is_array($template->days) ? implode(', ', array_map('ucfirst', $template->days)) : '—';
         $windows = $this->expectedWindowsFromTemplate($template);
         $grossMin = $this->templateGrossMinutes($template);
-        $netHours = \App\Support\AttendanceTemplateScheduledNetHours::fromTemplate($template);
+        $netHours = AttendanceTemplateScheduledNetHours::fromTemplate($template);
 
         return [
             'template_name' => (string) $template->name,
@@ -687,6 +692,7 @@ class TeamAttendanceDtrExportService
             $names[] = (string) $cursor->name;
             if ($cursor->relationLoaded('parent') && $cursor->parent !== null) {
                 $cursor = $cursor->parent;
+
                 continue;
             }
 
@@ -735,4 +741,3 @@ class TeamAttendanceDtrExportService
         ));
     }
 }
-

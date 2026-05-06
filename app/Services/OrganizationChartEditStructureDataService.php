@@ -7,8 +7,8 @@ use App\Models\Organization;
 use App\Models\OrganizationalUnit;
 use App\Models\UnitType;
 use App\Models\UnitTypeParent;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class OrganizationChartEditStructureDataService
 {

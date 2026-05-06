@@ -6,6 +6,7 @@ use App\Enums\EmployeeHrRecordStatus;
 use App\Http\Requests\Concerns\AuthorizesTeamHrLeaveOvertimeRecords;
 use App\Services\ScheduleAssignmentAccessService;
 use App\Support\EmployeeBranchDirectoryFilter;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,7 +26,7 @@ class StoreEmployeeOvertimeRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

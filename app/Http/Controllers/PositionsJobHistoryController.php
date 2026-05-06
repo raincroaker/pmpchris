@@ -3,15 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\IndexPositionsJobHistoryRequest;
+use App\Models\Employee;
 use App\Models\EmployeeAssignment;
 use App\Models\EmployeePosition;
-use App\Models\Employee;
-use App\Models\EmployeeEmployment;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
 use App\Services\BranchContextService;
 use App\Support\EmployeeBranchDirectoryFilter;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -61,7 +61,34 @@ class PositionsJobHistoryController extends Controller
         $paginator = $query->paginate($parsed['perPage'], ['*'], 'page', $parsed['page'])->withQueryString();
         if ($parsed['historyType'] === 'unit_assignments') {
             $paginator->load([
-                'employee:id,id_number,first_name,middle_name,last_name,suffix',
+                'employee' => function ($q) use ($today, $orgId): void {
+                    $q->select([
+                        'employees.id',
+                        'employees.first_name',
+                        'employees.middle_name',
+                        'employees.last_name',
+                        'employees.suffix',
+                        'employees.id_number',
+                    ])
+                        ->with([
+                            'affiliations' => function ($aq) use ($today, $orgId): void {
+                                $aq->select([
+                                    'employee_affiliations.id',
+                                    'employee_affiliations.employee_id',
+                                    'employee_affiliations.organization_id',
+                                    'employee_affiliations.root_unit_id',
+                                    'employee_affiliations.end_date',
+                                ])
+                                    ->where('organization_id', $orgId)
+                                    ->whereNull('root_unit_id')
+                                    ->whereNull('deleted_at')
+                                    ->where(function ($q2) use ($today): void {
+                                        $q2->whereNull('end_date')
+                                            ->orWhereDate('end_date', '>=', $today);
+                                    });
+                            },
+                        ]);
+                },
                 'organizationalUnit:id,code,name,unit_type_id',
                 'organizationalUnit.unitType:id,name',
                 'employmentPeriod:id,employment_status',
@@ -69,7 +96,34 @@ class PositionsJobHistoryController extends Controller
             $mappedPaginator = $paginator->through(fn (EmployeeAssignment $row): array => $this->mapUnitAssignmentRow($row, $today));
         } else {
             $paginator->load([
-                'employee:id,id_number,first_name,middle_name,last_name,suffix',
+                'employee' => function ($q) use ($today, $orgId): void {
+                    $q->select([
+                        'employees.id',
+                        'employees.first_name',
+                        'employees.middle_name',
+                        'employees.last_name',
+                        'employees.suffix',
+                        'employees.id_number',
+                    ])
+                        ->with([
+                            'affiliations' => function ($aq) use ($today, $orgId): void {
+                                $aq->select([
+                                    'employee_affiliations.id',
+                                    'employee_affiliations.employee_id',
+                                    'employee_affiliations.organization_id',
+                                    'employee_affiliations.root_unit_id',
+                                    'employee_affiliations.end_date',
+                                ])
+                                    ->where('organization_id', $orgId)
+                                    ->whereNull('root_unit_id')
+                                    ->whereNull('deleted_at')
+                                    ->where(function ($q2) use ($today): void {
+                                        $q2->whereNull('end_date')
+                                            ->orWhereDate('end_date', '>=', $today);
+                                    });
+                            },
+                        ]);
+                },
                 'position:id,code,title',
                 'employmentPeriod:id,employment_status',
             ]);
@@ -155,7 +209,7 @@ class PositionsJobHistoryController extends Controller
     /**
      * @return array{
      *     id: int,
-     *     employee: array{id: int, display_name: string, id_number: string},
+     *     employee: array{id: int, display_name: string, id_number: string, is_org_wide: bool},
      *     position: array{id: int, code: string, title: string},
      *     start_date: string,
      *     end_date: string|null,
@@ -194,6 +248,9 @@ class PositionsJobHistoryController extends Controller
                 'id' => (int) $employee->id,
                 'display_name' => $this->formatEmployeeDisplayName($employee),
                 'id_number' => (string) $employee->id_number,
+                'is_org_wide' => $employee->relationLoaded('affiliations')
+                    ? $employee->affiliations->isNotEmpty()
+                    : false,
             ],
             'position' => [
                 'id' => (int) $position->id,
@@ -212,7 +269,7 @@ class PositionsJobHistoryController extends Controller
     /**
      * @return array{
      *     id: int,
-     *     employee: array{id: int, display_name: string, id_number: string},
+     *     employee: array{id: int, display_name: string, id_number: string, is_org_wide: bool},
      *     position: null,
      *     organizational_unit: array{id: int, code: string, name: string, unit_type: string|null}|null,
      *     start_date: string,
@@ -249,6 +306,9 @@ class PositionsJobHistoryController extends Controller
                 'id' => (int) $employee->id,
                 'display_name' => $this->formatEmployeeDisplayName($employee),
                 'id_number' => (string) $employee->id_number,
+                'is_org_wide' => $employee->relationLoaded('affiliations')
+                    ? $employee->affiliations->isNotEmpty()
+                    : false,
             ],
             'position' => null,
             'organizational_unit' => $unit !== null ? [
@@ -277,7 +337,7 @@ class PositionsJobHistoryController extends Controller
      * }  $parsed
      * @param  array<string, mixed>  $validated
      */
-    private function buildPositionsQuery(array $parsed, mixed $visibleEmployees, int $orgId, string $todayString, array $validated): \Illuminate\Database\Eloquent\Builder
+    private function buildPositionsQuery(array $parsed, mixed $visibleEmployees, int $orgId, string $todayString, array $validated): Builder
     {
         $query = EmployeePosition::query()
             ->select('employee_positions.*')
@@ -336,7 +396,7 @@ class PositionsJobHistoryController extends Controller
      * }  $parsed
      * @param  array<string, mixed>  $validated
      */
-    private function buildUnitAssignmentsQuery(array $parsed, mixed $visibleEmployees, int $orgId, string $todayString, array $validated): \Illuminate\Database\Eloquent\Builder
+    private function buildUnitAssignmentsQuery(array $parsed, mixed $visibleEmployees, int $orgId, string $todayString, array $validated): Builder
     {
         $query = EmployeeAssignment::query()
             ->select('employee_assignments.*')
@@ -398,7 +458,7 @@ class PositionsJobHistoryController extends Controller
      * }  $parsed
      */
     private function applyCommonHistoryFilters(
-        \Illuminate\Database\Eloquent\Builder $query,
+        Builder $query,
         array $parsed,
         string $todayString,
         \Closure $searchCallback,
@@ -426,7 +486,7 @@ class PositionsJobHistoryController extends Controller
     }
 
     private function applySorting(
-        \Illuminate\Database\Eloquent\Builder $query,
+        Builder $query,
         string $sort,
         string $directionInput,
         string $todayString,

@@ -4,6 +4,7 @@ export type AdminRoleUser = {
     id: number;
     name: string;
     email: string;
+    avatar_url: string | null;
     employee_number: string | null;
 };
 

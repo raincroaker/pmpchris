@@ -6,6 +6,7 @@ use App\Enums\AttendanceEntrySource;
 use App\Enums\AttendanceRecordStatus;
 use App\Enums\WorkScheduleClockPattern;
 use App\Models\Concerns\SoftDeletesWithDeletedByUser;
+use Database\Factories\EmployeeAttendanceDayFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EmployeeAttendanceDay extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeeAttendanceDayFactory> */
+    /** @use HasFactory<EmployeeAttendanceDayFactory> */
     use HasFactory;
 
     use SoftDeletesWithDeletedByUser;

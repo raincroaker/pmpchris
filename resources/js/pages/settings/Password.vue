@@ -10,6 +10,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { edit } from '@/routes/user-password';
 import type { BreadcrumbItem } from '@/types';
+import { inertiaRouteForm } from '@/wayfinder';
 
 const breadcrumbItems: BreadcrumbItem[] = [
     {
@@ -34,7 +35,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                 />
 
                 <Form
-                    v-bind="PasswordController.update.form()"
+                    v-bind="inertiaRouteForm(PasswordController.update())"
                     :options="{
                         preserveScroll: true,
                     }"

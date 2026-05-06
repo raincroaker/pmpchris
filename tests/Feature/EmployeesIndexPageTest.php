@@ -19,6 +19,11 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
+beforeEach(function (): void {
+    (new RoleSeeder)->run();
+    config(['hris.branch_picker_enabled' => false]);
+});
+
 function createCurrentEmployment(Employee $employee): void
 {
     EmployeeEmployment::factory()->for($employee)->create([
@@ -32,7 +37,7 @@ function createCurrentEmployment(Employee $employee): void
 function createUser(): User
 {
     /** @var User $user */
-    $user = User::factory()->create();
+    $user = User::factory()->withRoles(Role::CODE_HR_HEAD)->create();
 
     return $user;
 }
@@ -41,7 +46,7 @@ test('guests are redirected from employees index', function () {
     $this->get(route('employees'))->assertRedirect(route('login'));
 });
 
-test('authenticated users can visit the employees index page', function () {
+test('authorized users can visit the employees index page', function () {
     $user = createUser();
     $this->actingAs($user)
         ->get(route('employees'))
@@ -55,7 +60,17 @@ test('authenticated users can visit the employees index page', function () {
             ->has('unitFilterOptions')
             ->where('filters.sort', 'last_name')
             ->where('filters.direction', 'asc')
-            ->where('filters.per_page', 10));
+            ->where('filters.per_page', 10)
+            ->where('filters.hire_from', null)
+            ->where('filters.hire_to', null));
+});
+
+test('employee role cannot access employees index page', function (): void {
+    $user = User::factory()->withRoles(Role::CODE_EMPLOYEE)->create();
+
+    $this->actingAs($user)
+        ->get(route('employees'))
+        ->assertForbidden();
 });
 
 test('employees index returns empty paginator when no default organization', function () {
@@ -110,6 +125,11 @@ test('employees linked by current position in default org appear in the index', 
         'email' => 'jamie@example.test',
     ]);
 
+    $currentEmployment = EmployeeEmployment::query()
+        ->where('employee_id', $employee->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
     $user = createUser();
     $this->actingAs($user)
         ->get(route('employees'))
@@ -121,7 +141,11 @@ test('employees linked by current position in default org appear in the index', 
             ->where('employees.data.0.id_number', 'EMP-T-IDX-001')
             ->where('employees.data.0.positions.0.title', 'Analyst')
             ->where('employees.data.0.contact.phone', '+639001112233')
-            ->where('employees.data.0.contact.email', 'jamie@example.test'));
+            ->where('employees.data.0.contact.email', 'jamie@example.test')
+            ->where('employees.data.0.current_employment.id', (int) $currentEmployment->id)
+            ->where('employees.data.0.current_employment.employment_status', EmployeeEmployment::STATUS_ACTIVE)
+            ->where('employees.data.0.current_employment.employee.id', $employee->id)
+            ->where('employees.data.0.current_employment.employee.id_number', 'EMP-T-IDX-001'));
 });
 
 test('position_id filter limits rows to employees with that current position', function () {
@@ -526,6 +550,21 @@ test('picker users only see employees affiliated to the session branch root', fu
             ->where('branchScope.id', $rootA->id));
 });
 
+test('hr manager is redirected from employees index when workspace branch is unmanaged', function (): void {
+    config(['hris.default_organization_code' => 'T-EMP-UNMANAGED']);
+
+    Organization::factory()->create([
+        'code' => 'T-EMP-UNMANAGED',
+        'is_active' => true,
+    ]);
+
+    $user = User::factory()->withRoles(Role::CODE_HR_MANAGER)->create();
+
+    $this->actingAs($user)
+        ->get(route('employees'))
+        ->assertRedirect(route('dashboard'));
+});
+
 test('picker users also see employees with org-wide affiliation (null root_unit_id)', function () {
     config(['hris.branch_picker_enabled' => true]);
     config(['hris.default_organization_code' => 'T-EMP-BR-NR']);
@@ -810,6 +849,111 @@ test('picker users only see active unit assignments inside selected branch subtr
             ->where('employees.data.2.id', $employeeWithOtherBranchUnit->id)
             ->has('employees.data.2.units', 0)
             ->where('branchScope.id', $rootA->id));
+});
+
+test('employees index hire date header filter restricts by current employment hire date', function () {
+    config(['hris.default_organization_code' => 'T-EMP-HIRE-FIL']);
+
+    $organization = Organization::factory()->create([
+        'code' => 'T-EMP-HIRE-FIL',
+        'is_active' => true,
+    ]);
+
+    $position = Position::factory()->create([
+        'organization_id' => $organization->id,
+    ]);
+
+    $earlyHire = Employee::factory()->create(['last_name' => 'AlphaEarly']);
+    EmployeeEmployment::factory()->for($earlyHire)->create([
+        'employment_status' => EmployeeEmployment::STATUS_ACTIVE,
+        'is_current' => true,
+        'hire_date' => '2019-01-15',
+    ]);
+
+    $lateHire = Employee::factory()->create(['last_name' => 'ZetaLate']);
+    EmployeeEmployment::factory()->for($lateHire)->create([
+        'employment_status' => EmployeeEmployment::STATUS_ACTIVE,
+        'is_current' => true,
+        'hire_date' => '2025-06-01',
+    ]);
+
+    foreach ([$earlyHire, $lateHire] as $employee) {
+        EmployeePosition::factory()->create([
+            'employee_id' => $employee->id,
+            'position_id' => $position->id,
+            'end_date' => null,
+            'is_primary' => true,
+        ]);
+    }
+
+    $user = createUser();
+
+    $this->actingAs($user)
+        ->get(route('employees', [
+            'hire_from' => '2025-01-01',
+            'hire_to' => '2025-12-31',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Employees/Index')
+            ->has('employees.data', 1)
+            ->where('employees.data.0.id', $lateHire->id)
+            ->where('filters.hire_from', '2025-01-01')
+            ->where('filters.hire_to', '2025-12-31'));
+});
+
+test('employees index can sort by hire date ascending', function () {
+    config(['hris.default_organization_code' => 'T-EMP-HIRE-SORT']);
+
+    $organization = Organization::factory()->create([
+        'code' => 'T-EMP-HIRE-SORT',
+        'is_active' => true,
+    ]);
+
+    $position = Position::factory()->create([
+        'organization_id' => $organization->id,
+    ]);
+
+    $earlier = Employee::factory()->create([
+        'last_name' => 'SortEarlier',
+        'first_name' => 'A',
+    ]);
+    EmployeeEmployment::factory()->for($earlier)->create([
+        'employment_status' => EmployeeEmployment::STATUS_ACTIVE,
+        'is_current' => true,
+        'hire_date' => '2018-03-01',
+    ]);
+
+    $later = Employee::factory()->create([
+        'last_name' => 'SortLater',
+        'first_name' => 'B',
+    ]);
+    EmployeeEmployment::factory()->for($later)->create([
+        'employment_status' => EmployeeEmployment::STATUS_ACTIVE,
+        'is_current' => true,
+        'hire_date' => '2020-07-15',
+    ]);
+
+    foreach ([$earlier, $later] as $employee) {
+        EmployeePosition::factory()->create([
+            'employee_id' => $employee->id,
+            'position_id' => $position->id,
+            'end_date' => null,
+            'is_primary' => true,
+        ]);
+    }
+
+    $user = createUser();
+
+    $this->actingAs($user)
+        ->get(route('employees', ['sort' => 'hire_date', 'direction' => 'asc']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Employees/Index')
+            ->has('employees.data', 2)
+            ->where('employees.data.0.id', $earlier->id)
+            ->where('employees.data.1.id', $later->id)
+            ->where('filters.sort', 'hire_date'));
 });
 
 test('picker users can filter employees by unassigned unit in selected branch', function () {

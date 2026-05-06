@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\EmployeeContactFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class EmployeeContact extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeeContactFactory> */
+    /** @use HasFactory<EmployeeContactFactory> */
     use HasFactory, SoftDeletes;
 
     /**

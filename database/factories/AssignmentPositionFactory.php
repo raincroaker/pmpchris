@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\AssignmentPosition;
 use App\Models\EmployeeAssignment;
 use App\Models\EmployeePosition;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\AssignmentPosition>
+ * @extends Factory<AssignmentPosition>
  */
 class AssignmentPositionFactory extends Factory
 {

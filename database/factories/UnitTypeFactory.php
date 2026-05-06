@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\UnitType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\UnitType>
+ * @extends Factory<UnitType>
  */
 class UnitTypeFactory extends Factory
 {

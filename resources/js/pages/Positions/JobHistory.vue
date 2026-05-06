@@ -252,6 +252,17 @@ const columns: ColumnDef<JobHistoryRow>[] = [
                     { class: 'text-xs text-muted-foreground' },
                     row.original.employee.id_number || '—',
                 ),
+                row.original.employee.is_org_wide &&
+                row.original.employment_status === 'active'
+                    ? h(
+                          Badge,
+                          {
+                              variant: 'outline',
+                              class: 'mt-0.5 w-fit rounded-full border-emerald-200 bg-emerald-50 text-[11px] font-medium text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300',
+                          },
+                          () => 'Org-wide',
+                      )
+                    : null,
             ]),
         enableSorting: false,
     },
@@ -456,7 +467,7 @@ const table = useVueTable({
                 <p v-if="organization" class="text-sm text-muted-foreground">
                     {{ organization.name }}
                     <span class="text-muted-foreground/80"
-                        >({{ organization.code }})</span
+                        > ({{ organization.code }})</span
                     >
                 </p>
                 <p v-else class="text-sm text-muted-foreground">
@@ -472,7 +483,7 @@ const table = useVueTable({
                         branchScope.name
                     }}</span>
                     <span class="text-muted-foreground/80"
-                        >({{ branchScope.code }})</span
+                        > ({{ branchScope.code }})</span
                     >.
                 </p>
             </div>
@@ -507,10 +518,15 @@ const table = useVueTable({
                             size="sm"
                             :variant="
                                 props.filters.history_type === 'positions'
-                                    ? 'secondary'
+                                    ? 'default'
                                     : 'ghost'
                             "
                             class="h-8 rounded-md px-3"
+                            :class="
+                                props.filters.history_type === 'positions'
+                                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            "
                             @click="
                                 applyQuery({
                                     history_type: 'positions',
@@ -525,10 +541,15 @@ const table = useVueTable({
                             size="sm"
                             :variant="
                                 props.filters.history_type === 'unit_assignments'
-                                    ? 'secondary'
+                                    ? 'default'
                                     : 'ghost'
                             "
                             class="h-8 rounded-md px-3"
+                            :class="
+                                props.filters.history_type === 'unit_assignments'
+                                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            "
                             @click="
                                 applyQuery({
                                     history_type: 'unit_assignments',

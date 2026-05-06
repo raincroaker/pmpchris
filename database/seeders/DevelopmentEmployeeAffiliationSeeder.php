@@ -7,6 +7,7 @@ use App\Models\EmployeeAffiliation;
 use App\Models\EmployeeEmployment;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
 class DevelopmentEmployeeAffiliationSeeder extends Seeder
@@ -96,6 +97,11 @@ class DevelopmentEmployeeAffiliationSeeder extends Seeder
             $affiliationEndDate = $employment !== null && ! $employment->is_current
                 ? $employment->separation_date
                 : null;
+
+            $affiliationStartDate = CarbonImmutable::parse(
+                $employment !== null ? (string) $employment->hire_date : '2020-01-01'
+            )->toDateString();
+
             foreach ($branchAffiliationsByEmployee[$idNumber] as $index => $rootCode) {
                 $this->createAffiliation(
                     (int) $employee->id,
@@ -103,6 +109,7 @@ class DevelopmentEmployeeAffiliationSeeder extends Seeder
                     $rootIdsByCode[$rootCode] ?? null,
                     $index === 0,
                     $employmentId,
+                    $affiliationStartDate,
                     $affiliationEndDate,
                 );
             }
@@ -115,6 +122,7 @@ class DevelopmentEmployeeAffiliationSeeder extends Seeder
         ?int $rootUnitId,
         bool $isPrimary,
         int $employmentId,
+        string $hireDate,
         ?string $endDate,
     ): void {
         EmployeeAffiliation::query()->create([
@@ -123,7 +131,7 @@ class DevelopmentEmployeeAffiliationSeeder extends Seeder
             'organization_id' => $organizationId,
             'root_unit_id' => $rootUnitId,
             'is_primary' => $isPrimary,
-            'start_date' => '2010-01-01',
+            'start_date' => $hireDate,
             'end_date' => $endDate,
         ]);
     }

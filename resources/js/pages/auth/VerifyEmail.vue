@@ -8,6 +8,7 @@ import { appToast } from '@/lib/app-toast-client';
 import { createLogoutFinishedPromise } from '@/lib/logout-toast-promise';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
+import { inertiaRouteForm } from '@/wayfinder';
 
 defineProps<{
     status?: string;
@@ -48,7 +49,7 @@ function handleLogout() {
         </div>
 
         <Form
-            v-bind="send.form()"
+            v-bind="inertiaRouteForm(send())"
             class="space-y-6 text-center"
             v-slot="{ processing }"
         >

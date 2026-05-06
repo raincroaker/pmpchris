@@ -34,15 +34,14 @@ use App\Http\Controllers\DestroyTeamAttendanceDayController;
 use App\Http\Controllers\DestroyTeamCalendarEventController;
 use App\Http\Controllers\DestroyWorkScheduleTemplateController;
 use App\Http\Controllers\DownloadDtrMockExcelController;
+use App\Http\Controllers\EmployeesAboutMeController;
 use App\Http\Controllers\EmployeesCreateController;
 use App\Http\Controllers\EmployeesEmploymentHistoryController;
 use App\Http\Controllers\EmployeesIndexController;
+use App\Http\Controllers\ExpandTeamHrLeavePeriodController;
 use App\Http\Controllers\HolidayCalendarController;
 use App\Http\Controllers\IndexOrganizationChartEditAreasController;
 use App\Http\Controllers\IndexTeamHrFormUnitsController;
-use App\Http\Controllers\ExpandTeamHrLeavePeriodController;
-use App\Http\Controllers\TeamHrEmployeeLeaveUsageSummaryController;
-use App\Http\Controllers\TeamHrEmployeeOvertimeUsageSummaryController;
 use App\Http\Controllers\IndexTeamHrOrganizationHolidayRulesController;
 use App\Http\Controllers\LeaveMyController;
 use App\Http\Controllers\LeavePoliciesController;
@@ -79,13 +78,21 @@ use App\Http\Controllers\StorePositionController;
 use App\Http\Controllers\StoreTeamAttendanceDayController;
 use App\Http\Controllers\StoreTeamCalendarEventController;
 use App\Http\Controllers\StoreWorkScheduleTemplateController;
+use App\Http\Controllers\SyncEmployeeAboutMeAddressesController;
+use App\Http\Controllers\SyncEmployeeAboutMeContactsController;
+use App\Http\Controllers\SyncEmployeeEmploymentPositionsAffiliationsController;
 use App\Http\Controllers\TeamCalendarController;
 use App\Http\Controllers\TeamCalendarEventsIndexController;
-use App\Http\Controllers\UpdateAdminUserController;
+use App\Http\Controllers\TeamHrEmployeeLeaveUsageSummaryController;
+use App\Http\Controllers\TeamHrEmployeeOvertimeUsageSummaryController;
 use App\Http\Controllers\UpdateAdminNoAccountUserController;
+use App\Http\Controllers\UpdateAdminUserController;
 use App\Http\Controllers\UpdateBranchCalendarEventController;
 use App\Http\Controllers\UpdateCalendarEventCategoryController;
 use App\Http\Controllers\UpdateCompanyCalendarEventController;
+use App\Http\Controllers\UpdateEmployeeAboutMeBasicsController;
+use App\Http\Controllers\UpdateEmployeeAboutMeDemographicsController;
+use App\Http\Controllers\UpdateEmployeeEmploymentDatesController;
 use App\Http\Controllers\UpdateEmployeeLeaveController;
 use App\Http\Controllers\UpdateEmployeeOvertimeController;
 use App\Http\Controllers\UpdateEmployeeWorkScheduleTemplateController;
@@ -175,17 +182,37 @@ Route::middleware(['auth', 'verified', 'branch.selected'])->group(function () {
     Route::delete('calendar/team/events/{teamCalendarEvent}', DestroyTeamCalendarEventController::class)
         ->name('calendar.team-events.destroy');
 
-    Route::get('employees', EmployeesIndexController::class)->name('employees');
-    Route::inertia('employees/about-me', 'Employees/AboutMe')->name('employees.about-me');
-    Route::get('employees/create', EmployeesCreateController::class)->name('employees.create');
+    Route::middleware(['non.employee', 'employee.directory.access'])->group(function (): void {
+        Route::get('employees', EmployeesIndexController::class)->name('employees');
+        Route::get('employees/create', EmployeesCreateController::class)->name('employees.create');
+        Route::get('employees/employment-history', EmployeesEmploymentHistoryController::class)->name('employees.employment-history');
+        Route::get('employees/{employee}', ShowEmployeeController::class)
+            ->whereNumber('employee')
+            ->name('employees.show');
+        Route::patch('employees/{employee}/about-me/basics', UpdateEmployeeAboutMeBasicsController::class)
+            ->whereNumber('employee')
+            ->name('employees.about-me.basics');
+        Route::patch('employees/{employee}/about-me/demographics', UpdateEmployeeAboutMeDemographicsController::class)
+            ->whereNumber('employee')
+            ->name('employees.about-me.demographics');
+        Route::patch('employees/{employee}/about-me/contacts', SyncEmployeeAboutMeContactsController::class)
+            ->whereNumber('employee')
+            ->name('employees.about-me.contacts');
+        Route::patch('employees/{employee}/about-me/addresses', SyncEmployeeAboutMeAddressesController::class)
+            ->whereNumber('employee')
+            ->name('employees.about-me.addresses');
+        Route::patch('employees/employments/{employment}', UpdateEmployeeEmploymentDatesController::class)
+            ->whereNumber('employment')
+            ->name('employees.employments.update-dates');
+        Route::patch('employees/employments/{employment}/positions-affiliations', SyncEmployeeEmploymentPositionsAffiliationsController::class)
+            ->whereNumber('employment')
+            ->name('employees.employments.sync-positions-affiliations');
+    });
+    Route::get('employees/about-me', EmployeesAboutMeController::class)
+        ->name('employees.about-me');
     Route::get('employees/check-availability', CheckEmployeeFieldAvailabilityController::class)
         ->name('employees.check-availability');
     Route::post('employees', StoreEmployeeController::class)->name('employees.store');
-    Route::get('employees/{employee}', ShowEmployeeController::class)
-        ->whereNumber('employee')
-        ->name('employees.show');
-    Route::get('employees/employment-history', EmployeesEmploymentHistoryController::class)->name('employees.employment-history');
-
     Route::get('organization-chart', [OrganizationChartController::class, 'index'])->name('organization-chart');
     Route::get('organization-chart/employees/search', SearchOrganizationChartEmployeesController::class)
         ->name('organization-chart.employees.search');

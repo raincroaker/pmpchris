@@ -66,7 +66,7 @@ const patternHint = computed(() =>
                     <p class="text-sm font-medium text-foreground">
                         Overtime (preview)
                     </p>
-                    <WorkScheduleFormFieldHint aria-label="About overtime on work schedules">
+                    <WorkScheduleFormFieldHint ariaLabel="About overtime on work schedules">
                         Model overtime as its own scheduled time in and time out. Gross OT
                         minutes come from that span—no separate OT caps here. Premium rates
                         and approvals stay on Overtime Policies.
@@ -83,7 +83,7 @@ const patternHint = computed(() =>
                         Schedule overtime block
                     </p>
                     <WorkScheduleFormFieldHint
-                        aria-label="About scheduling an overtime block"
+                        ariaLabel="About scheduling an overtime block"
                     >
                         Turn off if this template has no fixed OT window (engine may treat
                         OT-only elsewhere later).
@@ -104,7 +104,7 @@ const patternHint = computed(() =>
                         :for="`${idPrefix}-ot-in`"
                     >
                         <span>OT time in</span>
-                        <WorkScheduleFormFieldHint aria-label="About OT time in">
+                        <WorkScheduleFormFieldHint ariaLabel="About OT time in">
                             Start of the scheduled overtime block (wall clock).
                         </WorkScheduleFormFieldHint>
                     </Label>
@@ -124,7 +124,7 @@ const patternHint = computed(() =>
                         :for="`${idPrefix}-ot-out`"
                     >
                         <span>OT time out</span>
-                        <WorkScheduleFormFieldHint aria-label="About OT time out">
+                        <WorkScheduleFormFieldHint ariaLabel="About OT time out">
                             End of the scheduled overtime block. Duration is derived from
                             in/out. Use Overnight OT span only when the regular schedule is
                             an overnight shift and this OT block crosses midnight.
@@ -178,7 +178,7 @@ const patternHint = computed(() =>
                         Continuous after regular net
                     </p>
                     <WorkScheduleFormFieldHint
-                        aria-label="About continuous regular and OT"
+                        ariaLabel="About continuous regular and OT"
                     >
                         When on, regular working time and this OT block are treated as one
                         continuous story for policy (e.g. no artificial gap required between
@@ -213,7 +213,7 @@ const patternHint = computed(() =>
                         :for="`${idPrefix}-ot-grace`"
                     >
                         <span>OT boundary grace (minutes)</span>
-                        <WorkScheduleFormFieldHint aria-label="About OT grace">
+                        <WorkScheduleFormFieldHint ariaLabel="About OT grace">
                             Minutes ignored at the OT start boundary before credited OT time
                             begins (placeholder for rules engine).
                         </WorkScheduleFormFieldHint>

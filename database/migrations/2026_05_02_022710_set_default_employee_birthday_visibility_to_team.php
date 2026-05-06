@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\EmployeeBirthdayVisibility;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -7,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Align DB default with {@see \App\Enums\EmployeeBirthdayVisibility::Team} for databases that already ran the initial column migration with default `private`.
+     * Align DB default with {@see EmployeeBirthdayVisibility::Team} for databases that already ran the initial column migration with default `private`.
      */
     public function up(): void
     {

@@ -11,6 +11,7 @@ export type JobHistoryRow = {
         id: number;
         display_name: string;
         id_number: string;
+        is_org_wide: boolean;
     };
     position: {
         id: number;

@@ -6,6 +6,7 @@ use App\Http\Requests\Concerns\AuthorizesTeamHrLeaveOvertimeRecords;
 use App\Models\Employee;
 use App\Models\EmployeeOvertime;
 use App\Support\EmployeeBranchDirectoryFilter;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DestroyEmployeeOvertimeRequest extends FormRequest
@@ -36,7 +37,7 @@ class DestroyEmployeeOvertimeRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

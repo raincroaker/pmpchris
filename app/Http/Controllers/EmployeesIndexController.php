@@ -5,15 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Requests\IndexEmployeesRequest;
 use App\Models\Employee;
 use App\Models\EmployeeAssignment;
+use App\Models\EmployeeEmployment;
 use App\Models\EmployeePosition;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
 use App\Models\Position;
 use App\Services\BranchContextService;
+use App\Services\EmploymentHireAdjustmentBoundary;
 use App\Services\HrIndexUnitFilterCatalog;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -98,6 +100,13 @@ class EmployeesIndexController extends Controller
             $positionId = null;
         }
 
+        $hireFrom = isset($validated['hire_from']) && $validated['hire_from'] !== null
+            ? (string) $validated['hire_from']
+            : null;
+        $hireTo = isset($validated['hire_to']) && $validated['hire_to'] !== null
+            ? (string) $validated['hire_to']
+            : null;
+
         return [
             'perPage' => $perPage,
             'page' => $page,
@@ -105,6 +114,8 @@ class EmployeesIndexController extends Controller
             'positionId' => $positionId,
             'unitId' => $unitId,
             'orgScope' => $orgScope,
+            'hireFrom' => $hireFrom,
+            'hireTo' => $hireTo,
             'filters' => [
                 'search' => $search,
                 'sort' => (string) $validated['sort'],
@@ -113,6 +124,8 @@ class EmployeesIndexController extends Controller
                 'position_id' => $positionId,
                 'unit_id' => $unitId,
                 'org_scope' => $orgScope,
+                'hire_from' => $hireFrom,
+                'hire_to' => $hireTo,
             ],
         ];
     }
@@ -373,16 +386,40 @@ class EmployeesIndexController extends Controller
             });
         }
 
+        $hireFrom = $parsed['hireFrom'] ?? null;
+        $hireTo = $parsed['hireTo'] ?? null;
+        if ($hireFrom !== null && $hireTo !== null) {
+            $query->whereHas('currentEmployment', function ($q) use ($hireFrom, $hireTo): void {
+                $q->whereDate('hire_date', '>=', $hireFrom)
+                    ->whereDate('hire_date', '<=', $hireTo);
+            });
+        }
+
+        if ($validated['sort'] === 'hire_date') {
+            $query->leftJoin('employee_employments as ee_hire_sort', function ($join): void {
+                $join->on('employees.id', '=', 'ee_hire_sort.employee_id')
+                    ->where('ee_hire_sort.is_current', true)
+                    ->whereNull('ee_hire_sort.deleted_at');
+            });
+        }
+
+        $direction = $validated['direction'] === 'desc' ? 'desc' : 'asc';
+
         $sortColumn = match ($validated['sort']) {
             'first_name' => 'employees.first_name',
             'id_number' => 'employees.id_number',
             'id' => 'employees.id',
+            'hire_date' => 'ee_hire_sort.hire_date',
             default => 'employees.last_name',
         };
 
-        $direction = $validated['direction'] === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortColumn, $direction);
-        if ($validated['sort'] !== 'id') {
+
+        if ($validated['sort'] === 'hire_date') {
+            $query->orderBy('employees.last_name', 'asc')
+                ->orderBy('employees.first_name', 'asc')
+                ->orderBy('employees.id', 'asc');
+        } elseif ($validated['sort'] !== 'id') {
             $query->orderBy('employees.id', 'asc');
         }
 
@@ -390,6 +427,18 @@ class EmployeesIndexController extends Controller
 
         $paginator->getCollection()->load([
             'user:id,employee_id,avatar_path',
+            'currentEmployment' => function ($q): void {
+                $q->select([
+                    'employee_employments.id',
+                    'employee_employments.employee_id',
+                    'employee_employments.hire_date',
+                    'employee_employments.separation_date',
+                    'employee_employments.employment_status',
+                    'employee_employments.separation_reason',
+                    'employee_employments.notes',
+                    'employee_employments.is_current',
+                ]);
+            },
             'positions' => function ($q) use ($today): void {
                 $q->whereNull('deleted_at')
                     ->where(function ($q2) use ($today): void {
@@ -595,6 +644,8 @@ class EmployeesIndexController extends Controller
             $email = (string) $withEmail->email;
         }
 
+        $currentEmployment = $employee->currentEmployment;
+
         return [
             'id' => (int) $employee->id,
             'display_name' => $this->formatEmployeeDisplayName($employee),
@@ -606,6 +657,68 @@ class EmployeesIndexController extends Controller
             'contact' => [
                 'phone' => $phone,
                 'email' => $email,
+            ],
+            'current_employment' => $currentEmployment === null
+                ? null
+                : $this->mapCurrentEmploymentForDirectoryRow($currentEmployment, $employee),
+        ];
+    }
+
+    /**
+     * Mirrors {@see EmployeesEmploymentHistoryController::mapEmploymentRow} for the current employment row only.
+     *
+     * @return array{
+     *     id: int,
+     *     hire_date: string,
+     *     separation_date: string|null,
+     *     employment_status: string,
+     *     separation_reason: string|null,
+     *     notes: string|null,
+     *     tenure_days: int,
+     *     employee: array{
+     *         id: int,
+     *         display_name: string,
+     *         id_number: string,
+     *         avatar_url: string|null,
+     *         is_org_wide: bool
+     *     }
+     * }
+     */
+    private function mapCurrentEmploymentForDirectoryRow(EmployeeEmployment $employment, Employee $employee): array
+    {
+        $today = Carbon::now()->startOfDay();
+        $hire = Carbon::parse($employment->hire_date)->startOfDay();
+        $separation = $employment->separation_date !== null
+            ? Carbon::parse($employment->separation_date)->startOfDay()
+            : null;
+        $end = $separation ?? $today->copy()->startOfDay();
+
+        $daySpan = (int) $hire->diffInDays($end, false);
+        $tenureDays = $daySpan >= 0 ? $daySpan + 1 : 1;
+
+        return [
+            'id' => (int) $employment->id,
+            'hire_date' => Carbon::parse($employment->hire_date)->toDateString(),
+            'hire_adjustment_max_date' => EmploymentHireAdjustmentBoundary::latestPermittedHireDateIsoForEmployment(
+                (int) $employment->getKey(),
+            ),
+            'separation_date' => $employment->separation_date !== null
+                ? Carbon::parse($employment->separation_date)->toDateString()
+                : null,
+            'employment_status' => (string) $employment->employment_status,
+            'separation_reason' => $employment->separation_reason !== null && $employment->separation_reason !== ''
+                ? (string) $employment->separation_reason
+                : null,
+            'notes' => $employment->notes !== null && $employment->notes !== ''
+                ? (string) $employment->notes
+                : null,
+            'tenure_days' => $tenureDays,
+            'employee' => [
+                'id' => (int) $employee->id,
+                'display_name' => $this->formatEmployeeDisplayName($employee),
+                'id_number' => (string) $employee->id_number,
+                'avatar_url' => $this->resolveAvatarUrl($employee),
+                'is_org_wide' => $employee->affiliations->isNotEmpty(),
             ],
         ];
     }

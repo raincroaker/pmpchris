@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\SearchTeamHrFormEmployeesRequest;
 use App\Models\Employee;
 use App\Models\EmployeeEmployment;
+use App\Models\EmployeePosition;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\BranchContextService;
@@ -157,7 +158,7 @@ class SearchTeamHrFormEmployeesController extends Controller
      */
     private function resolvePositionOptions(Employee $employee): array
     {
-        /** @var Collection<int, \App\Models\EmployeePosition> $positions */
+        /** @var Collection<int, EmployeePosition> $positions */
         $positions = $employee->positions;
 
         return $positions
@@ -196,7 +197,7 @@ class SearchTeamHrFormEmployeesController extends Controller
 
     private function resolveActivePositionTitle(Employee $employee): ?string
     {
-        /** @var Collection<int, \App\Models\EmployeePosition> $positions */
+        /** @var Collection<int, EmployeePosition> $positions */
         $positions = $employee->positions;
         $title = $positions->first()?->position?->title;
 

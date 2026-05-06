@@ -15,6 +15,7 @@ import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { BreadcrumbItem } from '@/types';
+import { inertiaRouteForm } from '@/wayfinder';
 
 type Props = {
     mustVerifyEmail: boolean;
@@ -50,7 +51,7 @@ const { getInitials } = useInitials();
                 />
 
                 <Form
-                    v-bind="ProfileController.update.form()"
+                    v-bind="inertiaRouteForm(ProfileController.update())"
                     class="space-y-6"
                     enctype="multipart/form-data"
                     v-slot="{ errors, processing, recentlySuccessful }"

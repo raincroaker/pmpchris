@@ -104,7 +104,7 @@ describe('attendance shifts page access', function (): void {
             ->assertRedirect(route('login'));
     });
 
-test('employee role can view work schedules', function (): void {
+    test('employee role can view work schedules', function (): void {
         (new RoleSeeder)->run();
 
         /** @var User $user */
@@ -112,10 +112,10 @@ test('employee role can view work schedules', function (): void {
 
         $this->actingAs($user)
             ->get(route('attendance.shifts'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('Attendance/Shifts')
-            ->has('workScheduleTemplates'));
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Attendance/Shifts')
+                ->has('workScheduleTemplates'));
     });
 
     test('hr head may access work schedules after selecting workspace branch', function (): void {
@@ -183,7 +183,7 @@ test('employee role can view work schedules', function (): void {
                 ->has('workScheduleTemplates'));
     });
 
-test('hr manager can view work schedules without branch manager assignment', function (): void {
+    test('hr manager can view work schedules without branch manager assignment', function (): void {
         (new RoleSeeder)->run();
         $branch = shiftsSeedOrgWithSelectableBranchRoot();
         $org = Organization::query()->where('code', 'T-AR-SHIFTS')->firstOrFail();
@@ -217,13 +217,13 @@ test('hr manager can view work schedules without branch manager assignment', fun
 
         $this->actingAs($user)
             ->get(route('attendance.shifts'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('Attendance/Shifts')
-            ->has('workScheduleTemplates'));
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Attendance/Shifts')
+                ->has('workScheduleTemplates'));
     });
 
-test('hr manager can view work schedules when workspace branch is not a managed branch root', function (): void {
+    test('hr manager can view work schedules when workspace branch is not a managed branch root', function (): void {
         (new RoleSeeder)->run();
         [$rootA, $rootB] = shiftsSeedTwoBranchRootsInOrg();
         $org = Organization::query()->where('code', 'T-AR-2BR')->firstOrFail();
@@ -263,9 +263,9 @@ test('hr manager can view work schedules when workspace branch is not a managed 
 
         $this->actingAs($user)
             ->get(route('attendance.shifts'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('Attendance/Shifts')
-            ->has('workScheduleTemplates'));
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Attendance/Shifts')
+                ->has('workScheduleTemplates'));
     });
 });

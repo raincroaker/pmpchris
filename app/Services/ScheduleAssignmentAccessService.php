@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Http\Controllers\EmployeesIndexController;
 use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
@@ -50,7 +51,7 @@ class ScheduleAssignmentAccessService
     }
 
     /**
-     * Same rules as {@see \App\Http\Controllers\EmployeesIndexController} for branch-picker session root.
+     * Same rules as {@see EmployeesIndexController} for branch-picker session root.
      */
     public function resolveBranchRootForEmployeeDirectory(Request $request, Organization $organization): ?int
     {

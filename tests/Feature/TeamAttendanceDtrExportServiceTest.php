@@ -2,6 +2,7 @@
 
 use App\Enums\AttendanceEntrySource;
 use App\Enums\AttendanceRecordStatus;
+use App\Enums\EmployeeHrRecordStatus;
 use App\Exports\DtrMockExport;
 use App\Models\Employee;
 use App\Models\EmployeeAssignment;
@@ -10,12 +11,13 @@ use App\Models\EmployeeAttendanceSegment;
 use App\Models\EmployeeLeave;
 use App\Models\EmployeeLeaveDay;
 use App\Models\EmployeeOvertime;
+use App\Models\EmployeePosition;
 use App\Models\HolidayType;
 use App\Models\LeavePolicy;
 use App\Models\Organization;
+use App\Models\OrganizationalUnit;
 use App\Models\OrganizationHoliday;
 use App\Models\OvertimePolicy;
-use App\Models\OrganizationalUnit;
 use App\Models\Position;
 use App\Models\UnitType;
 use App\Models\WorkScheduleTemplate;
@@ -59,7 +61,7 @@ test('team mode builds per-employee exports with no-schedule fallback', function
         'organization_id' => $organization->id,
         'title' => 'HR Specialist',
     ]);
-    \App\Models\EmployeePosition::factory()->create([
+    EmployeePosition::factory()->create([
         'employee_id' => $employeeWithSchedule->id,
         'position_id' => $position->id,
         'is_primary' => true,
@@ -98,7 +100,7 @@ test('team mode builds per-employee exports with no-schedule fallback', function
         'leave_policy_id' => $leavePolicy->id,
         'start_date' => '2026-05-05',
         'end_date' => '2026-05-05',
-        'status' => \App\Enums\EmployeeHrRecordStatus::Approved,
+        'status' => EmployeeHrRecordStatus::Approved,
     ]);
     EmployeeLeaveDay::query()->create([
         'organization_id' => $organization->id,
@@ -120,7 +122,7 @@ test('team mode builds per-employee exports with no-schedule fallback', function
         'overtime_policy_id' => $otPolicy->id,
         'ot_date' => '2026-05-05',
         'hours' => 2.0,
-        'status' => \App\Enums\EmployeeHrRecordStatus::Approved,
+        'status' => EmployeeHrRecordStatus::Approved,
     ]);
 
     $holidayType = HolidayType::query()->create([
@@ -277,4 +279,3 @@ test('single pair dtr row uses first actual in and last actual out across captur
         ->and($row['otIn'])->toBe('')
         ->and($row['otOut'])->toBe('');
 });
-

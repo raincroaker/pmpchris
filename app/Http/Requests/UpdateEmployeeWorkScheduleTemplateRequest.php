@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\User;
 use App\Services\BranchContextService;
 use App\Services\ScheduleAssignmentAccessService;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,7 @@ class UpdateEmployeeWorkScheduleTemplateRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\IndexAdminUsersRequest;
+use App\Models\Employee;
 use App\Models\EmployeeAffiliation;
 use App\Models\EmployeeAssignment;
-use App\Models\Employee;
 use App\Models\EmployeeEmployment;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
@@ -16,6 +16,7 @@ use App\Services\BranchContextService;
 use App\Services\HrIndexUnitFilterCatalog;
 use App\Support\TeamHrEmployeeDisplay;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -116,6 +117,10 @@ class AdminUsersIndexController extends Controller
             $perPage,
             $page,
             $viewerIsSuperAdmin,
+            $organizationId,
+            $branchRootId,
+            $unitFilter,
+            $allowedUnitIds,
         );
         $usersPaginator = $this->buildUsersPaginator(
             $search,
@@ -190,6 +195,10 @@ class AdminUsersIndexController extends Controller
         int $perPage,
         int $page,
         bool $viewerIsSuperAdmin,
+        ?int $organizationId,
+        ?int $branchRootId,
+        int|string|null $unitFilter,
+        array $allowedUnitIds,
     ) {
         $query = Role::query()
             ->select(['id', 'code', 'name', 'description']);
@@ -197,19 +206,33 @@ class AdminUsersIndexController extends Controller
         if (! $viewerIsSuperAdmin) {
             $query->where('code', '<>', Role::CODE_SUPER_ADMIN)
                 ->withCount([
-                    'users as users_count' => function ($q): void {
+                    'users as users_count' => function ($q) use ($organizationId, $branchRootId, $unitFilter, $allowedUnitIds): void {
                         $q->whereDoesntHave('roles', function ($roleQ): void {
                             $roleQ->where('roles.code', Role::CODE_SUPER_ADMIN);
                         });
+                        $this->applyRolesUsersScopeConstraints(
+                            $q,
+                            $organizationId,
+                            $branchRootId,
+                            $unitFilter,
+                            $allowedUnitIds,
+                        );
                     },
                 ])
                 ->with([
-                    'users' => function ($q): void {
-                        $q->select(['users.id', 'users.name', 'users.email', 'users.employee_id'])
+                    'users' => function ($q) use ($organizationId, $branchRootId, $unitFilter, $allowedUnitIds): void {
+                        $q->select(['users.id', 'users.name', 'users.email', 'users.avatar_path', 'users.employee_id'])
                             ->whereDoesntHave('roles', function ($roleQ): void {
                                 $roleQ->where('roles.code', Role::CODE_SUPER_ADMIN);
-                            })
-                            ->orderBy('users.name')
+                            });
+                        $this->applyRolesUsersScopeConstraints(
+                            $q,
+                            $organizationId,
+                            $branchRootId,
+                            $unitFilter,
+                            $allowedUnitIds,
+                        );
+                        $q->orderBy('users.name')
                             ->orderBy('users.id');
                     },
                     'users.employee' => function ($q): void {
@@ -217,11 +240,28 @@ class AdminUsersIndexController extends Controller
                     },
                 ]);
         } else {
-            $query->withCount('users')
+            $query->withCount([
+                'users as users_count' => function ($q) use ($organizationId, $branchRootId, $unitFilter, $allowedUnitIds): void {
+                    $this->applyRolesUsersScopeConstraints(
+                        $q,
+                        $organizationId,
+                        $branchRootId,
+                        $unitFilter,
+                        $allowedUnitIds,
+                    );
+                },
+            ])
                 ->with([
-                    'users' => function ($q): void {
-                        $q->select(['users.id', 'users.name', 'users.email', 'users.employee_id'])
-                            ->orderBy('users.name')
+                    'users' => function ($q) use ($organizationId, $branchRootId, $unitFilter, $allowedUnitIds): void {
+                        $q->select(['users.id', 'users.name', 'users.email', 'users.avatar_path', 'users.employee_id']);
+                        $this->applyRolesUsersScopeConstraints(
+                            $q,
+                            $organizationId,
+                            $branchRootId,
+                            $unitFilter,
+                            $allowedUnitIds,
+                        );
+                        $q->orderBy('users.name')
                             ->orderBy('users.id');
                     },
                     'users.employee' => function ($q): void {
@@ -277,12 +317,80 @@ class AdminUsersIndexController extends Controller
                         'id' => (int) $roleUser->id,
                         'name' => (string) $roleUser->name,
                         'email' => (string) $roleUser->email,
+                        'avatar_url' => $this->resolveAvatarUrl($roleUser),
                         'employee_number' => $roleUser->employee?->id_number !== null
                             ? (string) $roleUser->employee->id_number
                             : null,
                     ])
                     ->all(),
             ]);
+    }
+
+    /**
+     * @param  Builder<User>|BelongsToMany<User>  $query
+     * @param  int|'unassigned'|null  $unitFilter
+     * @param  list<int>  $allowedUnitIds
+     */
+    private function applyRolesUsersScopeConstraints(
+        Builder|BelongsToMany $query,
+        ?int $organizationId,
+        ?int $branchRootId,
+        int|string|null $unitFilter,
+        array $allowedUnitIds,
+    ): void {
+        $today = now()->toDateString();
+
+        $query->whereNotNull('users.employee_id');
+
+        if ($organizationId !== null && $branchRootId !== null) {
+            $query->whereHas('employee.affiliations', function ($q) use ($organizationId, $branchRootId, $today): void {
+                $q->where('employee_affiliations.organization_id', $organizationId)
+                    ->where(function ($q2) use ($branchRootId): void {
+                        $q2->where('employee_affiliations.root_unit_id', $branchRootId)
+                            ->orWhereNull('employee_affiliations.root_unit_id');
+                    })
+                    ->whereNull('employee_affiliations.deleted_at')
+                    ->where(function ($q3) use ($today): void {
+                        $q3->whereNull('employee_affiliations.end_date')
+                            ->orWhereDate('employee_affiliations.end_date', '>=', $today);
+                    });
+            });
+        }
+
+        if ($unitFilter === null || $allowedUnitIds === []) {
+            return;
+        }
+
+        if (is_int($unitFilter)) {
+            $query->whereHas('employee.assignments', function ($q) use ($unitFilter, $today): void {
+                $q->where('employee_assignments.organizational_unit_id', $unitFilter)
+                    ->whereNull('employee_assignments.deleted_at')
+                    ->where(function ($q2) use ($today): void {
+                        $q2->whereNull('employee_assignments.end_date')
+                            ->orWhereDate('employee_assignments.end_date', '>=', $today);
+                    });
+            });
+
+            return;
+        }
+
+        if ($unitFilter !== 'unassigned') {
+            return;
+        }
+
+        $query->whereHas('employee', function ($eq) use ($allowedUnitIds, $today): void {
+            $eq->whereNotExists(function ($sub) use ($allowedUnitIds, $today): void {
+                $sub->selectRaw('1')
+                    ->from('employee_assignments')
+                    ->whereColumn('employee_assignments.employee_id', 'employees.id')
+                    ->whereIn('employee_assignments.organizational_unit_id', $allowedUnitIds)
+                    ->whereNull('employee_assignments.deleted_at')
+                    ->where(function ($q2) use ($today): void {
+                        $q2->whereNull('employee_assignments.end_date')
+                            ->orWhereDate('employee_assignments.end_date', '>=', $today);
+                    });
+            });
+        });
     }
 
     private function buildUsersPaginator(
@@ -1092,6 +1200,16 @@ class AdminUsersIndexController extends Controller
             'assigned_branches' => $assignedBranches,
             'assigned_units' => $assignedUnits,
         ];
+    }
+
+    private function resolveAvatarUrl(User $user): ?string
+    {
+        $avatarPath = $user->avatar_path;
+        if ($avatarPath === null || $avatarPath === '') {
+            return null;
+        }
+
+        return asset('storage/'.$avatarPath);
     }
 
     private function resolveBranchRootIdForAdminUsers(Request $request, ?Organization $organization): ?int

@@ -3,7 +3,22 @@
  * Replace mocks with Inertia props when backend wiring is ready.
  */
 
-export type EmployeeProfileAssignmentRow = {
+import { formatCalendarTriggerFromIsoYmd } from '@/lib/formatCalendarTriggerDate';
+
+/** HR affiliation placements (catalog / branch roots) — excludes org-chart unit placements. */
+export type EmployeeProfileAffiliationHistoryRow = {
+    id: number;
+    root_unit_id: number | null;
+    unit: string;
+    unit_type: string;
+    code: string | null;
+    start_date: string;
+    end_date: string | null;
+};
+
+/** Org chart {@link EmployeeAssignment} spans for current employment period. */
+export type EmployeeProfileUnitAssignmentRow = {
+    id: number;
     unit: string;
     unit_type: string;
     code: string | null;
@@ -39,6 +54,7 @@ export type EmployeeProfileStatTile = {
 
 /** Mirrors `employee_contacts` categories (display-ready strings). */
 export type EmployeeProfileContactRow = {
+    id?: number;
     category: 'personal' | 'emergency';
     channel_label: string;
     contact_number: string;
@@ -53,20 +69,61 @@ export type EmployeeProfileAddressBlock = {
     type: 'current' | 'permanent';
     lines: string[];
     is_primary: boolean;
+    /** When present (from API), editors round-trip PSGC + lines without parsing `lines`. */
+    address_line_1?: string;
+    address_line_2?: string | null;
+    barangay?: string;
+    barangay_code?: string | null;
+    city?: string;
+    city_code?: string | null;
+    province?: string;
+    province_code?: string | null;
+    zip_code?: string;
+    country?: string;
 };
 
 /** Mirrors core `employees` demographic fields. */
 export type EmployeeProfileDemographics = {
+    /** ISO `YYYY-MM-DD` for calendars and API (null if unknown). */
+    birthdate_iso: string | null;
+    /** Short English label for read-only profile (same style as calendar trigger). */
     birthdate_display: string;
     sex: string;
     civil_status: string;
     nationality: string;
     religion: string | null;
-    birthday_visibility_label: string;
+    /** When `religion === 'Other'`, free-text denomination. */
+    religion_other: string | null;
 };
 
+export function formatEmployeeDisplayName(
+    first_name: string,
+    middle_name: string,
+    last_name: string,
+): string {
+    return [first_name, middle_name, last_name]
+        .map((part) => part.trim())
+        .filter((part) => part !== '')
+        .join(' ');
+}
+
+/** Lowercase keys matching {@link WorkScheduleTemplate} `days` (Mon–Sun chips on profile). */
+export type ScheduleDayToken =
+    | 'mon'
+    | 'tue'
+    | 'wed'
+    | 'thu'
+    | 'fri'
+    | 'sat'
+    | 'sun';
+
 export type EmployeeProfileDisplay = {
+    employee_id: number;
     display_name: string;
+    /** Given / first name (edit forms; keep in sync with `display_name` on save). */
+    first_name: string;
+    middle_name: string;
+    last_name: string;
     legal_name_line: string;
     id_number: string;
     avatar_url: string | null;
@@ -76,8 +133,10 @@ export type EmployeeProfileDisplay = {
     org_scope_label: string;
     schedule_label: string;
     schedule_template_code: string | null;
-    /** Short banner copy; `null` hides the alert. */
-    layout_notice: string | null;
+    /** From work schedule template `days` (serialized keys). */
+    schedule_day_tokens: ScheduleDayToken[];
+    /** Canonical Mon→Sun comma list from template `days` (PHP); single source for profile working-days line. */
+    schedule_working_days: string;
     stats: EmployeeProfileStatTile[];
     demographics: EmployeeProfileDemographics;
     personal_contacts: EmployeeProfileContactRow[];
@@ -85,14 +144,23 @@ export type EmployeeProfileDisplay = {
     current_address: EmployeeProfileAddressBlock | null;
     permanent_address: EmployeeProfileAddressBlock | null;
     employment_rows: EmployeeProfileEmploymentRow[];
-    assignment_history: EmployeeProfileAssignmentRow[];
+    affiliation_history: EmployeeProfileAffiliationHistoryRow[];
+    unit_assignment_history: EmployeeProfileUnitAssignmentRow[];
     positions: EmployeeProfilePositionRow[];
     attendance_summary: EmployeeProfileAttendanceSummary[];
 };
 
 export function mockAboutMeProfile(): EmployeeProfileDisplay {
+    const first_name = 'Alex';
+    const middle_name = 'Quinn';
+    const last_name = 'Morgan';
+
     return {
-        display_name: 'Alex Morgan',
+        employee_id: 90_001,
+        display_name: formatEmployeeDisplayName(first_name, middle_name, last_name),
+        first_name,
+        middle_name,
+        last_name,
         legal_name_line: 'Alexandra Quinn Morgan',
         id_number: 'EMP-2024-0148',
         avatar_url: null,
@@ -100,9 +168,17 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
         status_label: 'Active',
         branch_label: 'Metro Operations',
         org_scope_label: 'Branch-scoped',
-        schedule_label: 'Standard weekday · Mon–Fri · 08:00–17:00',
+        schedule_label: 'Standard weekday · Mon–Sat · 08:00–17:00',
         schedule_template_code: 'STD-WD-08',
-        layout_notice: null,
+        schedule_day_tokens: [
+            'mon',
+            'tue',
+            'wed',
+            'thu',
+            'fri',
+            'sat',
+        ],
+        schedule_working_days: 'Mon, Tue, Wed, Thu, Fri, Sat',
         stats: [
             { label: 'Hire date', value: 'Mar 4, 2022' },
             {
@@ -122,16 +198,17 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
             },
         ],
         demographics: {
-            birthdate_display: 'April 12, 1994',
+            birthdate_iso: '1994-04-12',
+            birthdate_display: formatCalendarTriggerFromIsoYmd('1994-04-12'),
             sex: 'Female',
             civil_status: 'Single',
             nationality: 'Filipino',
             religion: 'Catholic',
-            birthday_visibility_label:
-                'Team (month & day visible to your team)',
+            religion_other: null,
         },
         personal_contacts: [
             {
+                id: 1,
                 category: 'personal',
                 channel_label: 'Mobile',
                 contact_number: '+63 917 000 4488',
@@ -141,6 +218,7 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
                 is_primary: true,
             },
             {
+                id: 2,
                 category: 'personal',
                 channel_label: 'Work',
                 contact_number: '+63 2 8888 0100',
@@ -149,9 +227,20 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
                 relationship: null,
                 is_primary: false,
             },
+            {
+                id: 3,
+                category: 'personal',
+                channel_label: 'Home',
+                contact_number: '+63 2 8712 4456',
+                email: null,
+                contact_person: null,
+                relationship: null,
+                is_primary: false,
+            },
         ],
         emergency_contacts: [
             {
+                id: 11,
                 category: 'emergency',
                 channel_label: 'Mobile',
                 contact_number: '+63 918 111 2299',
@@ -159,6 +248,16 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
                 contact_person: 'Jordan Morgan',
                 relationship: 'Sibling',
                 is_primary: true,
+            },
+            {
+                id: 12,
+                category: 'emergency',
+                channel_label: 'Mobile',
+                contact_number: '+63 919 882 4421',
+                email: 'pat.morgan@example.com',
+                contact_person: 'Patricia Morgan',
+                relationship: 'Parent',
+                is_primary: false,
             },
         ],
         current_address: {
@@ -181,16 +280,14 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
             ],
         },
         employment_rows: [
-            { label: 'Hire date', value: 'March 4, 2022' },
-            { label: 'Employment type', value: 'Regular · Full-time' },
-            { label: 'Employment status', value: 'Active' },
-            {
-                label: 'Latest movement',
-                value: 'Promotion to Lead Analyst · Jan 2025',
-            },
+            { label: 'Start date', value: 'March 4, 2022' },
+            { label: 'Separation date', value: '—' },
+            { label: 'Status', value: 'Active' },
         ],
-        assignment_history: [
+        affiliation_history: [
             {
+                id: 1,
+                root_unit_id: 10,
                 unit: 'Customer Success Pod',
                 unit_type: 'Team',
                 code: 'CS-POD-2',
@@ -198,9 +295,38 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
                 end_date: null,
             },
             {
+                id: 2,
+                root_unit_id: 11,
                 unit: 'Support Desk West',
                 unit_type: 'Department',
                 code: 'SUP-W',
+                start_date: 'Mar 4, 2022',
+                end_date: 'Jan 14, 2025',
+            },
+            {
+                id: 3,
+                root_unit_id: 12,
+                unit: 'Operations Hub',
+                unit_type: 'Division',
+                code: 'OPS-HQ',
+                start_date: 'Jun 1, 2020',
+                end_date: 'Mar 3, 2022',
+            },
+        ],
+        unit_assignment_history: [
+            {
+                id: 101,
+                unit: 'Metro Support Line',
+                unit_type: 'Unit',
+                code: 'STL-001',
+                start_date: 'Jan 15, 2025',
+                end_date: null,
+            },
+            {
+                id: 102,
+                unit: 'CS Escalations',
+                unit_type: 'Department',
+                code: 'CS-ESC',
                 start_date: 'Mar 4, 2022',
                 end_date: 'Jan 14, 2025',
             },
@@ -220,16 +346,31 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
                 start_date: 'Mar 4, 2022',
                 end_date: 'Jan 14, 2025',
             },
+            {
+                title: 'Analyst I',
+                code: 'ANL-1',
+                is_primary: false,
+                start_date: 'Jun 1, 2020',
+                end_date: 'Mar 3, 2022',
+            },
         ],
         attendance_summary: [
             {
                 label: 'This cut-off',
-                value: 'Present 19 · Leave 1 · Rest day 11',
+                value: 'Present 21 · Leave 1 · Rest day 9',
             },
             {
                 label: 'Tardiness (rolling 90 days)',
                 value: '2 occurrences',
                 hint: 'Open Attendance for detailed logs.',
+            },
+            {
+                label: 'Undertime (rolling 90 days)',
+                value: '1 occurrence',
+            },
+            {
+                label: 'Overtime hours (this month)',
+                value: '14h 30m',
             },
         ],
     };
@@ -238,8 +379,16 @@ export function mockAboutMeProfile(): EmployeeProfileDisplay {
 export function mockEmployeeShowProfile(
     employeeId: number,
 ): EmployeeProfileDisplay {
+    const first_name = 'Jamie';
+    const middle_name = '';
+    const last_name = 'Dela Cruz';
+
     return {
-        display_name: `Jamie Dela Cruz`,
+        employee_id: employeeId,
+        display_name: formatEmployeeDisplayName(first_name, middle_name, last_name),
+        first_name,
+        middle_name,
+        last_name,
         legal_name_line: 'Jaime Santos Dela Cruz Jr.',
         id_number: `EMP-${String(employeeId).padStart(6, '0')}`,
         avatar_url: null,
@@ -249,11 +398,15 @@ export function mockEmployeeShowProfile(
         org_scope_label: 'Organization-wide',
         schedule_label: 'Flexible · Core hours 09:00–15:00',
         schedule_template_code: 'FLX-CORE-09',
-        layout_notice:
-            'Sample data for layout review — replace with live employee payload when APIs are connected.',
+        schedule_day_tokens: [],
+        schedule_working_days: '',
         stats: [
             { label: 'Hire date', value: 'Jun 12, 2019' },
-            { label: 'Tenure', value: '6y 11mo' },
+            {
+                label: 'Tenure',
+                value: '6y 11mo',
+                hint: 'Approximate from hire date',
+            },
             {
                 label: 'Primary position',
                 value: 'HR Business Partner',
@@ -266,15 +419,17 @@ export function mockEmployeeShowProfile(
             },
         ],
         demographics: {
-            birthdate_display: 'February 3, 1991',
+            birthdate_iso: '1991-02-03',
+            birthdate_display: formatCalendarTriggerFromIsoYmd('1991-02-03'),
             sex: 'Male',
             civil_status: 'Married',
             nationality: 'Filipino',
             religion: 'Catholic',
-            birthday_visibility_label: 'Private (full date HR-only)',
+            religion_other: null,
         },
         personal_contacts: [
             {
+                id: 1,
                 category: 'personal',
                 channel_label: 'Mobile',
                 contact_number: '+63 917 555 2211',
@@ -286,6 +441,7 @@ export function mockEmployeeShowProfile(
         ],
         emergency_contacts: [
             {
+                id: 11,
                 category: 'emergency',
                 channel_label: 'Mobile',
                 contact_number: '+63 919 444 8877',
@@ -315,25 +471,38 @@ export function mockEmployeeShowProfile(
             ],
         },
         employment_rows: [
-            { label: 'Hire date', value: 'June 12, 2019' },
-            { label: 'Employment type', value: 'Regular · Full-time' },
-            { label: 'Employment status', value: 'Active' },
-            { label: 'HR notes', value: '—' },
+            { label: 'Start date', value: 'June 12, 2019' },
+            { label: 'Separation date', value: '—' },
+            { label: 'Status', value: 'Active' },
         ],
-        assignment_history: [
+        affiliation_history: [
             {
-                unit: 'People Operations',
-                unit_type: 'Department',
-                code: 'HR-OPS',
+                id: 21,
+                root_unit_id: null,
+                unit: 'Organization-wide',
+                unit_type: 'Organization',
+                code: null,
                 start_date: 'Aug 1, 2023',
                 end_date: null,
             },
             {
+                id: 22,
+                root_unit_id: 30,
                 unit: 'Talent Acquisition',
                 unit_type: 'Team',
                 code: 'TA-CORE',
                 start_date: 'Jun 12, 2019',
                 end_date: 'Jul 31, 2023',
+            },
+        ],
+        unit_assignment_history: [
+            {
+                id: 201,
+                unit: 'HR Shared Services Floor',
+                unit_type: 'Unit',
+                code: 'HR-FL2',
+                start_date: 'Aug 1, 2023',
+                end_date: null,
             },
         ],
         positions: [

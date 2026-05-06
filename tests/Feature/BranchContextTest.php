@@ -15,6 +15,7 @@ use Database\Seeders\OrganizationalStructureSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 uses(RefreshDatabase::class);
 
@@ -43,7 +44,7 @@ function createOrgWithBranchRoot(): OrganizationalUnit
 }
 
 test('picker user without branch session is redirected from dashboard to branch select', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     createOrgWithBranchRoot();
 
@@ -56,7 +57,7 @@ test('picker user without branch session is redirected from dashboard to branch 
 });
 
 test('user without picker roles reaches dashboard without branch session', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     createOrgWithBranchRoot();
 
@@ -69,7 +70,7 @@ test('user without picker roles reaches dashboard without branch session', funct
 });
 
 test('branch store accepts head office root for default organization', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
 
@@ -116,7 +117,7 @@ test('branch store accepts head office root for default organization', function 
 });
 
 test('branch store sets session and redirects to dashboard', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     $branch = createOrgWithBranchRoot();
 
@@ -136,7 +137,7 @@ test('branch store sets session and redirects to dashboard', function () {
 });
 
 test('branch store redirects to safe return_to path when provided', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     $branch = createOrgWithBranchRoot();
 
@@ -153,7 +154,7 @@ test('branch store redirects to safe return_to path when provided', function () 
 });
 
 test('branch store ignores unsafe return_to and redirects to dashboard', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     $branch = createOrgWithBranchRoot();
 
@@ -172,7 +173,7 @@ test('branch store ignores unsafe return_to and redirects to dashboard', functio
 });
 
 test('branch store rejects branch outside default organization', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     createOrgWithBranchRoot();
 
@@ -194,7 +195,7 @@ test('branch store rejects branch outside default organization', function () {
 });
 
 test('org-wide employee can access branch picker store', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     $branch = createOrgWithBranchRoot();
     $org = Organization::query()->where('code', 'T-ORG')->firstOrFail();
@@ -223,7 +224,7 @@ test('org-wide employee can access branch picker store', function () {
 });
 
 test('employee without org-wide affiliation cannot access branch picker page', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     createOrgWithBranchRoot();
 
@@ -234,7 +235,7 @@ test('employee without org-wide affiliation cannot access branch picker page', f
 });
 
 test('employee with single active branch affiliation cannot access branch picker page', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     $branch = createOrgWithBranchRoot();
     $org = Organization::query()->where('code', 'T-ORG')->firstOrFail();
@@ -262,7 +263,7 @@ test('employee with single active branch affiliation cannot access branch picker
 });
 
 test('employee with single active branch affiliation still receives display branch context', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     $branch = createOrgWithBranchRoot();
     $org = Organization::query()->where('code', 'T-ORG')->firstOrFail();
@@ -297,7 +298,7 @@ test('employee with single active branch affiliation still receives display bran
 });
 
 test('employee with two active branch affiliations can pick affiliated roots only', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
 
@@ -376,7 +377,7 @@ test('employee with two active branch affiliations can pick affiliated roots onl
 });
 
 test('org-wide user can pick all roots even with branch affiliations', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
 
@@ -453,7 +454,7 @@ test('org-wide user can pick all roots even with branch affiliations', function 
 });
 
 test('invalid session branch id is cleared when visiting dashboard', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     createOrgWithBranchRoot();
 
@@ -469,7 +470,7 @@ test('invalid session branch id is cleared when visiting dashboard', function ()
 });
 
 test('branch select page includes area_name on branches when area is linked', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     $branch = createOrgWithBranchRoot();
     $org = Organization::query()->where('code', 'T-ORG')->firstOrFail();
@@ -494,7 +495,7 @@ test('branch select page includes area_name on branches when area is linked', fu
 });
 
 test('picker role user is redirected to branch select after login', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     createOrgWithBranchRoot();
 
@@ -511,7 +512,7 @@ test('picker role user is redirected to branch select after login', function () 
 });
 
 test('hr manager can pick union of managed and affiliated roots', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
 
@@ -581,7 +582,7 @@ test('hr manager can pick union of managed and affiliated roots', function () {
 });
 
 test('hr head plus hr manager can pick all roots', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     (new RoleSeeder)->run();
     (new OrganizationalStructureSeeder)->run();
 

@@ -26,7 +26,7 @@ class DtrMockExport implements FromView, WithTitle
      * }>  $rows
      * @param  array{
      *     template_name: string,
- *     is_overnight: bool,
+     *     is_overnight: bool,
      *     is_active: bool,
      *     scheduled_days: string,
      *     clock_pattern: string,

@@ -4,13 +4,14 @@ namespace App\Models;
 
 use App\Enums\EmployeeHrRecordStatus;
 use App\Models\Concerns\SoftDeletesWithDeletedByUser;
+use Database\Factories\EmployeeOvertimeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmployeeOvertime extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeeOvertimeFactory> */
+    /** @use HasFactory<EmployeeOvertimeFactory> */
     use HasFactory;
 
     use SoftDeletesWithDeletedByUser;

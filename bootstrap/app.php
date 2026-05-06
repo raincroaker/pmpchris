@@ -1,5 +1,12 @@
 <?php
 
+use App\Http\Middleware\EnsureAdministrationAccess;
+use App\Http\Middleware\EnsureBranchSelected;
+use App\Http\Middleware\EnsureEmployeeDirectoryAccess;
+use App\Http\Middleware\EnsureEmployeeTeamHrLeaveOvertimeAccess;
+use App\Http\Middleware\EnsureNotEmployeeRole;
+use App\Http\Middleware\EnsureOrganizationChartEditAccess;
+use App\Http\Middleware\EnsureScheduleAssignmentAccess;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -16,12 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['sidebar_state']);
 
         $middleware->alias([
-            'administration.access' => \App\Http\Middleware\EnsureAdministrationAccess::class,
-            'branch.selected' => \App\Http\Middleware\EnsureBranchSelected::class,
-            'employee.team.hr.leave-overtime' => \App\Http\Middleware\EnsureEmployeeTeamHrLeaveOvertimeAccess::class,
-            'non.employee' => \App\Http\Middleware\EnsureNotEmployeeRole::class,
-            'organization-chart.edit' => \App\Http\Middleware\EnsureOrganizationChartEditAccess::class,
-            'schedule.assignment' => \App\Http\Middleware\EnsureScheduleAssignmentAccess::class,
+            'administration.access' => EnsureAdministrationAccess::class,
+            'branch.selected' => EnsureBranchSelected::class,
+            'employee.directory.access' => EnsureEmployeeDirectoryAccess::class,
+            'employee.team.hr.leave-overtime' => EnsureEmployeeTeamHrLeaveOvertimeAccess::class,
+            'non.employee' => EnsureNotEmployeeRole::class,
+            'organization-chart.edit' => EnsureOrganizationChartEditAccess::class,
+            'schedule.assignment' => EnsureScheduleAssignmentAccess::class,
         ]);
 
         $middleware->web(append: [

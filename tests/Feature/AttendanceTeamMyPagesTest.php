@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\User;
 use App\Models\Employee;
 use App\Models\EmployeeAffiliation;
 use App\Models\EmployeeAttendanceDay;
@@ -9,6 +8,7 @@ use App\Models\EmployeeEmployment;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
 use App\Models\UnitType;
+use App\Models\User;
 use App\Models\WorkScheduleTemplate;
 use Database\Seeders\OrganizationalStructureSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -169,123 +169,123 @@ describe('team and my attendance pages', function (): void {
                 ->where('myAttendanceFilters.recording_style', 'simple'));
     });
 
-test('my attendance supports work date sort direction toggle', function (): void {
-    (new OrganizationalStructureSeeder)->run();
+    test('my attendance supports work date sort direction toggle', function (): void {
+        (new OrganizationalStructureSeeder)->run();
 
-    $org = Organization::factory()->create([
-        'code' => 'MY-ATT-SORT',
-        'name' => 'My attendance sort org',
-        'is_active' => true,
-    ]);
-    config(['hris.default_organization_code' => 'MY-ATT-SORT']);
+        $org = Organization::factory()->create([
+            'code' => 'MY-ATT-SORT',
+            'name' => 'My attendance sort org',
+            'is_active' => true,
+        ]);
+        config(['hris.default_organization_code' => 'MY-ATT-SORT']);
 
-    $branchType = UnitType::query()->where('name', 'Branch')->firstOrFail();
-    $branch = OrganizationalUnit::factory()->create([
-        'organization_id' => $org->id,
-        'unit_type_id' => $branchType->id,
-        'parent_id' => null,
-        'code' => 'MY-SORT-BR',
-        'name' => 'My sort branch',
-        'is_active' => true,
-    ]);
+        $branchType = UnitType::query()->where('name', 'Branch')->firstOrFail();
+        $branch = OrganizationalUnit::factory()->create([
+            'organization_id' => $org->id,
+            'unit_type_id' => $branchType->id,
+            'parent_id' => null,
+            'code' => 'MY-SORT-BR',
+            'name' => 'My sort branch',
+            'is_active' => true,
+        ]);
 
-    $template = WorkScheduleTemplate::factory()->create([
-        'organization_id' => $org->id,
-        'name' => 'My sort template',
-        'time_in' => '08:00',
-        'time_out' => '17:00',
-    ]);
+        $template = WorkScheduleTemplate::factory()->create([
+            'organization_id' => $org->id,
+            'name' => 'My sort template',
+            'time_in' => '08:00',
+            'time_out' => '17:00',
+        ]);
 
-    $employee = Employee::factory()->create([
-        'attendance_id' => 'MY-SORT-EMP',
-        'work_schedule_template_id' => $template->id,
-    ]);
+        $employee = Employee::factory()->create([
+            'attendance_id' => 'MY-SORT-EMP',
+            'work_schedule_template_id' => $template->id,
+        ]);
 
-    $employment = EmployeeEmployment::factory()->create([
-        'employee_id' => $employee->id,
-        'is_current' => true,
-    ]);
-    EmployeeAffiliation::query()->create([
-        'employee_id' => $employee->id,
-        'employee_employment_id' => $employment->id,
-        'organization_id' => $org->id,
-        'root_unit_id' => $branch->id,
-        'is_primary' => true,
-        'start_date' => now()->subYear()->toDateString(),
-        'end_date' => null,
-    ]);
+        $employment = EmployeeEmployment::factory()->create([
+            'employee_id' => $employee->id,
+            'is_current' => true,
+        ]);
+        EmployeeAffiliation::query()->create([
+            'employee_id' => $employee->id,
+            'employee_employment_id' => $employment->id,
+            'organization_id' => $org->id,
+            'root_unit_id' => $branch->id,
+            'is_primary' => true,
+            'start_date' => now()->subYear()->toDateString(),
+            'end_date' => null,
+        ]);
 
-    $olderDay = EmployeeAttendanceDay::factory()->create([
-        'organization_id' => $org->id,
-        'employee_id' => $employee->id,
-        'organizational_unit_id' => $branch->id,
-        'work_schedule_template_id' => $template->id,
-        'work_date' => '2026-05-10',
-        'ingest_key' => 'MY-SORT-OLDER',
-    ]);
-    EmployeeAttendanceSegment::factory()->create([
-        'employee_attendance_day_id' => $olderDay->id,
-        'segment_index' => 0,
-        'label' => 'Shift',
-        'scheduled_in' => '08:00',
-        'scheduled_out' => '17:00',
-        'actual_in' => '08:00',
-        'actual_out' => '17:00',
-    ]);
+        $olderDay = EmployeeAttendanceDay::factory()->create([
+            'organization_id' => $org->id,
+            'employee_id' => $employee->id,
+            'organizational_unit_id' => $branch->id,
+            'work_schedule_template_id' => $template->id,
+            'work_date' => '2026-05-10',
+            'ingest_key' => 'MY-SORT-OLDER',
+        ]);
+        EmployeeAttendanceSegment::factory()->create([
+            'employee_attendance_day_id' => $olderDay->id,
+            'segment_index' => 0,
+            'label' => 'Shift',
+            'scheduled_in' => '08:00',
+            'scheduled_out' => '17:00',
+            'actual_in' => '08:00',
+            'actual_out' => '17:00',
+        ]);
 
-    $newerDay = EmployeeAttendanceDay::factory()->create([
-        'organization_id' => $org->id,
-        'employee_id' => $employee->id,
-        'organizational_unit_id' => $branch->id,
-        'work_schedule_template_id' => $template->id,
-        'work_date' => '2026-05-20',
-        'ingest_key' => 'MY-SORT-NEWER',
-    ]);
-    EmployeeAttendanceSegment::factory()->create([
-        'employee_attendance_day_id' => $newerDay->id,
-        'segment_index' => 0,
-        'label' => 'Shift',
-        'scheduled_in' => '08:00',
-        'scheduled_out' => '17:00',
-        'actual_in' => '08:01',
-        'actual_out' => '17:01',
-    ]);
+        $newerDay = EmployeeAttendanceDay::factory()->create([
+            'organization_id' => $org->id,
+            'employee_id' => $employee->id,
+            'organizational_unit_id' => $branch->id,
+            'work_schedule_template_id' => $template->id,
+            'work_date' => '2026-05-20',
+            'ingest_key' => 'MY-SORT-NEWER',
+        ]);
+        EmployeeAttendanceSegment::factory()->create([
+            'employee_attendance_day_id' => $newerDay->id,
+            'segment_index' => 0,
+            'label' => 'Shift',
+            'scheduled_in' => '08:00',
+            'scheduled_out' => '17:00',
+            'actual_in' => '08:01',
+            'actual_out' => '17:01',
+        ]);
 
-    /** @var User $user */
-    $user = User::factory()->create([
-        'employee_id' => $employee->id,
-    ]);
+        /** @var User $user */
+        $user = User::factory()->create([
+            'employee_id' => $employee->id,
+        ]);
 
-    $this->actingAs($user)
-        ->get(route('attendance.my', [
-            'date_from' => '2026-05-01',
-            'date_to' => '2026-05-31',
-            'recording_style' => 'simple',
-            'sort' => 'work_date',
-            'direction' => 'asc',
-        ]))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('Attendance/My')
-            ->where('myAttendanceFilters.sort', 'work_date')
-            ->where('myAttendanceFilters.direction', 'asc')
-            ->where('myAttendanceDays.data.0.ingest_key', 'MY-SORT-OLDER')
-            ->where('myAttendanceDays.data.1.ingest_key', 'MY-SORT-NEWER'));
+        $this->actingAs($user)
+            ->get(route('attendance.my', [
+                'date_from' => '2026-05-01',
+                'date_to' => '2026-05-31',
+                'recording_style' => 'simple',
+                'sort' => 'work_date',
+                'direction' => 'asc',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Attendance/My')
+                ->where('myAttendanceFilters.sort', 'work_date')
+                ->where('myAttendanceFilters.direction', 'asc')
+                ->where('myAttendanceDays.data.0.ingest_key', 'MY-SORT-OLDER')
+                ->where('myAttendanceDays.data.1.ingest_key', 'MY-SORT-NEWER'));
 
-    $this->actingAs($user)
-        ->get(route('attendance.my', [
-            'date_from' => '2026-05-01',
-            'date_to' => '2026-05-31',
-            'recording_style' => 'simple',
-            'sort' => 'work_date',
-            'direction' => 'desc',
-        ]))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('Attendance/My')
-            ->where('myAttendanceFilters.sort', 'work_date')
-            ->where('myAttendanceFilters.direction', 'desc')
-            ->where('myAttendanceDays.data.0.ingest_key', 'MY-SORT-NEWER')
-            ->where('myAttendanceDays.data.1.ingest_key', 'MY-SORT-OLDER'));
-});
+        $this->actingAs($user)
+            ->get(route('attendance.my', [
+                'date_from' => '2026-05-01',
+                'date_to' => '2026-05-31',
+                'recording_style' => 'simple',
+                'sort' => 'work_date',
+                'direction' => 'desc',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Attendance/My')
+                ->where('myAttendanceFilters.sort', 'work_date')
+                ->where('myAttendanceFilters.direction', 'desc')
+                ->where('myAttendanceDays.data.0.ingest_key', 'MY-SORT-NEWER')
+                ->where('myAttendanceDays.data.1.ingest_key', 'MY-SORT-OLDER'));
+    });
 });

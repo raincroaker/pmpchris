@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\HolidayType;
 use App\Models\Organization;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class HolidayTypesSeeder extends Seeder
@@ -23,10 +22,7 @@ class HolidayTypesSeeder extends Seeder
             return;
         }
 
-        $actorId = User::query()
-            ->whereIn('email', ['superadmin@example.com', 'hrhead1@example.com'], 'and', false)
-            ->orderBy('id', 'asc')
-            ->value('id');
+        $actorId = OrganizationSeedActorResolver::resolveUserId();
 
         $rows = [
             [

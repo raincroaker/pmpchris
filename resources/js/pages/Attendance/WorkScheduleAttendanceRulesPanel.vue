@@ -61,7 +61,7 @@ const fieldLabelClass =
                         Regular attendance (preview)
                     </p>
                     <WorkScheduleFormFieldHint
-                        aria-label="About regular attendance preview"
+                        ariaLabel="About regular attendance preview"
                     >
                         Configures how clock punches become gross/net regular time.
                         These fields are stored as JSON on the template
@@ -80,7 +80,7 @@ const fieldLabelClass =
                         :for="`${idPrefix}-grace-min`"
                     >
                         <span class="min-w-0 shrink">Grace period (minutes)</span>
-                        <WorkScheduleFormFieldHint aria-label="About grace period">
+                        <WorkScheduleFormFieldHint ariaLabel="About grace period">
                             Minutes after the scheduled first start of the day that still
                             count as on-time (first clock-in only).
                             {{ graceScopeHint }}
@@ -105,7 +105,7 @@ const fieldLabelClass =
                     >
                         <span class="min-w-0 shrink">Round clock-in to</span>
                         <WorkScheduleFormFieldHint
-                            aria-label="About clock-in rounding"
+                            ariaLabel="About clock-in rounding"
                         >
                             Snap the recorded first clock-in to the nearest interval before
                             lateness and net-time math (placeholder).
@@ -137,7 +137,7 @@ const fieldLabelClass =
                     >
                         <span class="min-w-0 shrink">Custom interval (minutes)</span>
                         <WorkScheduleFormFieldHint
-                            aria-label="About custom rounding interval"
+                            ariaLabel="About custom rounding interval"
                         >
                             Used when “Custom…” is selected for clock-in rounding.
                         </WorkScheduleFormFieldHint>
@@ -168,7 +168,7 @@ const fieldLabelClass =
                         <p class="text-sm font-medium text-foreground">
                             Cap net regular hours
                         </p>
-                        <WorkScheduleFormFieldHint aria-label="About net regular hours cap">
+                        <WorkScheduleFormFieldHint ariaLabel="About net regular hours cap">
                             Net credited time for regular pay does not exceed this daily
                             standard when enabled. When the Schedule tab yields a net
                             duration, this value follows it automatically (same as Gross −
@@ -254,7 +254,7 @@ const fieldLabelClass =
                                         Limit grace uses per employee / month
                                     </p>
                                     <WorkScheduleFormFieldHint
-                                        aria-label="About grace uses limit"
+                                        ariaLabel="About grace uses limit"
                                     >
                                         After the limit, additional late arrivals follow
                                         policy (placeholder — not persisted yet).
@@ -278,7 +278,7 @@ const fieldLabelClass =
                                     >
                                         <span class="min-w-0 shrink">Uses per month</span>
                                         <WorkScheduleFormFieldHint
-                                            aria-label="About grace uses per month"
+                                            ariaLabel="About grace uses per month"
                                         >
                                             Maximum times grace can apply to first clock-in
                                             per employee per calendar month (placeholder).

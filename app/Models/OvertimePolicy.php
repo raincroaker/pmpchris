@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\OvertimePolicyContext;
 use App\Models\Concerns\SoftDeletesWithDeletedByUser;
+use Database\Factories\OvertimePolicyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OvertimePolicy extends Model
 {
-    /** @use HasFactory<\Database\Factories\OvertimePolicyFactory> */
+    /** @use HasFactory<OvertimePolicyFactory> */
     use HasFactory;
 
     use SoftDeletesWithDeletedByUser;

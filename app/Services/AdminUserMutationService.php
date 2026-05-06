@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Employee;
 use App\Models\BranchManager;
+use App\Models\Employee;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\TeamHrEmployeeDisplay;

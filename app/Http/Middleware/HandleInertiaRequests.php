@@ -83,6 +83,10 @@ class HandleInertiaRequests extends Middleware
                     Role::CODE_HR_HEAD,
                     Role::CODE_HR_MANAGER,
                 ]) ?? false,
+                'canRecordEmploymentSeparation' => $user?->hasAnyRole([
+                    Role::CODE_SUPER_ADMIN,
+                    Role::CODE_HR_HEAD,
+                ]) ?? false,
                 'canViewWorkSchedules' => $canViewWorkSchedules,
                 'canMutateWorkSchedules' => $canMutateWorkSchedules,
                 'canManageScheduleAssignments' => $canManageWorkspaceAttendancePolicies,

@@ -79,5 +79,5 @@ test('employee position must use employment for the same employee', function () 
     expect(fn () => EmployeePosition::factory()->create([
         'employee_id' => $employee->id,
         'employee_employment_id' => $employment->id,
-    ]))->toThrow(\InvalidArgumentException::class, 'employee_employment_id must belong to the same employee_id.');
+    ]))->toThrow(InvalidArgumentException::class, 'employee_employment_id must belong to the same employee_id.');
 });

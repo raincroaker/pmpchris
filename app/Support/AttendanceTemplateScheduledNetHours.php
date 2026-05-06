@@ -4,10 +4,11 @@ namespace App\Support;
 
 use App\Enums\WorkScheduleClockPattern;
 use App\Models\WorkScheduleTemplate;
+use Database\Seeders\DevelopmentEmployeeAttendanceDaysSeeder;
 
 /**
  * Scheduled (template) payable hours snapshot for {@see EmployeeAttendanceDay::$net_hours} when status is complete.
- * Mirrors logic in {@see \Database\Seeders\DevelopmentEmployeeAttendanceDaysSeeder::netHoursForTemplate}.
+ * Mirrors logic in {@see DevelopmentEmployeeAttendanceDaysSeeder::netHoursForTemplate}.
  */
 final class AttendanceTemplateScheduledNetHours
 {

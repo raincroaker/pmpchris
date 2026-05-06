@@ -6,16 +6,23 @@ use App\Models\EmployeeEmployment;
 use App\Models\EmployeePosition;
 use App\Models\Organization;
 use App\Models\Position;
+use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
+beforeEach(function (): void {
+    (new RoleSeeder)->run();
+    config(['hris.branch_picker_enabled' => false]);
+});
+
 function employmentHistoryMakeUser(): User
 {
     /** @var User $user */
-    $user = User::factory()->create();
+    $user = User::factory()->withRoles(Role::CODE_HR_HEAD)->create();
 
     return $user;
 }
@@ -55,6 +62,29 @@ function employmentHistoryBootstrapVisibleEmployee(Organization $organization): 
 test('guests are redirected from employment history', function (): void {
     $this->get(route('employees.employment-history'))
         ->assertRedirect(route('login'));
+});
+
+test('employee role cannot access employment history', function (): void {
+    $user = User::factory()->withRoles(Role::CODE_EMPLOYEE)->create();
+
+    $this->actingAs($user)
+        ->get(route('employees.employment-history'))
+        ->assertForbidden();
+});
+
+test('hr manager is redirected from employment history when workspace branch is unmanaged', function (): void {
+    config(['hris.default_organization_code' => 'T-EMP-HIST-UNMANAGED']);
+
+    Organization::factory()->create([
+        'code' => 'T-EMP-HIST-UNMANAGED',
+        'is_active' => true,
+    ]);
+
+    $user = User::factory()->withRoles(Role::CODE_HR_MANAGER)->create();
+
+    $this->actingAs($user)
+        ->get(route('employees.employment-history'))
+        ->assertRedirect(route('dashboard'));
 });
 
 test('employment history renders empty listing when default organization missing', function (): void {

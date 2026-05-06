@@ -2,6 +2,9 @@ import type { EmploymentStatusApi } from '@/pages/Employees/employmentStatusCons
 
 export type { EmploymentStatusApi };
 
+/** Employment history (`⋯` menu): adjust dates vs record separation dialogs. */
+export type EmploymentHistoryDialogMode = 'adjust_dates' | 'record_separation';
+
 export type EmploymentHistoryEmployee = {
     id: number;
     display_name: string;
@@ -13,8 +16,12 @@ export type EmploymentHistoryEmployee = {
 export type EmploymentHistoryRow = {
     id: number;
     hire_date: string;
+    /** Inclusive max hire date aligned with position/affiliation/org-chart assignment starts (ISO `YYYY-MM-DD`), or null if none. */
+    hire_adjustment_max_date: string | null;
     separation_date: string | null;
     employment_status: EmploymentStatusApi;
+    separation_reason: string | null;
+    notes: string | null;
     tenure_days: number;
     employee: EmploymentHistoryEmployee;
 };

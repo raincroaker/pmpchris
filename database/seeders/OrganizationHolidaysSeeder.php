@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\HolidayType;
 use App\Models\Organization;
 use App\Models\OrganizationHoliday;
-use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
@@ -28,10 +27,7 @@ class OrganizationHolidaysSeeder extends Seeder
             return;
         }
 
-        $actorId = User::query()
-            ->whereIn('email', ['superadmin@example.com', 'hrhead1@example.com'], 'and', false)
-            ->orderBy('id', 'asc')
-            ->value('id');
+        $actorId = OrganizationSeedActorResolver::resolveUserId();
 
         $typeIds = HolidayType::query()
             ->where('organization_id', $organization->id)

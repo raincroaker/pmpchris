@@ -12,9 +12,11 @@ use App\Models\UnitType;
 use App\Models\User;
 use App\Services\BranchContextService;
 use Database\Seeders\RoleSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     (new RoleSeeder)->run();
@@ -37,13 +39,13 @@ function createRootForOrganization(Organization $organization): OrganizationalUn
 }
 
 test('guests are redirected to the login page', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $response = $this->get(route('employees.create'));
     $response->assertRedirect(route('login'));
 });
 
 test('authorized users can visit the add employee page', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organization = Organization::factory()->create(['code' => 'T-EMP-AUTH', 'is_active' => true]);
     config(['hris.default_organization_code' => 'T-EMP-AUTH']);
     $root = createRootForOrganization($organization);
@@ -58,7 +60,7 @@ test('authorized users can visit the add employee page', function () {
 });
 
 test('non hr roles cannot visit add employee page', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $user = User::factory()->withRoles(Role::CODE_EMPLOYEE)->create();
 
     $this->actingAs($user)
@@ -67,7 +69,7 @@ test('non hr roles cannot visit add employee page', function () {
 });
 
 test('add employee page includes active positions for default organization', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organization = Organization::factory()->create([
         'code' => 'T-EMP-CREATE',
         'name' => 'Test Org Create',
@@ -97,7 +99,7 @@ test('add employee page includes active positions for default organization', fun
 });
 
 test('add employee page includes affiliation organization and selectable root units', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organization = Organization::factory()->create([
         'code' => 'T-EMP-AFFIL',
         'name' => 'Affil Test Org',
@@ -128,7 +130,7 @@ test('add employee page includes affiliation organization and selectable root un
 });
 
 test('hr manager only sees managed branches in affiliation roots', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organization = Organization::factory()->create([
         'code' => 'T-EMP-MGR',
         'name' => 'Manager Scope Org',
@@ -165,8 +167,8 @@ test('hr manager only sees managed branches in affiliation roots', function () {
             ->where('affiliationRoots.0.code', 'ROOT-ALLOW'));
 });
 
-test('hr manager add employee options exclude affiliated but unmanaged roots', function () {
-    /** @var \Tests\TestCase $this */
+test('hr manager is redirected from add employee when workspace branch is unmanaged', function () {
+    /** @var TestCase $this */
     $organization = Organization::factory()->create([
         'code' => 'T-EMP-MGR-STRICT',
         'name' => 'Manager Strict Org',
@@ -206,14 +208,11 @@ test('hr manager add employee options exclude affiliated but unmanaged roots', f
     $this->actingAs($manager)
         ->withSession([BranchContextService::SESSION_BRANCH_ID => $affiliatedOnlyRoot->id])
         ->get(route('employees.create'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->has('affiliationRoots', 1)
-            ->where('affiliationRoots.0.code', 'ROOT-MANAGED'));
+        ->assertRedirect(route('dashboard'));
 });
 
 test('hr head plus hr manager sees full affiliation options on add employee page', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $organization = Organization::factory()->create([
         'code' => 'T-EMP-MIXED',
         'name' => 'Mixed Role Org',

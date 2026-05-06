@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\OrganizationalUnitFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Support\Str;
 
 class OrganizationalUnit extends Model
 {
-    /** @use HasFactory<\Database\Factories\OrganizationalUnitFactory> */
+    /** @use HasFactory<OrganizationalUnitFactory> */
     use HasFactory, SoftDeletes;
 
     /**

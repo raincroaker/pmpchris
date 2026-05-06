@@ -1,10 +1,10 @@
 <?php
 
+use App\Models\BranchManager;
 use App\Models\Employee;
 use App\Models\EmployeeAffiliation;
 use App\Models\EmployeeAssignment;
 use App\Models\EmployeeEmployment;
-use App\Models\BranchManager;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
 use App\Models\Role;
@@ -680,6 +680,155 @@ test('non-super-admin admin users payloads hide super administrator role and hol
             ))
             ->where('users.data', fn ($rows): bool => ! collect($rows)->pluck('email')->contains('backup-super@example.com'))
         );
+});
+
+test('picker user sees only current branch and org-wide users in roles tab and unit filter applies', function () {
+    config(['hris.branch_picker_enabled' => true]);
+    config(['hris.default_organization_code' => 'T-ADMIN-USR-BR-ROLE']);
+
+    $organization = Organization::factory()->create([
+        'code' => 'T-ADMIN-USR-BR-ROLE',
+        'is_active' => true,
+    ]);
+    $rootType = UnitType::factory()->create([
+        'can_be_root' => true,
+        'is_active' => true,
+    ]);
+    $rootA = OrganizationalUnit::factory()->create([
+        'organization_id' => $organization->id,
+        'unit_type_id' => $rootType->id,
+        'parent_id' => null,
+        'code' => 'BRA-ROLE',
+        'name' => 'Branch A Role',
+    ]);
+    $rootB = OrganizationalUnit::factory()->create([
+        'organization_id' => $organization->id,
+        'unit_type_id' => $rootType->id,
+        'parent_id' => null,
+        'code' => 'BRB-ROLE',
+        'name' => 'Branch B Role',
+    ]);
+    $unitA = OrganizationalUnit::factory()->create([
+        'organization_id' => $organization->id,
+        'unit_type_id' => $rootType->id,
+        'parent_id' => $rootA->id,
+        'code' => 'UNIT-A-ROLE',
+        'name' => 'Unit A Role',
+    ]);
+
+    $employeeRole = Role::query()->where('code', Role::CODE_EMPLOYEE)->firstOrFail();
+
+    $branchEmployee = Employee::factory()->create();
+    $branchEmployment = EmployeeEmployment::factory()->create([
+        'employee_id' => $branchEmployee->id,
+        'is_current' => true,
+    ]);
+    EmployeeAffiliation::factory()->for($branchEmployee)->create([
+        'employee_employment_id' => $branchEmployment->id,
+        'organization_id' => $organization->id,
+        'root_unit_id' => $rootA->id,
+        'end_date' => null,
+    ]);
+    EmployeeAssignment::factory()->create([
+        'employee_id' => $branchEmployee->id,
+        'employee_employment_id' => $branchEmployment->id,
+        'organization_id' => null,
+        'organizational_unit_id' => $unitA->id,
+        'end_date' => null,
+    ]);
+    $branchUser = User::factory()->create([
+        'name' => 'Branch Role User',
+        'email' => 'branch-role-user@example.com',
+        'avatar_path' => 'avatars/branch-role-user.png',
+        'employee_id' => $branchEmployee->id,
+    ]);
+    $branchUser->roles()->attach($employeeRole->id);
+
+    $orgWideEmployee = Employee::factory()->create();
+    $orgWideEmployment = EmployeeEmployment::factory()->create([
+        'employee_id' => $orgWideEmployee->id,
+        'is_current' => true,
+    ]);
+    EmployeeAffiliation::factory()->for($orgWideEmployee)->create([
+        'employee_employment_id' => $orgWideEmployment->id,
+        'organization_id' => $organization->id,
+        'root_unit_id' => null,
+        'end_date' => null,
+    ]);
+    $orgWideUser = User::factory()->create([
+        'name' => 'Orgwide Role User',
+        'email' => 'orgwide-role-user@example.com',
+        'employee_id' => $orgWideEmployee->id,
+    ]);
+    $orgWideUser->roles()->attach($employeeRole->id);
+
+    $otherBranchEmployee = Employee::factory()->create();
+    $otherBranchEmployment = EmployeeEmployment::factory()->create([
+        'employee_id' => $otherBranchEmployee->id,
+        'is_current' => true,
+    ]);
+    EmployeeAffiliation::factory()->for($otherBranchEmployee)->create([
+        'employee_employment_id' => $otherBranchEmployment->id,
+        'organization_id' => $organization->id,
+        'root_unit_id' => $rootB->id,
+        'end_date' => null,
+    ]);
+    $otherBranchUser = User::factory()->create([
+        'name' => 'Other Branch Role User',
+        'email' => 'other-branch-role-user@example.com',
+        'employee_id' => $otherBranchEmployee->id,
+    ]);
+    $otherBranchUser->roles()->attach($employeeRole->id);
+
+    /** @var User $viewer */
+    $viewer = User::factory()->withRoles(Role::CODE_HR_HEAD)->create();
+
+    $this->actingAs($viewer)
+        ->withSession([
+            BranchContextService::SESSION_BRANCH_ID => $rootA->id,
+            BranchContextService::SESSION_BRANCH_META => [
+                'code' => (string) $rootA->code,
+                'name' => (string) $rootA->name,
+            ],
+        ])
+        ->get(route('admin.users', [
+            'view' => 'roles',
+        ]))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Users')
+            ->where('filters.view', 'roles')
+            ->where('roles.data', fn ($rows): bool => collect($rows)->contains(
+                fn (array $role): bool => $role['code'] === Role::CODE_EMPLOYEE
+                    && $role['users_count'] === 2
+                    && collect($role['users'])->contains(
+                        fn (array $roleUser): bool => $roleUser['email'] === 'branch-role-user@example.com'
+                            && is_string($roleUser['avatar_url'])
+                            && str_contains($roleUser['avatar_url'], '/storage/avatars/branch-role-user.png')
+                    )
+            )));
+
+    $this->actingAs($viewer)
+        ->withSession([
+            BranchContextService::SESSION_BRANCH_ID => $rootA->id,
+            BranchContextService::SESSION_BRANCH_META => [
+                'code' => (string) $rootA->code,
+                'name' => (string) $rootA->name,
+            ],
+        ])
+        ->get(route('admin.users', [
+            'view' => 'roles',
+            'unit_id' => $unitA->id,
+        ]))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Users')
+            ->where('filters.view', 'roles')
+            ->where('filters.unit_id', (int) $unitA->id)
+            ->where('roles.data', fn ($rows): bool => collect($rows)->contains(
+                fn (array $role): bool => $role['code'] === Role::CODE_EMPLOYEE
+                    && $role['users_count'] === 1
+            )));
 });
 
 test('super administrator sees super administrator role and holders on admin users index', function () {

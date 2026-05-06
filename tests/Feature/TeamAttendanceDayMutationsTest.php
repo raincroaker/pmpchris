@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\WorkScheduleClockPattern;
 use App\Models\Employee;
 use App\Models\EmployeeAffiliation;
 use App\Models\EmployeeAttendanceDay;
@@ -10,7 +11,6 @@ use App\Models\Role;
 use App\Models\UnitType;
 use App\Models\User;
 use App\Models\WorkScheduleTemplate;
-use App\Enums\WorkScheduleClockPattern;
 use Database\Seeders\OrganizationalStructureSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

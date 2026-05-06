@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\OrganizationalUnit;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,13 +15,15 @@ class IndexEmployeesRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'search' => ['nullable', 'string', 'max:100'],
-            'sort' => ['required', Rule::in(['last_name', 'first_name', 'id_number', 'id'])],
+            'hire_from' => ['nullable', 'date'],
+            'hire_to' => ['nullable', 'date', 'after_or_equal:hire_from'],
+            'sort' => ['required', Rule::in(['last_name', 'first_name', 'id_number', 'id', 'hire_date'])],
             'direction' => ['required', Rule::in(['asc', 'desc'])],
             'per_page' => ['required', 'integer', 'min:1', 'max:50'],
             'page' => ['required', 'integer', 'min:1'],
@@ -37,9 +41,18 @@ class IndexEmployeesRequest extends FormRequest
             ]);
         }
 
-        $allowedSorts = ['last_name', 'first_name', 'id_number', 'id'];
+        $allowedSorts = ['last_name', 'first_name', 'id_number', 'id', 'hire_date'];
         if (! $this->has('sort') || ! in_array((string) $this->input('sort'), $allowedSorts, true)) {
             $this->merge(['sort' => 'last_name']);
+        }
+
+        if ($this->filled('hire_from') xor $this->filled('hire_to')) {
+            if ($this->filled('hire_from') && ! $this->filled('hire_to')) {
+                $this->merge(['hire_to' => $this->input('hire_from')]);
+            }
+            if ($this->filled('hire_to') && ! $this->filled('hire_from')) {
+                $this->merge(['hire_from' => $this->input('hire_to')]);
+            }
         }
 
         if (! $this->has('direction') || ! in_array((string) $this->input('direction'), ['asc', 'desc'], true)) {
@@ -111,7 +124,7 @@ class IndexEmployeesRequest extends FormRequest
                 return;
             }
 
-            $exists = \App\Models\OrganizationalUnit::query()
+            $exists = OrganizationalUnit::query()
                 ->whereKey($unitId)
                 ->exists();
 

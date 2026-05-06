@@ -1,3 +1,5 @@
+import type { EmploymentHistoryRow } from '@/pages/Employees/employmentHistoryTypes';
+
 export type EmployeeIndexPosition = {
     id: number;
     code: string;
@@ -25,6 +27,8 @@ export type EmployeeRow = {
     positions: EmployeeIndexPosition[];
     units: EmployeeIndexUnit[];
     contact: EmployeeIndexContact;
+    /** Current employment for directory actions (`AdjustEmploymentDatesDialog`). */
+    current_employment: EmploymentHistoryRow | null;
 };
 
 export type EmployeesPaginator = {
@@ -39,12 +43,14 @@ export type EmployeesPaginator = {
 
 export type EmployeeFilters = {
     search: string;
-    sort: 'last_name' | 'first_name' | 'id_number' | 'id';
+    sort: 'last_name' | 'first_name' | 'id_number' | 'id' | 'hire_date';
     direction: 'asc' | 'desc';
     per_page: number;
     position_id: number | null;
     unit_id: number | 'unassigned' | null;
     org_scope: 'org_wide' | 'branch_scoped' | null;
+    hire_from: string | null;
+    hire_to: string | null;
 };
 
 export type EmployeePositionFilterOption = {

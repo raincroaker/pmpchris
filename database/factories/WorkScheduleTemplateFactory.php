@@ -4,10 +4,11 @@ namespace Database\Factories;
 
 use App\Enums\WorkScheduleClockPattern;
 use App\Models\Organization;
+use App\Models\WorkScheduleTemplate;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\WorkScheduleTemplate>
+ * @extends Factory<WorkScheduleTemplate>
  */
 class WorkScheduleTemplateFactory extends Factory
 {

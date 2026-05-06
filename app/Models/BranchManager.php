@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\BranchManagerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BranchManager extends Model
 {
-    /** @use HasFactory<\Database\Factories\BranchManagerFactory> */
+    /** @use HasFactory<BranchManagerFactory> */
     use HasFactory;
 
     /**

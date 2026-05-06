@@ -9,7 +9,7 @@ use App\Models\UnitType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\EmployeeAffiliation>
+ * @extends Factory<\App\Models\EmployeeAffiliation>
  */
 class EmployeeAffiliationFactory extends Factory
 {

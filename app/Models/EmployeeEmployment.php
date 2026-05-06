@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\EmployeeEmploymentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Support\Str;
 
 class EmployeeEmployment extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeeEmploymentFactory> */
+    /** @use HasFactory<EmployeeEmploymentFactory> */
     use HasFactory, SoftDeletes;
 
     public const STATUS_ACTIVE = 'active';

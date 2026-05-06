@@ -8,6 +8,7 @@ use App\Models\EmployeeEmployment;
 use App\Models\Organization;
 use App\Models\OrganizationalUnit;
 use App\Services\BranchContextService;
+use App\Services\EmploymentHireAdjustmentBoundary;
 use App\Support\EmployeeBranchDirectoryFilter;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -269,8 +270,24 @@ class EmployeesEmploymentHistoryController extends Controller
             },
         ]);
 
+        /** @var list<int> $employmentIdsOnPage */
+        $employmentIdsOnPage = $paginator->getCollection()
+            ->pluck('id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        $hireAdjustmentMaxDates = EmploymentHireAdjustmentBoundary::latestPermittedHireDatesByEmploymentIds(
+            $employmentIdsOnPage,
+        );
+
         $mappedPaginator = $paginator->through(
-            fn (EmployeeEmployment $employment): array => $this->mapEmploymentRow($employment, $today),
+            function (EmployeeEmployment $employment) use ($today, $hireAdjustmentMaxDates): array {
+                return $this->mapEmploymentRow(
+                    $employment,
+                    $today,
+                    $hireAdjustmentMaxDates[(int) $employment->getKey()] ?? null,
+                );
+            },
         );
 
         return [
@@ -288,7 +305,7 @@ class EmployeesEmploymentHistoryController extends Controller
     /**
      * Tenure span is inclusive calendar days from hire_date through separation_date, or today's date when still employed.
      */
-    private function mapEmploymentRow(EmployeeEmployment $employment, Carbon $today): array
+    private function mapEmploymentRow(EmployeeEmployment $employment, Carbon $today, ?string $hireAdjustmentMaxDate): array
     {
         $hire = Carbon::parse($employment->hire_date)->startOfDay();
         $separation = $employment->separation_date !== null
@@ -307,10 +324,17 @@ class EmployeesEmploymentHistoryController extends Controller
         return [
             'id' => (int) $employment->id,
             'hire_date' => Carbon::parse($employment->hire_date)->toDateString(),
+            'hire_adjustment_max_date' => $hireAdjustmentMaxDate,
             'separation_date' => $employment->separation_date !== null
                 ? Carbon::parse($employment->separation_date)->toDateString()
                 : null,
             'employment_status' => (string) $employment->employment_status,
+            'separation_reason' => $employment->separation_reason !== null && $employment->separation_reason !== ''
+                ? (string) $employment->separation_reason
+                : null,
+            'notes' => $employment->notes !== null && $employment->notes !== ''
+                ? (string) $employment->notes
+                : null,
             'tenure_days' => $tenureDays,
             'employee' => [
                 'id' => (int) $employee->id,

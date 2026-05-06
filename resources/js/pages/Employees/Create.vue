@@ -67,6 +67,12 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { appToast } from '@/lib/app-toast-client';
 import { formatCalendarTriggerFromDate } from '@/lib/formatCalendarTriggerDate';
 import { cn } from '@/lib/utils';
+import {
+    employeeStepOneCivilStatusOptions as civilStatusOptions,
+    employeeStepOneNationalityOptions as nationalityOptions,
+    employeeStepOneReligionOptions as religionOptions,
+    employeeStepOneSexOptions as sexOptions,
+} from '@/pages/Employees/employeeStepOneOptions';
 import { employees } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
@@ -147,54 +153,7 @@ const {
 
 const currentStep = ref(1);
 
-const sexOptions = ['Male', 'Female', 'Other', 'Prefer not to say'] as const;
-const religionOptions = [
-    'Catholic',
-    'Protestant',
-    'Muslim',
-    'Hindu',
-    'Buddhist',
-    'Jewish',
-    'Other',
-    'Prefer not to say',
-] as const;
-
-const civilStatusOptions = [
-    'Single',
-    'Married',
-    'Widowed',
-    'Divorced',
-    'Legally separated',
-    'Annulled',
-    'Domestic partnership',
-    'Other',
-] as const;
-
 const suffixOptions = ['Jr.', 'Sr.', 'II', 'III', 'IV', 'V'] as const;
-
-const nationalityOptions = [
-    'Filipino',
-    'American',
-    'British',
-    'Canadian',
-    'Australian',
-    'Chinese',
-    'Japanese',
-    'Indian',
-    'Malaysian',
-    'Singaporean',
-    'Indonesian',
-    'Thai',
-    'Vietnamese',
-    'Korean',
-    'German',
-    'French',
-    'Spanish',
-    'Italian',
-    'Mexican',
-    'Brazilian',
-    'Other',
-] as const;
 
 type StepOnePersonalInfo = {
     firstName: string;

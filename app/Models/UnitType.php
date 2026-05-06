@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\UnitTypeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UnitType extends Model
 {
-    /** @use HasFactory<\Database\Factories\UnitTypeFactory> */
+    /** @use HasFactory<UnitTypeFactory> */
     use HasFactory;
 
     /**

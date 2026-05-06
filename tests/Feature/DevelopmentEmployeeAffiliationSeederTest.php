@@ -6,6 +6,7 @@ use App\Models\EmployeeAffiliation;
 use App\Models\EmployeeAssignment;
 use App\Models\EmployeeEmployment;
 use App\Models\Organization;
+use App\Models\OrganizationalUnit;
 use Database\Seeders\DemoCooperativeSeeder;
 use Database\Seeders\DevelopmentEmployeeAffiliationSeeder;
 use Database\Seeders\DevelopmentEmployeePositionSeeder;
@@ -27,12 +28,12 @@ test('development employee affiliation seeder creates PAN and TAG affiliations f
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
     $employee = Employee::query()->where('id_number', 'EMP-SEED-001')->firstOrFail();
 
-    $panRoot = \App\Models\OrganizationalUnit::query()
+    $panRoot = OrganizationalUnit::query()
         ->where('organization_id', $organization->id)
         ->where('code', 'PAN')
         ->whereNull('parent_id')
         ->firstOrFail();
-    $tagRoot = \App\Models\OrganizationalUnit::query()
+    $tagRoot = OrganizationalUnit::query()
         ->where('organization_id', $organization->id)
         ->where('code', 'TAG')
         ->whereNull('parent_id')
@@ -106,7 +107,7 @@ test('hr manager seed employee has branch affiliation only not org-wide', functi
     (new DevelopmentEmployeeAffiliationSeeder)->run();
 
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
-    $tagRoot = \App\Models\OrganizationalUnit::query()
+    $tagRoot = OrganizationalUnit::query()
         ->where('organization_id', $organization->id)
         ->where('code', 'TAG')
         ->whereNull('parent_id')
@@ -125,7 +126,7 @@ test('hr manager seed employee has branch affiliation only not org-wide', functi
             EmployeeAffiliation::query()
                 ->where('employee_id', $diana->id)
                 ->where('organization_id', $organization->id)
-                ->whereIn('root_unit_id', [$tagRoot->id, \App\Models\OrganizationalUnit::query()
+                ->whereIn('root_unit_id', [$tagRoot->id, OrganizationalUnit::query()
                     ->where('organization_id', $organization->id)
                     ->where('code', 'PAN')
                     ->whereNull('parent_id')
@@ -143,12 +144,12 @@ test('multi-affiliated line employee has branch affiliations only', function () 
     (new DevelopmentEmployeeAffiliationSeeder)->run();
 
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
-    $panRoot = \App\Models\OrganizationalUnit::query()
+    $panRoot = OrganizationalUnit::query()
         ->where('organization_id', $organization->id)
         ->where('code', 'PAN')
         ->whereNull('parent_id')
         ->firstOrFail();
-    $tagRoot = \App\Models\OrganizationalUnit::query()
+    $tagRoot = OrganizationalUnit::query()
         ->where('organization_id', $organization->id)
         ->where('code', 'TAG')
         ->whereNull('parent_id')

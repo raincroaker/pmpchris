@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\EmployeeLeave;
 use App\Services\ScheduleAssignmentAccessService;
 use App\Support\EmployeeBranchDirectoryFilter;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -39,7 +40,7 @@ class UpdateEmployeeLeaveRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

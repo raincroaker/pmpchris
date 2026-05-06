@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Http\Controllers\SearchTeamHrFormEmployeesController;
 use App\Models\Employee;
 use App\Models\EmployeeEmployment;
 use App\Models\Role;
@@ -10,7 +11,7 @@ use App\Models\User;
 final class TeamHrFormEligibleEmployeeResolver
 {
     /**
-     * Matches {@see \App\Http\Controllers\SearchTeamHrFormEmployeesController} visibility: active employment, branch affiliation
+     * Matches {@see SearchTeamHrFormEmployeesController} visibility: active employment, branch affiliation
      * scope with optional org-wide root, and assignment on {@code $unitId}.
      *
      * @param  list<string>|array<int|string, mixed>  $with

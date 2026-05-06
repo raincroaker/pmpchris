@@ -6,6 +6,7 @@ use App\Models\CalendarEventCategory;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\BranchContextService;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Validator;
@@ -24,7 +25,7 @@ class UpdateCalendarEventRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
