@@ -21,8 +21,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { appToast } from '@/lib/app-toast-client';
+import { inertiaRouteForm } from '@/lib/inertiaRouteForm';
 import { store } from '@/routes/login';
-import { inertiaRouteForm } from '@/wayfinder';
 
 const showPassword = ref(false);
 const isLoggingIn = ref(false);

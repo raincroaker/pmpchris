@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
+import { inertiaRouteForm } from '@/lib/inertiaRouteForm';
 import { edit } from '@/routes/user-password';
 import type { BreadcrumbItem } from '@/types';
-import { inertiaRouteForm } from '@/wayfinder';
 
 const breadcrumbItems: BreadcrumbItem[] = [
     {

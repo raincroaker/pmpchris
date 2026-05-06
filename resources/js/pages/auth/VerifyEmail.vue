@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { appToast } from '@/lib/app-toast-client';
+import { inertiaRouteForm } from '@/lib/inertiaRouteForm';
 import { createLogoutFinishedPromise } from '@/lib/logout-toast-promise';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
-import { inertiaRouteForm } from '@/wayfinder';
 
 defineProps<{
     status?: string;
