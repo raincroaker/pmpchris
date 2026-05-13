@@ -2,23 +2,19 @@
 
 use App\Models\Organization;
 use App\Models\WorkScheduleTemplate;
-use Database\Seeders\DemoCooperativeSeeder;
-use Database\Seeders\DevelopmentUserSeeder;
-use Database\Seeders\OrganizationalStructureSeeder;
-use Database\Seeders\RoleSeeder;
 use Database\Seeders\WorkScheduleTemplatesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 test('work schedule templates seeder persists weekday and mon saturday split overtime templates', function (): void {
-    $this->seed([
-        OrganizationalStructureSeeder::class,
-        RoleSeeder::class,
-        DemoCooperativeSeeder::class,
-        DevelopmentUserSeeder::class,
-        WorkScheduleTemplatesSeeder::class,
+    Organization::factory()->create([
+        'code' => 'PMPC',
+        'name' => 'Panabo Multipurpose Cooperative',
+        'is_active' => true,
     ]);
+
+    (new WorkScheduleTemplatesSeeder)->run();
 
     $organization = Organization::query()->where('code', 'PMPC')->firstOrFail();
 

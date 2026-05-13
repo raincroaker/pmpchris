@@ -33,7 +33,7 @@ test('authorized hr roles can check unit code availability', function () {
         ->getJson(route('organization-chart.units.check-code-availability', [
             'chart_branch_id' => $panabo->id,
             'node_id' => 'unit-'.$panaboDepartment->id,
-            'code' => 'PAN-D2-S1',
+            'code' => 'PAN-D1-S1',
         ]))
         ->assertSuccessful()
         ->assertJsonPath('code.status', 'taken');

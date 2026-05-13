@@ -12,6 +12,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class PhaseOneInitialSystemSeeder extends Seeder
@@ -33,8 +34,10 @@ class PhaseOneInitialSystemSeeder extends Seeder
             $this->seedPhaseThreeInternEmployees($organizationId, $panaboRootId, $roleIds, $positionIds);
             $this->seedPhaseFourDepartmentAssignments($organizationId);
             $this->seedWorkScheduleTemplate($organizationId, $seededAt);
-            $this->seedPhaseFiveBiometricEnrollment($organizationId);
-            $this->seedPhaseSixInternAttendanceDeviceIngest($organizationId);
+            if (Schema::hasTable('employee_attendance_days') && Schema::hasTable('employee_attendance_segments')) {
+                $this->seedPhaseFiveBiometricEnrollment($organizationId);
+                $this->seedPhaseSixInternAttendanceDeviceIngest($organizationId);
+            }
             $holidayTypeIds = $this->seedHolidayTypes($organizationId, $seededAt);
             $this->seedCalendarEventCategories($organizationId, $seededAt);
             $this->seedOrganizationHolidays($organizationId, $holidayTypeIds, $seededAt);
@@ -47,17 +50,17 @@ class PhaseOneInitialSystemSeeder extends Seeder
                 roleId: $roleIds[Role::CODE_HR_HEAD],
                 positionId: $positionIds['HR-ADM'],
                 idNumber: '20170032',
-                firstName: 'Kenneth',
-                lastName: 'Martinez',
-                birthdate: '1986-04-17',
-                sex: 'male',
-                civilStatus: 'married',
-                nationality: 'Filipino',
+                firstName: 'HR',
+                lastName: 'Head',
+                birthdate: '2000-01-01',
+                sex: 'Prefer not to say',
+                civilStatus: 'Other',
+                nationality: 'Unspecified',
                 religion: null,
                 hireDate: '2017-06-26',
-                email: 'martinez.kenneth@hrnexus.com',
+                email: 'hrhead@hrnexus.com',
                 seededAt: $seededAt,
-                passwordPlain: 'KenHR#Mtz!2610',
+                passwordPlain: 'password',
                 userUpdatedAt: CarbonImmutable::create(2026, 2, 16, 10, 11, 27),
             );
 
@@ -67,15 +70,15 @@ class PhaseOneInitialSystemSeeder extends Seeder
                 roleId: $roleIds[Role::CODE_SUPER_ADMIN],
                 positionId: $positionIds['HR-MGR'],
                 idNumber: '20200024',
-                firstName: 'Krysta',
-                lastName: 'Magallanes',
-                birthdate: '1989-09-08',
-                sex: 'female',
-                civilStatus: 'married',
-                nationality: 'Filipino',
+                firstName: 'Super',
+                lastName: 'Admin',
+                birthdate: '2000-01-01',
+                sex: 'Prefer not to say',
+                civilStatus: 'Other',
+                nationality: 'Unspecified',
                 religion: null,
                 hireDate: '2020-11-11',
-                email: 'magallanes.krysta@hrnexus.com',
+                email: 'superadmin@hrnexus.com',
                 seededAt: $seededAt,
                 passwordPlain: 'password',
                 userUpdatedAt: CarbonImmutable::create(2026, 2, 16, 10, 18, 44),
@@ -347,374 +350,8 @@ class PhaseOneInitialSystemSeeder extends Seeder
         array $roleIds,
         array $positionIds
     ): void {
-        $internPositionId = (int) (
-            DB::table('positions')
-                ->where('organization_id', $organizationId)
-                ->where('code', 'INT')
-                ->value('id')
-            ?? $positionIds['INT']
-            ?? 0
-        );
-
-        if ($internPositionId <= 0 || ! isset($roleIds[Role::CODE_EMPLOYEE])) {
-            return;
-        }
-
-        $employeeRoleId = (int) $roleIds[Role::CODE_EMPLOYEE];
-
-        $rows = [
-            [
-                'id_number' => '2023-00452',
-                'first_name' => 'Jannah',
-                'last_name' => 'Cartagena',
-                'sex' => 'female',
-                'birthdate' => '2004-03-15',
-                'contact_number' => '09184726503',
-                'email' => 'jannah.cartagena@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. San Francisco, Panabo City, Davao del Norte',
-                'barangay' => 'San Francisco',
-                'city' => 'Panabo City',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8105',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 11, 2, 12),
-                'password_plain' => 'Jc#5204!Nrm',
-            ],
-            [
-                'id_number' => '2023-01987',
-                'first_name' => 'Rose',
-                'last_name' => 'Magno',
-                'sex' => 'female',
-                'birthdate' => '2003-07-22',
-                'contact_number' => '09276148395',
-                'email' => 'rose.magno@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Nanyo, Panabo City, Davao del Norte',
-                'barangay' => 'Nanyo',
-                'city' => 'Panabo City',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8105',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 11, 5, 4),
-                'password_plain' => 'Rm!1987@Pcs',
-            ],
-            [
-                'id_number' => '2023-07314',
-                'first_name' => 'April',
-                'last_name' => 'Alcordo',
-                'sex' => 'female',
-                'birthdate' => '2004-04-10',
-                'contact_number' => '09452837610',
-                'email' => 'april.alcordo@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Ising, Carmen, Davao del Norte',
-                'barangay' => 'Ising',
-                'city' => 'Carmen',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8101',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 11, 8, 31),
-                'password_plain' => 'Ap$7314_Crm',
-            ],
-            [
-                'id_number' => '2023-11829',
-                'first_name' => 'Carmel',
-                'last_name' => 'Galon',
-                'sex' => 'female',
-                'birthdate' => '2003-12-05',
-                'contact_number' => '09367052184',
-                'email' => 'carmel.galon@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Tibungol, Panabo City, Davao del Norte',
-                'barangay' => 'Tibungol',
-                'city' => 'Panabo City',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8105',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 11, 11, 9),
-                'password_plain' => 'Cg*1829Pan!',
-            ],
-            [
-                'id_number' => '2023-20576',
-                'first_name' => 'Archie',
-                'last_name' => 'Josol',
-                'sex' => 'male',
-                'birthdate' => '2003-01-18',
-                'contact_number' => '09095614728',
-                'email' => 'archie.josol@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Tagpore, Panabo City, Davao del Norte',
-                'barangay' => 'Tagpore',
-                'city' => 'Panabo City',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8105',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 16, 3, 15),
-                'password_plain' => 'Aj-20576#Ojt',
-            ],
-            [
-                'id_number' => '2023-26741',
-                'first_name' => 'Ivy',
-                'last_name' => 'Moya',
-                'sex' => 'female',
-                'birthdate' => '2004-05-09',
-                'contact_number' => '09528341907',
-                'email' => 'ivy.moya@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Alejal, Carmen, Davao del Norte',
-                'barangay' => 'Alejal',
-                'city' => 'Carmen',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8101',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 16, 6, 2),
-                'password_plain' => 'Im@26741!Cmn',
-            ],
-            [
-                'id_number' => '2023-33490',
-                'first_name' => 'Philip',
-                'last_name' => 'Sagais',
-                'sex' => 'male',
-                'birthdate' => '2003-08-14',
-                'contact_number' => '09216473059',
-                'email' => 'philip.sagais@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Guadalupe, Carmen, Davao del Norte',
-                'barangay' => 'Guadalupe',
-                'city' => 'Carmen',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8101',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 16, 9, 44),
-                'password_plain' => 'Ps#33490_Ojt',
-            ],
-            [
-                'id_number' => '2023-40128',
-                'first_name' => 'Odessa',
-                'last_name' => 'Ybañez',
-                'sex' => 'female',
-                'birthdate' => '2004-11-30',
-                'contact_number' => '09392185647',
-                'email' => 'odessa.ybanez@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Datu Abdul Dadia, Panabo City, Davao del Norte',
-                'barangay' => 'Datu Abdul Dadia',
-                'city' => 'Panabo City',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8105',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 16, 12, 21),
-                'password_plain' => 'Oy!40128-pan',
-            ],
-            [
-                'id_number' => '2023-58937',
-                'first_name' => 'Lealyn',
-                'last_name' => 'Gentica',
-                'sex' => 'female',
-                'birthdate' => '2004-02-02',
-                'contact_number' => '09476053821',
-                'email' => 'lealyn.gentica@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Salvacion, Panabo City, Davao del Norte',
-                'barangay' => 'Salvacion',
-                'city' => 'Panabo City',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8105',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 16, 15, 58),
-                'password_plain' => 'Lg#58937_hrs',
-            ],
-            [
-                'id_number' => '2023-74206',
-                'first_name' => 'Jona Mae',
-                'last_name' => 'Cabanog',
-                'sex' => 'female',
-                'birthdate' => '2003-06-25',
-                'contact_number' => '09267431589',
-                'email' => 'jonamae.cabanog@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Tuganay, Carmen, Davao del Norte',
-                'barangay' => 'Tuganay',
-                'city' => 'Carmen',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8101',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 16, 18, 33),
-                'password_plain' => 'Jm$74206-mm',
-            ],
-            [
-                'id_number' => '2023-91355',
-                'first_name' => 'Ruby Rose',
-                'last_name' => 'Arellano',
-                'sex' => 'female',
-                'birthdate' => '2004-09-12',
-                'contact_number' => '09345802671',
-                'email' => 'rubyrose.arellano@gmail.com',
-                'religion' => 'Catholic',
-                'hire_date' => '2026-02-09',
-                'address_line_1' => 'Brgy. Anibongan, Carmen, Davao del Norte',
-                'barangay' => 'Anibongan',
-                'city' => 'Carmen',
-                'province' => 'Davao del Norte',
-                'zip_code' => '8101',
-                'created_at' => CarbonImmutable::create(2026, 2, 17, 16, 21, 41),
-                'password_plain' => 'Rr@91355-hr',
-            ],
-        ];
-
-        foreach ($rows as $row) {
-            $timestamp = $row['created_at'];
-
-            DB::table('employees')->updateOrInsert(
-                ['id_number' => $row['id_number']],
-                [
-                    'attendance_id' => null,
-                    'work_schedule_template_id' => null,
-                    'first_name' => $row['first_name'],
-                    'middle_name' => null,
-                    'last_name' => $row['last_name'],
-                    'suffix' => null,
-                    'birthdate' => $row['birthdate'],
-                    'birthday_visibility' => 'team',
-                    'sex' => $row['sex'],
-                    'civil_status' => 'single',
-                    'nationality' => 'Filipino',
-                    'religion' => $row['religion'],
-                    'religion_other' => null,
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                    'deleted_at' => null,
-                ]
-            );
-
-            $employeeId = (int) DB::table('employees')->where('id_number', $row['id_number'])->value('id');
-
-            DB::table('users')->updateOrInsert(
-                ['email' => $row['email']],
-                [
-                    'employee_id' => $employeeId,
-                    'name' => trim($row['first_name'].' '.$row['last_name']),
-                    'password' => Hash::make((string) ($row['password_plain'] ?? 'password')),
-                    'email_verified_at' => $timestamp,
-                    'remember_token' => null,
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                ]
-            );
-
-            $userId = (int) DB::table('users')->where('email', $row['email'])->value('id');
-
-            DB::table('role_user')->updateOrInsert(
-                [
-                    'user_id' => $userId,
-                    'role_id' => $employeeRoleId,
-                ],
-                [
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                ]
-            );
-
-            DB::table('employee_employments')->updateOrInsert(
-                [
-                    'employee_id' => $employeeId,
-                    'hire_date' => $row['hire_date'],
-                ],
-                [
-                    'uuid' => (string) Str::uuid(),
-                    'separation_date' => null,
-                    'separation_reason' => null,
-                    'employment_status' => EmployeeEmployment::STATUS_ACTIVE,
-                    'is_current' => true,
-                    'notes' => 'Phase 3 intern onboarding.',
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                    'deleted_at' => null,
-                ]
-            );
-
-            $employmentId = (int) DB::table('employee_employments')
-                ->where('employee_id', $employeeId)
-                ->where('hire_date', $row['hire_date'])
-                ->value('id');
-
-            DB::table('employee_affiliations')->updateOrInsert(
-                [
-                    'employee_id' => $employeeId,
-                    'employee_employment_id' => $employmentId,
-                    'organization_id' => $organizationId,
-                    'root_unit_id' => $panaboRootId,
-                    'start_date' => $row['hire_date'],
-                ],
-                [
-                    'is_primary' => true,
-                    'end_date' => null,
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                    'deleted_at' => null,
-                ]
-            );
-
-            DB::table('employee_positions')->updateOrInsert(
-                [
-                    'employee_id' => $employeeId,
-                    'employee_employment_id' => $employmentId,
-                    'position_id' => $internPositionId,
-                    'start_date' => $row['hire_date'],
-                ],
-                [
-                    'uuid' => (string) Str::uuid(),
-                    'is_primary' => true,
-                    'end_date' => null,
-                    'notes' => 'Phase 3 intern position.',
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                    'deleted_at' => null,
-                ]
-            );
-
-            DB::table('employee_contacts')->updateOrInsert(
-                [
-                    'employee_id' => $employeeId,
-                    'category' => 'personal',
-                    'type' => 'mobile',
-                ],
-                [
-                    'contact_person' => null,
-                    'relationship' => null,
-                    'contact_number' => $row['contact_number'],
-                    'email' => $row['email'],
-                    'is_primary' => true,
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                    'deleted_at' => null,
-                ]
-            );
-
-            DB::table('employee_addresses')->updateOrInsert(
-                [
-                    'employee_id' => $employeeId,
-                    'type' => 'current',
-                ],
-                [
-                    'address_line_1' => $row['address_line_1'],
-                    'address_line_2' => null,
-                    'barangay' => $row['barangay'],
-                    'barangay_code' => null,
-                    'city' => $row['city'],
-                    'city_code' => null,
-                    'province' => $row['province'],
-                    'province_code' => null,
-                    'zip_code' => $row['zip_code'],
-                    'country' => 'Philippines',
-                    'is_primary' => true,
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                    'deleted_at' => null,
-                ]
-            );
-        }
+        unset($organizationId, $panaboRootId, $roleIds, $positionIds);
+        // Stakeholder handoff: no fabricated intern employees, contacts, or addresses. INT catalog remains from phase two.
     }
 
     private function seedPhaseFourDepartmentAssignments(int $organizationId): void

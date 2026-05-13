@@ -12,7 +12,7 @@ final class OrganizationSeedActorResolver
 {
     public static function resolveUserId(): ?int
     {
-        $preferredEmails = ['superadmin@example.com', 'hrhead1@example.com'];
+        $preferredEmails = ['superadmin@hrnexus.com', 'hrhead@hrnexus.com', 'superadmin@example.com', 'hrhead1@example.com'];
 
         $id = User::query()
             ->whereIn('email', $preferredEmails)

@@ -42,6 +42,11 @@ declare module '@inertiajs/core' {
                 teamAssignmentUnitIds: number[];
                 teamHeadUnitIds: number[];
             };
+            /** Session flash; consumed in {@link AppShell} with `appToast`. */
+            flash?: {
+                success?: string | null;
+                error?: string | null;
+            } | null;
             [key: string]: unknown;
         };
     }

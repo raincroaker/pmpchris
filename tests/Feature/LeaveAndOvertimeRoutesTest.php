@@ -109,10 +109,6 @@ test('employee team leave and overtime routes forbid users without hr team acces
     $this->actingAs($user)
         ->get(route('overtime.team'))
         ->assertForbidden();
-
-    $this->actingAs($user)
-        ->get(route('attendance.team'))
-        ->assertForbidden();
 });
 
 test('short leave and overtime urls redirect to my records pages', function (): void {
@@ -131,4 +127,6 @@ test('short leave and overtime urls redirect to my records pages', function (): 
 test('removed request routes are not registered', function (): void {
     expect(Route::has('leave.request'))->toBeFalse();
     expect(Route::has('overtime.request'))->toBeFalse();
+    expect(Route::has('attendance.team'))->toBeFalse();
+    expect(Route::has('chat'))->toBeFalse();
 });

@@ -2,18 +2,14 @@ import {
     Briefcase,
     Calendar,
     CalendarClock,
-    Clock,
     Timer,
-    FileText,
+    ClipboardList,
     GitBranch,
     LayoutGrid,
-    MessageCircle,
-    ClipboardList,
     Settings,
     Users,
 } from 'lucide-vue-next';
 import {
-    chat,
     dashboard,
     employees,
     organizationChart,
@@ -22,9 +18,7 @@ import {
 import { users } from '@/routes/admin';
 import {
     employeeSchedules as attendanceEmployeeSchedules,
-    my as attendanceMy,
     shifts as attendanceShifts,
-    team as attendanceTeam,
 } from '@/routes/attendance';
 import {
     branch as calendarBranch,
@@ -32,13 +26,6 @@ import {
     holidays as calendarHolidays,
     team as calendarTeam,
 } from '@/routes/calendar';
-import {
-    branch as documentsBranch,
-    company as documentsCompany,
-    my as documentsMy,
-    team as documentsTeam,
-    trash as documentsTrash,
-} from '@/routes/documents';
 import { aboutMe, employmentHistory } from '@/routes/employees';
 import {
     my as leaveMy,
@@ -64,12 +51,6 @@ export const appNavigationTree: NavTreeEntry[] = [
         title: 'Dashboard',
         icon: LayoutGrid,
         href: () => dashboard(),
-    },
-    {
-        kind: 'link',
-        title: 'Chats',
-        icon: MessageCircle,
-        href: () => chat(),
     },
     {
         kind: 'collapsible',
@@ -127,15 +108,6 @@ export const appNavigationTree: NavTreeEntry[] = [
     },
     {
         kind: 'collapsible',
-        title: 'Attendance',
-        icon: Clock,
-        items: [
-            { title: 'My Attendance', href: () => attendanceMy() },
-            { title: 'Team Attendance', href: () => attendanceTeam() },
-        ],
-    },
-    {
-        kind: 'collapsible',
         title: 'Scheduling',
         icon: CalendarClock,
         items: [
@@ -160,18 +132,6 @@ export const appNavigationTree: NavTreeEntry[] = [
             { title: 'Branch Calendar', href: () => calendarBranch() },
             { title: 'Team Calendar', href: () => calendarTeam() },
             { title: 'Holiday Calendar', href: () => calendarHolidays() },
-        ],
-    },
-    {
-        kind: 'collapsible',
-        title: 'Documents',
-        icon: FileText,
-        items: [
-            { title: 'My Documents', href: () => documentsMy() },
-            { title: 'Team Documents', href: () => documentsTeam() },
-            { title: 'Branch Documents', href: () => documentsBranch() },
-            { title: 'Company Documents', href: () => documentsCompany() },
-            { title: 'Trash', href: () => documentsTrash() },
         ],
     },
     {

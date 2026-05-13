@@ -4,77 +4,13 @@ namespace App\Http\Requests;
 
 use App\Models\Employee;
 use App\Services\EmploymentWorkMutationAccess;
+use App\Support\EmployeeDemographicsFormOptions;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateEmployeeAboutMeDemographicsRequest extends FormRequest
 {
-    /**
-     * @var list<string>
-     */
-    private const SEX_OPTIONS = [
-        'Male',
-        'Female',
-        'Other',
-        'Prefer not to say',
-    ];
-
-    /**
-     * @var list<string>
-     */
-    private const CIVIL_STATUS_OPTIONS = [
-        'Single',
-        'Married',
-        'Widowed',
-        'Divorced',
-        'Legally separated',
-        'Annulled',
-        'Domestic partnership',
-        'Other',
-    ];
-
-    /**
-     * @var list<string>
-     */
-    private const NATIONALITY_OPTIONS = [
-        'Filipino',
-        'American',
-        'British',
-        'Canadian',
-        'Australian',
-        'Chinese',
-        'Japanese',
-        'Indian',
-        'Malaysian',
-        'Singaporean',
-        'Indonesian',
-        'Thai',
-        'Vietnamese',
-        'Korean',
-        'German',
-        'French',
-        'Spanish',
-        'Italian',
-        'Mexican',
-        'Brazilian',
-        'Other',
-    ];
-
-    /**
-     * @var list<string>
-     */
-    private const RELIGION_OPTIONS = [
-        'Catholic',
-        'Protestant',
-        'Muslim',
-        'Hindu',
-        'Buddhist',
-        'Jewish',
-        'Other',
-        'Prefer not to say',
-    ];
-
     public function authorize(EmploymentWorkMutationAccess $access): bool
     {
         $employee = $this->route('employee');
@@ -103,10 +39,10 @@ class UpdateEmployeeAboutMeDemographicsRequest extends FormRequest
     {
         return [
             'birthdate' => ['required', 'date'],
-            'sex' => ['required', 'string', Rule::in(self::SEX_OPTIONS)],
-            'civil_status' => ['nullable', 'string', Rule::in(self::CIVIL_STATUS_OPTIONS)],
-            'nationality' => ['nullable', 'string', Rule::in(self::NATIONALITY_OPTIONS)],
-            'religion' => ['nullable', 'string', Rule::in(self::RELIGION_OPTIONS)],
+            'sex' => ['required', 'string', Rule::in(EmployeeDemographicsFormOptions::SEX_OPTIONS)],
+            'civil_status' => ['nullable', 'string', Rule::in(EmployeeDemographicsFormOptions::CIVIL_STATUS_OPTIONS)],
+            'nationality' => ['nullable', 'string', Rule::in(EmployeeDemographicsFormOptions::NATIONALITY_OPTIONS)],
+            'religion' => ['nullable', 'string', Rule::in(EmployeeDemographicsFormOptions::RELIGION_OPTIONS)],
             'religion_other' => ['nullable', 'string', 'max:255', 'required_if:religion,Other'],
         ];
     }

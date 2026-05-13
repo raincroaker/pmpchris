@@ -16,7 +16,7 @@ test('demo cooperative seeder creates one area and two roots with PAN/TAG units'
 
     expect(Area::query()->count())->toBe(1)
         ->and(OrganizationalUnit::query()->whereNull('parent_id')->count())->toBe(2)
-        ->and(Position::query()->count())->toBe(10);
+        ->and(Position::query()->count())->toBe(2);
 
     foreach (['PAN', 'TAG'] as $prefix) {
         expect(

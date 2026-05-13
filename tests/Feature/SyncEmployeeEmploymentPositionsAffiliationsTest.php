@@ -191,3 +191,45 @@ test('employee role cannot persist employment positions affiliations sync', func
             ->whereNull('deleted_at')
             ->count())->toBe(1);
 });
+
+test('super admin can sync employment with all position and affiliation rows ended', function (): void {
+    $boot = syncCatalogBootstrap();
+
+    $admin = User::factory()->withRoles(Role::CODE_SUPER_ADMIN)->create();
+
+    $payload = syncCatalogAuthPayload([
+        'positions' => [
+            [
+                'id' => $boot['employeePosition']->id,
+                'position_id' => $boot['position']->id,
+                'start_date' => '2020-06-01',
+                'end_date' => '2023-12-31',
+                'is_primary' => true,
+            ],
+        ],
+        'affiliations' => [
+            [
+                'id' => $boot['affiliation']->id,
+                'root_unit_id' => $boot['root']->id,
+                'start_date' => '2020-06-01',
+                'end_date' => '2023-12-31',
+                'is_primary' => true,
+            ],
+        ],
+    ]);
+
+    $this->from(route('dashboard'))
+        ->actingAs($admin)
+        ->patch(
+            route('employees.employments.sync-positions-affiliations', ['employment' => $boot['employment']->id]),
+            $payload,
+        )
+        ->assertRedirect(route('dashboard'))
+        ->assertSessionHas('success', 'Positions and affiliations updated.');
+
+    $position = EmployeePosition::query()->findOrFail($boot['employeePosition']->id);
+    $affiliation = EmployeeAffiliation::query()->findOrFail($boot['affiliation']->id);
+
+    expect($position->end_date?->format('Y-m-d'))->toBe('2023-12-31')
+        ->and($affiliation->end_date?->format('Y-m-d'))->toBe('2023-12-31');
+});

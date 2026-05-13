@@ -125,7 +125,7 @@ test('hr head can search chart employees filtered by chart branch and query', fu
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
     $tagum = OrganizationalUnit::query()->where('code', 'TAG')->whereNull('parent_id')->firstOrFail();
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
     $tagumSection = OrganizationalUnit::query()->where('code', 'TAG-D1-S1')->firstOrFail();
 
     createEmployeeForChartBranch($panabo, $panaboSection, 'Alice', 'EMP-ALICE');
@@ -204,8 +204,8 @@ test('employee search endpoint includes current user and excludes already assign
     (new DemoCooperativeSeeder)->run();
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
-    $panaboOtherSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S2')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
+    $panaboOtherSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S2')->firstOrFail();
 
     $selfEmployee = createEmployeeForChartBranch($panabo, $panaboOtherSection, 'Self', 'EMP-SELF');
     createEmployeeForChartBranch($panabo, $panaboSection, 'AlreadyAssigned', 'EMP-ASSIGNED');
@@ -239,7 +239,7 @@ test('employee search includes branch and org-wide employees for hr head and bra
     (new DemoCooperativeSeeder)->run();
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
-    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
+    $panaboSection = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
 
     createOrgWideEmployee($panabo, 'Orgwide', 'EMP-ORGWIDE');
     createEmployeeForChartBranch($panabo, $panaboSection, 'Branch', 'EMP-BRANCH');

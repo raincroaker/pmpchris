@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import { getLocalTimeZone, parseDate } from '@internationalized/date';
+import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
+import { calendarDateValueToIsoYmd } from '@/lib/calendarDateValueToIsoYmd';
 import type { DateValue } from '@internationalized/date';
 import { Handle, Position } from '@vue-flow/core';
 import {
@@ -519,10 +520,6 @@ function currentNodeUnitId(): number | null {
     return Number.isFinite(id) && id > 0 ? id : null;
 }
 
-function dateValueToIsoDate(value: DateValue): string {
-    return value.toDate(getLocalTimeZone()).toISOString().slice(0, 10);
-}
-
 function calendarValueFromIsoDate(value: string): DateValue | undefined {
     if (value.trim() === '') {
         return undefined;
@@ -559,7 +556,7 @@ function onAddEmployeeStartDateSelect(value: unknown, close: () => void): void {
         return;
     }
 
-    addEmployeeStartDate.value = dateValueToIsoDate(value as DateValue);
+    addEmployeeStartDate.value = calendarDateValueToIsoYmd(value as DateValue);
     close();
 }
 
@@ -1119,7 +1116,7 @@ function onAddEmployee(): void {
     selectedEmployee.value = null;
     addEmployeeIsPrimary.value = false;
     addEmployeeError.value = null;
-    addEmployeeStartDate.value = new Date().toISOString().slice(0, 10);
+    addEmployeeStartDate.value = calendarDateValueToIsoYmd(today(getLocalTimeZone()));
     if (addEmployeeCloseResetTimer !== null) {
         clearTimeout(addEmployeeCloseResetTimer);
         addEmployeeCloseResetTimer = null;

@@ -2,6 +2,7 @@
 import { router } from '@inertiajs/vue3';
 import type { DateValue } from '@internationalized/date';
 import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
+import { calendarDateValueToIsoYmd } from '@/lib/calendarDateValueToIsoYmd';
 import { CalendarIcon, ChevronDownIcon } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import updateEmployeeEmploymentDates from '@/actions/App/Http/Controllers/UpdateEmployeeEmploymentDatesController';
@@ -76,10 +77,6 @@ const currentPassword = ref('');
 const currentPasswordConfirmation = ref('');
 const fieldErrors = ref<PageErrorsBag>({});
 const processing = ref(false);
-
-function dateValueToIsoDate(value: DateValue): string {
-    return value.toDate(getLocalTimeZone()).toISOString().slice(0, 10);
-}
 
 function isoToCalendarValue(iso: string): DateValue | undefined {
     const t = iso.trim().slice(0, 10);
@@ -204,7 +201,7 @@ function onHireSelect(value: unknown, close: () => void): void {
         return;
     }
 
-    hireDateIso.value = dateValueToIsoDate(value as DateValue);
+    hireDateIso.value = calendarDateValueToIsoYmd(value as DateValue);
     close();
 }
 
@@ -233,7 +230,7 @@ function onSeparationSelect(value: unknown, close: () => void): void {
         return;
     }
 
-    separationDateIso.value = dateValueToIsoDate(value as DateValue);
+    separationDateIso.value = calendarDateValueToIsoYmd(value as DateValue);
     close();
 }
 

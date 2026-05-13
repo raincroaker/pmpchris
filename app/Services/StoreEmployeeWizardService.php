@@ -55,8 +55,12 @@ class StoreEmployeeWizardService
                 'suffix' => $personalInfo['suffix'] ?? null,
                 'birthdate' => (string) $personalInfo['birthdate'],
                 'sex' => (string) $personalInfo['sex'],
-                'civil_status' => (string) $personalInfo['civil_status'],
-                'nationality' => (string) $personalInfo['nationality'],
+                'civil_status' => isset($personalInfo['civil_status']) && is_string($personalInfo['civil_status']) && trim($personalInfo['civil_status']) !== ''
+                    ? trim($personalInfo['civil_status'])
+                    : null,
+                'nationality' => isset($personalInfo['nationality']) && is_string($personalInfo['nationality']) && trim($personalInfo['nationality']) !== ''
+                    ? trim($personalInfo['nationality'])
+                    : null,
                 'religion' => $personalInfo['religion'] ?? null,
             ]);
 
@@ -75,22 +79,24 @@ class StoreEmployeeWizardService
                 'notes' => $employmentData['notes'] ?? null,
             ]);
 
-            foreach ($addresses as $address) {
-                EmployeeAddress::query()->create([
-                    'employee_id' => $employee->id,
-                    'type' => (string) $address['type'],
-                    'address_line_1' => (string) $address['address_line_1'],
-                    'address_line_2' => $address['address_line_2'] ?? null,
-                    'barangay' => (string) $address['barangay'],
-                    'barangay_code' => $address['barangay_code'] ?? null,
-                    'city' => (string) $address['city'],
-                    'city_code' => $address['city_code'] ?? null,
-                    'province' => (string) $address['province'],
-                    'province_code' => $address['province_code'] ?? null,
-                    'zip_code' => (string) $address['zip_code'],
-                    'country' => (string) $address['country'],
-                    'is_primary' => (bool) ($address['is_primary'] ?? false),
-                ]);
+            if ($addresses !== []) {
+                foreach ($addresses as $address) {
+                    EmployeeAddress::query()->create([
+                        'employee_id' => $employee->id,
+                        'type' => (string) $address['type'],
+                        'address_line_1' => (string) $address['address_line_1'],
+                        'address_line_2' => $address['address_line_2'] ?? null,
+                        'barangay' => (string) $address['barangay'],
+                        'barangay_code' => $address['barangay_code'] ?? null,
+                        'city' => (string) $address['city'],
+                        'city_code' => $address['city_code'] ?? null,
+                        'province' => (string) $address['province'],
+                        'province_code' => $address['province_code'] ?? null,
+                        'zip_code' => (string) $address['zip_code'],
+                        'country' => (string) $address['country'],
+                        'is_primary' => (bool) ($address['is_primary'] ?? false),
+                    ]);
+                }
             }
 
             foreach ($contacts as $contact) {

@@ -1,5 +1,13 @@
 import type { ClockPattern } from '@/pages/Attendance/attendanceRulesTypes';
-import type { TeamAttendanceSegment } from '@/pages/Attendance/teamAttendanceTypes';
+
+/** Scheduled vs actual segment row (shared with team HR forms). */
+export type TeamAttendanceSegment = {
+    label: string;
+    scheduled_in: string;
+    scheduled_out: string;
+    actual_in: string | null;
+    actual_out: string | null;
+};
 
 export type ScheduleDayOfWeek =
     | 'mon'

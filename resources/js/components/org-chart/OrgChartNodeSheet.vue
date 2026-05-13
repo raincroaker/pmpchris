@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import { getLocalTimeZone, parseDate } from '@internationalized/date';
+import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
+import { calendarDateValueToIsoYmd } from '@/lib/calendarDateValueToIsoYmd';
 import type { DateValue } from '@internationalized/date';
 import {
     AlertTriangle,
@@ -93,7 +94,7 @@ const props = defineProps<{
 }>();
 
 const sheetBridge = inject(orgChartSheetBridgeKey, null);
-const todayIsoDate = new Date().toISOString().slice(0, 10);
+const todayIsoDate = calendarDateValueToIsoYmd(today(getLocalTimeZone()));
 const todayCalendarDate = parseDate(todayIsoDate) as DateValue;
 
 const sheetDetailTab = ref<'units' | 'employees'>('units');
@@ -249,10 +250,6 @@ function onChildRowClick(childId: string): void {
     sheetBridge?.openNodeSheet(childId);
 }
 
-function dateValueToIsoDate(value: DateValue): string {
-    return value.toDate(getLocalTimeZone()).toISOString().slice(0, 10);
-}
-
 function calendarValueFromIsoDate(value: string): DateValue | undefined {
     if (value.trim() === '') {
         return undefined;
@@ -292,7 +289,7 @@ function onEmployeeEffectiveDateSelect(
         return;
     }
 
-    employeeEditDraft.value.effectiveDate = dateValueToIsoDate(
+    employeeEditDraft.value.effectiveDate = calendarDateValueToIsoYmd(
         value as DateValue,
     );
     close();
@@ -316,7 +313,7 @@ function onEmployeeRemoveEndDateSelect(
         return;
     }
 
-    employeeRemoveEndDate.value = dateValueToIsoDate(value as DateValue);
+    employeeRemoveEndDate.value = calendarDateValueToIsoYmd(value as DateValue);
     close();
 }
 
@@ -333,7 +330,7 @@ function seedEmployeeDraft(employee: OrgChartEmployeeRow): void {
               : '',
         isPrimary: Boolean(employee.is_primary),
         isHead: Boolean(employee.is_head),
-        effectiveDate: new Date().toISOString().slice(0, 10),
+        effectiveDate: calendarDateValueToIsoYmd(today(getLocalTimeZone())),
     };
 }
 

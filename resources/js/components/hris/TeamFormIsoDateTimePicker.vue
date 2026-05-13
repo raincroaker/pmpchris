@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date';
-import { parseDate } from '@internationalized/date';
+import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
+import { calendarDateValueToIsoYmd } from '@/lib/calendarDateValueToIsoYmd';
 import { Calendar as CalendarIcon, ChevronDown } from 'lucide-vue-next';
 import { computed, ref, useId } from 'vue';
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,7 @@ const calendarValue = computed(() => {
         return parseDate(d);
     }
 
-    return parseDate(new Date().toISOString().slice(0, 10));
+    return parseDate(calendarDateValueToIsoYmd(today(getLocalTimeZone())));
 });
 
 const timeModel = computed({
@@ -48,7 +49,7 @@ const timeModel = computed({
     set(v: string) {
         const datePart =
             modelValue.value.split('T')[0] ||
-            new Date().toISOString().slice(0, 10);
+            calendarDateValueToIsoYmd(today(getLocalTimeZone()));
         modelValue.value = `${datePart}T${v}`;
     },
 });

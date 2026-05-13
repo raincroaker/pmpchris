@@ -174,12 +174,4 @@ class Organization extends Model
     {
         return $this->hasMany(EmployeeOvertime::class);
     }
-
-    /**
-     * @return HasMany<EmployeeAttendanceDay, $this>
-     */
-    public function employeeAttendanceDays(): HasMany
-    {
-        return $this->hasMany(EmployeeAttendanceDay::class);
-    }
 }

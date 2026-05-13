@@ -36,6 +36,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { appToast } from '@/lib/app-toast-client';
+import { calendarDateValueToIsoYmd } from '@/lib/calendarDateValueToIsoYmd';
 import { formatCalendarTriggerFromDate } from '@/lib/formatCalendarTriggerDate';
 import { cn } from '@/lib/utils';
 import type {
@@ -97,11 +98,7 @@ const affiliationRootsByGroup = computed(() => {
 
 const todayLocal = computed(() => today(getLocalTimeZone()));
 
-const todayIsoDate = computed(() => dateValueToIsoDate(todayLocal.value));
-
-function dateValueToIsoDate(value: DateValue): string {
-    return value.toDate(getLocalTimeZone()).toISOString().slice(0, 10);
-}
+const todayIsoDate = computed(() => calendarDateValueToIsoYmd(todayLocal.value));
 
 function isoToCalendarValue(iso: string): DateValue | undefined {
     const t = iso.trim().slice(0, 10);
@@ -239,7 +236,7 @@ function onAffiliationStart(
 
         return;
     }
-    row.startDate = dateValueToIsoDate(value as DateValue);
+    row.startDate = calendarDateValueToIsoYmd(value as DateValue);
     if (row.endDate !== '' && row.endDate < row.startDate) {
         row.endDate = '';
     }
@@ -267,7 +264,7 @@ function onAffiliationEnd(
 
         return;
     }
-    row.endDate = dateValueToIsoDate(value as DateValue);
+    row.endDate = calendarDateValueToIsoYmd(value as DateValue);
     close();
 }
 
@@ -478,8 +475,10 @@ function submit(): void {
                         >
                             <div class="space-y-1">
                                 <p class="text-xs text-muted-foreground">
-                                    At least one primary and one active
-                                    (open-ended) affiliation is required.
+                                    Branch or org-wide roots for this employment.
+                                    Exactly one row must be primary; end dates are
+                                    optional and must be on or after each row’s
+                                    start (and on or after hire).
                                 </p>
                                 <p
                                     v-if="

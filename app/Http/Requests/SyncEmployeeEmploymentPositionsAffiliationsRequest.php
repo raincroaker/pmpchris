@@ -146,7 +146,6 @@ class SyncEmployeeEmploymentPositionsAffiliationsRequest extends FormRequest
             }
 
             $hasPrimaryPosition = false;
-            $hasActivePosition = false;
 
             foreach ($positions as $index => $position) {
                 if (! is_array($position)) {
@@ -163,7 +162,6 @@ class SyncEmployeeEmploymentPositionsAffiliationsRequest extends FormRequest
                 if (
                     is_string($startRaw) && $startRaw !== ''
                     && ($endRaw === null || $endRaw === '')) {
-                    $hasActivePosition = true;
 
                     try {
                         $startC = Carbon::parse($startRaw)->startOfDay();
@@ -207,20 +205,12 @@ class SyncEmployeeEmploymentPositionsAffiliationsRequest extends FormRequest
                 );
             }
 
-            if (! $hasActivePosition) {
-                $validator->errors()->add(
-                    'positions',
-                    'At least one active position assignment is required.',
-                );
-            }
-
             $affiliations = $this->input('affiliations', []);
             if (! is_array($affiliations)) {
                 return;
             }
 
             $hasPrimaryAffiliation = false;
-            $hasActiveAffiliation = false;
 
             foreach ($affiliations as $index => $affiliation) {
                 if (! is_array($affiliation)) {
@@ -256,7 +246,6 @@ class SyncEmployeeEmploymentPositionsAffiliationsRequest extends FormRequest
                 if (
                     is_string($startRaw) && $startRaw !== ''
                     && ($endRaw === null || $endRaw === '')) {
-                    $hasActiveAffiliation = true;
 
                     try {
                         $startC = Carbon::parse($startRaw)->startOfDay();
@@ -297,13 +286,6 @@ class SyncEmployeeEmploymentPositionsAffiliationsRequest extends FormRequest
                 $validator->errors()->add(
                     'affiliations',
                     'At least one affiliation must be marked as primary.',
-                );
-            }
-
-            if (! $hasActiveAffiliation) {
-                $validator->errors()->add(
-                    'affiliations',
-                    'At least one active affiliation is required.',
                 );
             }
         });

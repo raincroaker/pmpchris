@@ -25,8 +25,6 @@ test('authenticated users can visit the dashboard', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Dashboard')
             ->has('kpis')
-            ->has('attendance.rows')
-            ->has('attendance.stats')
             ->has('upcomingEvents')
             ->has('todayFocus')
             ->has('meta.updated_at'));

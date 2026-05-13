@@ -1,25 +1,21 @@
 <?php
 
+use App\Models\OrganizationalUnit;
 use App\Models\User;
-use Database\Seeders\DemoCooperativeSeeder;
-use Database\Seeders\DevelopmentUserSeeder;
-use Database\Seeders\HolidayTypesSeeder;
-use Database\Seeders\OrganizationalStructureSeeder;
-use Database\Seeders\OrganizationHolidaysSeeder;
+use App\Services\BranchContextService;
+use Database\Seeders\PhaseOneInitialSystemSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 test('calendar organization holidays index returns filtered rows', function (): void {
-    (new OrganizationalStructureSeeder)->run();
-    (new DemoCooperativeSeeder)->run();
-    (new DevelopmentUserSeeder)->run();
-    (new HolidayTypesSeeder)->run();
-    (new OrganizationHolidaysSeeder)->run();
+    (new PhaseOneInitialSystemSeeder)->run();
 
-    $user = User::query()->where('email', 'superadmin@example.com')->firstOrFail();
+    $user = User::query()->where('email', 'superadmin@hrnexus.com')->firstOrFail();
+    $panabo = OrganizationalUnit::query()->where('code', 'PAN')->firstOrFail();
 
     $response = $this->actingAs($user)
+        ->withSession([BranchContextService::SESSION_BRANCH_ID => $panabo->id])
         ->getJson(route('calendar.organization-holidays.index', [
             'month' => '2026-04',
             'range' => 'custom',

@@ -7,7 +7,6 @@ use Database\Factories\WorkScheduleTemplateFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkScheduleTemplate extends Model
@@ -79,14 +78,6 @@ class WorkScheduleTemplate extends Model
     public function updatedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by_user_id');
-    }
-
-    /**
-     * @return HasMany<EmployeeAttendanceDay, $this>
-     */
-    public function employeeAttendanceDays(): HasMany
-    {
-        return $this->hasMany(EmployeeAttendanceDay::class);
     }
 
     /**

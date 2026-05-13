@@ -12,11 +12,11 @@ class PhaseEightCompanyCalendarSeeder extends Seeder
     public function run(): void
     {
         $organizationId = (int) (DB::table('organizations')->where('code', 'PMPC')->value('id') ?? 0);
-        $kennethUserId = (int) (DB::table('users')->where('email', 'martinez.kenneth@hrnexus.com')->value('id') ?? 0);
+        $hrHeadUserId = (int) (DB::table('users')->where('email', 'hrhead@hrnexus.com')->value('id') ?? 0);
 
-        if ($organizationId <= 0 || $kennethUserId <= 0) {
+        if ($organizationId <= 0 || $hrHeadUserId <= 0) {
             throw new RuntimeException(
-                'PhaseEightCompanyCalendarSeeder prerequisites missing: ensure organization code PMPC and Kenneth user exist.'
+                'PhaseEightCompanyCalendarSeeder prerequisites missing: ensure organization code PMPC and HR head user exist.'
             );
         }
 
@@ -51,8 +51,8 @@ class PhaseEightCompanyCalendarSeeder extends Seeder
                     'details' => $row['details'],
                     'recurrence' => null,
                     'recurrence_exceptions' => null,
-                    'set_by_user_id' => $kennethUserId,
-                    'last_edited_by_user_id' => $kennethUserId,
+                    'set_by_user_id' => $hrHeadUserId,
+                    'last_edited_by_user_id' => $hrHeadUserId,
                     'created_at' => $row['set_up_at'],
                     'updated_at' => $row['set_up_at'],
                     'deleted_at' => null,

@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { appToast } from '@/lib/app-toast-client';
+import { calendarDateValueToIsoYmd } from '@/lib/calendarDateValueToIsoYmd';
 import { formatCalendarTriggerFromDate } from '@/lib/formatCalendarTriggerDate';
 import { cn } from '@/lib/utils';
 import type { AboutMeWorkPayload } from '@/pages/Employees/aboutMeWorkTypes';
@@ -78,11 +79,7 @@ const pickerPositions = computed(
 
 const todayLocal = computed(() => today(getLocalTimeZone()));
 
-const todayIsoDate = computed(() => dateValueToIsoDate(todayLocal.value));
-
-function dateValueToIsoDate(value: DateValue): string {
-    return value.toDate(getLocalTimeZone()).toISOString().slice(0, 10);
-}
+const todayIsoDate = computed(() => calendarDateValueToIsoYmd(todayLocal.value));
 
 function isoToCalendarValue(iso: string): DateValue | undefined {
     const t = iso.trim().slice(0, 10);
@@ -220,7 +217,7 @@ function onPositionStart(
 
         return;
     }
-    row.startDate = dateValueToIsoDate(value as DateValue);
+    row.startDate = calendarDateValueToIsoYmd(value as DateValue);
     if (row.endDate !== '' && row.endDate < row.startDate) {
         row.endDate = '';
     }
@@ -244,7 +241,7 @@ function onPositionEnd(index: number, value: unknown, close: () => void): void {
 
         return;
     }
-    row.endDate = dateValueToIsoDate(value as DateValue);
+    row.endDate = calendarDateValueToIsoYmd(value as DateValue);
     close();
 }
 
@@ -430,9 +427,10 @@ function submit(): void {
                         >
                             <div class="space-y-1">
                                 <p class="text-xs text-muted-foreground">
-                                    Mapped to HR reporting roles — at least one
-                                    primary and one active (open-ended) row is
-                                    required.
+                                    Catalog-linked titles for this employment.
+                                    Exactly one row must be primary; end dates are
+                                    optional and must be on or after each row’s
+                                    start (and on or after hire).
                                 </p>
                                 <p
                                     v-if="

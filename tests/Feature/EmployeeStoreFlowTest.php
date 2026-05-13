@@ -2,6 +2,7 @@
 
 use App\Models\BranchManager;
 use App\Models\Employee;
+use App\Models\EmployeeAddress;
 use App\Models\EmployeeAffiliation;
 use App\Models\EmployeeEmployment;
 use App\Models\Organization;
@@ -201,7 +202,8 @@ test('hr manager can create employee only on managed root', function () {
     $this->actingAs($manager)
         ->withSession([BranchContextService::SESSION_BRANCH_ID => $root->id])
         ->post(route('employees.store'), employeePayload($root->id))
-        ->assertRedirect(route('employees'));
+        ->assertRedirect(route('employees'))
+        ->assertSessionHas('success', 'Employee created successfully.');
 
     $employee = Employee::query()->firstOrFail();
     expect($employee->currentEmployment?->employment_status)->toBe('active');
@@ -723,4 +725,60 @@ test('store employee without user account creates employee only', function () {
 
     $employee = Employee::query()->firstOrFail();
     expect($employee->user()->exists())->toBeFalse();
+});
+
+test('store employee with empty addresses array creates no employee addresses', function () {
+    $organization = Organization::factory()->create(['code' => 'T-EMP-0-ADDR', 'is_active' => true]);
+    config(['hris.default_organization_code' => 'T-EMP-0-ADDR']);
+
+    $root = createRootForOrg($organization);
+    $admin = User::factory()->withRoles(Role::CODE_SUPER_ADMIN)->create();
+
+    $payload = employeePayload(null);
+    $payload['addresses'] = [];
+
+    $this->actingAs($admin)
+        ->withSession([BranchContextService::SESSION_BRANCH_ID => $root->id])
+        ->post(route('employees.store'), $payload)
+        ->assertRedirect(route('employees'));
+
+    $employee = Employee::query()->firstOrFail();
+    expect(EmployeeAddress::query()->where('employee_id', $employee->id)->count())->toBe(0);
+});
+
+test('store employee allows null civil status and nationality', function () {
+    $organization = Organization::factory()->create(['code' => 'T-EMP-NULL-DEMO', 'is_active' => true]);
+    config(['hris.default_organization_code' => 'T-EMP-NULL-DEMO']);
+
+    $root = createRootForOrg($organization);
+    $admin = User::factory()->withRoles(Role::CODE_SUPER_ADMIN)->create();
+
+    $payload = employeePayload(null);
+    $payload['personal_info']['civil_status'] = null;
+    $payload['personal_info']['nationality'] = null;
+
+    $this->actingAs($admin)
+        ->withSession([BranchContextService::SESSION_BRANCH_ID => $root->id])
+        ->post(route('employees.store'), $payload)
+        ->assertRedirect(route('employees'));
+
+    $employee = Employee::query()->firstOrFail();
+    expect($employee->civil_status)->toBeNull()
+        ->and($employee->nationality)->toBeNull();
+});
+
+test('store employee rejects invalid civil status when provided', function () {
+    $organization = Organization::factory()->create(['code' => 'T-EMP-BAD-CIV', 'is_active' => true]);
+    config(['hris.default_organization_code' => 'T-EMP-BAD-CIV']);
+
+    $root = createRootForOrg($organization);
+    $admin = User::factory()->withRoles(Role::CODE_SUPER_ADMIN)->create();
+
+    $payload = employeePayload(null);
+    $payload['personal_info']['civil_status'] = 'Not a real status';
+
+    $this->actingAs($admin)
+        ->withSession([BranchContextService::SESSION_BRANCH_ID => $root->id])
+        ->post(route('employees.store'), $payload)
+        ->assertSessionHasErrors(['personal_info.civil_status']);
 });

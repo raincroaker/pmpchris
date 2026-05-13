@@ -2,20 +2,15 @@
 
 use App\Http\Controllers\ActivateOrganizationChartUnitController;
 use App\Http\Controllers\AdminUsersIndexController;
-use App\Http\Controllers\AttendanceMyController;
-use App\Http\Controllers\AttendanceTeamController;
 use App\Http\Controllers\BranchCalendarController;
 use App\Http\Controllers\BranchCalendarEventsIndexController;
 use App\Http\Controllers\BranchContextController;
-use App\Http\Controllers\ChatController;
-use App\Http\Controllers\ChatRoomMessagesIndexController;
 use App\Http\Controllers\CheckAdminUserFieldAvailabilityController;
 use App\Http\Controllers\CheckEmployeeFieldAvailabilityController;
 use App\Http\Controllers\CheckOrganizationChartUnitCodeAvailabilityController;
 use App\Http\Controllers\CheckPositionCodeAvailabilityController;
 use App\Http\Controllers\CompanyCalendarController;
 use App\Http\Controllers\CompanyCalendarEventsIndexController;
-use App\Http\Controllers\CompanyDocumentsIndexController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeactivateOrganizationChartEditUnitTypeController;
 use App\Http\Controllers\DeactivateOrganizationChartUnitController;
@@ -24,8 +19,6 @@ use App\Http\Controllers\DeleteOrganizationChartEmployeeAssignmentController;
 use App\Http\Controllers\DestroyBranchCalendarEventController;
 use App\Http\Controllers\DestroyCalendarEventCategoryController;
 use App\Http\Controllers\DestroyCompanyCalendarEventController;
-use App\Http\Controllers\DestroyCompanyDocumentController;
-use App\Http\Controllers\DestroyCompanyDocumentFolderController;
 use App\Http\Controllers\DestroyEmployeeLeaveController;
 use App\Http\Controllers\DestroyEmployeeOvertimeController;
 use App\Http\Controllers\DestroyHolidayTypeController;
@@ -36,11 +29,8 @@ use App\Http\Controllers\DestroyOrganizationChartUnitController;
 use App\Http\Controllers\DestroyOrganizationHolidayController;
 use App\Http\Controllers\DestroyOvertimePolicyController;
 use App\Http\Controllers\DestroyPositionController;
-use App\Http\Controllers\DestroyTeamAttendanceDayController;
 use App\Http\Controllers\DestroyTeamCalendarEventController;
 use App\Http\Controllers\DestroyWorkScheduleTemplateController;
-use App\Http\Controllers\DownloadCompanyDocumentController;
-use App\Http\Controllers\DownloadDtrMockExcelController;
 use App\Http\Controllers\EmployeesAboutMeController;
 use App\Http\Controllers\EmployeesCreateController;
 use App\Http\Controllers\EmployeesEmploymentHistoryController;
@@ -53,7 +43,6 @@ use App\Http\Controllers\IndexTeamHrOrganizationHolidayRulesController;
 use App\Http\Controllers\LeaveMyController;
 use App\Http\Controllers\LeavePoliciesController;
 use App\Http\Controllers\LeaveTeamController;
-use App\Http\Controllers\MarkUnitChatRoomReadController;
 use App\Http\Controllers\OrganizationChartController;
 use App\Http\Controllers\OrganizationChartEditController;
 use App\Http\Controllers\OrganizationHolidaysIndexController;
@@ -62,7 +51,6 @@ use App\Http\Controllers\OvertimePoliciesController;
 use App\Http\Controllers\OvertimeTeamController;
 use App\Http\Controllers\PositionsIndexController;
 use App\Http\Controllers\PositionsJobHistoryController;
-use App\Http\Controllers\PreviewCompanyDocumentController;
 use App\Http\Controllers\ScheduleAssignmentController;
 use App\Http\Controllers\SearchOrganizationChartEmployeesController;
 use App\Http\Controllers\SearchTeamHrDecisionMakerEmployeesController;
@@ -72,8 +60,6 @@ use App\Http\Controllers\ShowPositionEmployeesController;
 use App\Http\Controllers\StoreBranchCalendarEventController;
 use App\Http\Controllers\StoreCalendarEventCategoryController;
 use App\Http\Controllers\StoreCompanyCalendarEventController;
-use App\Http\Controllers\StoreCompanyDocumentController;
-use App\Http\Controllers\StoreCompanyDocumentFolderController;
 use App\Http\Controllers\StoreEmployeeController;
 use App\Http\Controllers\StoreEmployeeLeaveController;
 use App\Http\Controllers\StoreEmployeeOvertimeController;
@@ -86,9 +72,7 @@ use App\Http\Controllers\StoreOrganizationChartUnitTypeController;
 use App\Http\Controllers\StoreOrganizationHolidayController;
 use App\Http\Controllers\StoreOvertimePolicyController;
 use App\Http\Controllers\StorePositionController;
-use App\Http\Controllers\StoreTeamAttendanceDayController;
 use App\Http\Controllers\StoreTeamCalendarEventController;
-use App\Http\Controllers\StoreUnitChatMessageController;
 use App\Http\Controllers\StoreWorkScheduleTemplateController;
 use App\Http\Controllers\SyncEmployeeAboutMeAddressesController;
 use App\Http\Controllers\SyncEmployeeAboutMeContactsController;
@@ -102,9 +86,6 @@ use App\Http\Controllers\UpdateAdminUserController;
 use App\Http\Controllers\UpdateBranchCalendarEventController;
 use App\Http\Controllers\UpdateCalendarEventCategoryController;
 use App\Http\Controllers\UpdateCompanyCalendarEventController;
-use App\Http\Controllers\UpdateCompanyDocumentController;
-use App\Http\Controllers\UpdateCompanyDocumentFolderController;
-use App\Http\Controllers\UpdateCompanyDocumentInternalMetadataController;
 use App\Http\Controllers\UpdateEmployeeAboutMeBasicsController;
 use App\Http\Controllers\UpdateEmployeeAboutMeDemographicsController;
 use App\Http\Controllers\UpdateEmployeeEmploymentDatesController;
@@ -120,7 +101,6 @@ use App\Http\Controllers\UpdateOrganizationChartUnitTypeController;
 use App\Http\Controllers\UpdateOrganizationHolidayController;
 use App\Http\Controllers\UpdateOvertimePolicyController;
 use App\Http\Controllers\UpdatePositionController;
-use App\Http\Controllers\UpdateTeamAttendanceDayController;
 use App\Http\Controllers\UpdateTeamCalendarEventController;
 use App\Http\Controllers\UpdateWorkScheduleTemplateController;
 use App\Http\Controllers\WorkSchedulesController;
@@ -135,13 +115,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified', 'branch.selected'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
-    Route::get('chat', ChatController::class)->name('chat');
-    Route::get('chat/rooms/{room}/messages', ChatRoomMessagesIndexController::class)->name('chat.messages.index');
-    Route::post('chat/rooms/{room}/messages', StoreUnitChatMessageController::class)->name('chat.messages.store');
-    Route::post('chat/rooms/{room}/read', MarkUnitChatRoomReadController::class)->name('chat.read.store');
 
     Route::redirect('calendar', '/calendar/company');
-    Route::redirect('attendance', '/attendance/my');
+    Route::redirect('attendance', '/attendance/employee-schedules');
     Route::redirect('leave', '/leave/my');
     Route::redirect('overtime', '/overtime/my');
     Route::redirect('leave/request', '/leave/my');
@@ -285,9 +261,6 @@ Route::middleware(['auth', 'verified', 'branch.selected'])->group(function () {
         Route::delete('positions/{position}', DestroyPositionController::class)->name('positions.destroy');
     });
 
-    Route::get('attendance/my', AttendanceMyController::class)->name('attendance.my');
-    Route::get('attendance/reports/dtr-mock-sample', DownloadDtrMockExcelController::class)
-        ->name('attendance.reports.dtr-mock-sample');
     Route::permanentRedirect('attendance/schedule-assignment', '/attendance/employee-schedules');
 
     Route::get('attendance/shifts', WorkSchedulesController::class)->name('attendance.shifts');
@@ -318,13 +291,6 @@ Route::middleware(['auth', 'verified', 'branch.selected'])->group(function () {
     Route::delete('overtime/policies/{overtimePolicy}', DestroyOvertimePolicyController::class)->name('overtime.policies.destroy');
 
     Route::middleware('employee.team.hr.leave-overtime')->group(function (): void {
-        Route::get('attendance/team', AttendanceTeamController::class)->name('attendance.team');
-        Route::post('attendance/team/attendance-days', StoreTeamAttendanceDayController::class)
-            ->name('attendance.team.attendance-days.store');
-        Route::patch('attendance/team/attendance-days/{employeeAttendanceDay}', UpdateTeamAttendanceDayController::class)
-            ->name('attendance.team.attendance-days.update');
-        Route::delete('attendance/team/attendance-days/{employeeAttendanceDay}', DestroyTeamAttendanceDayController::class)
-            ->name('attendance.team.attendance-days.destroy');
         Route::get('leave/team', LeaveTeamController::class)->name('leave.team');
         Route::post('leave/team/employee-leaves', StoreEmployeeLeaveController::class)
             ->name('leave.team.employee-leaves.store');
@@ -356,32 +322,6 @@ Route::middleware(['auth', 'verified', 'branch.selected'])->group(function () {
         Route::get('team-hr/overtime-usage-summary', TeamHrEmployeeOvertimeUsageSummaryController::class)
             ->name('team-hr.overtime-usage-summary.index');
     });
-
-    Route::inertia('documents/my', 'Documents/My')->name('documents.my');
-    Route::inertia('documents/team', 'Documents/Team')->name('documents.team');
-    Route::inertia('documents/branch', 'Documents/Branch')->name('documents.branch');
-    Route::inertia('documents/company', 'Documents/Company')->name('documents.company');
-    Route::get('documents/company/items', CompanyDocumentsIndexController::class)
-        ->name('documents.company.items.index');
-    Route::post('documents/company/folders', StoreCompanyDocumentFolderController::class)
-        ->name('documents.company.folders.store');
-    Route::patch('documents/company/folders/{companyDocumentFolder}', UpdateCompanyDocumentFolderController::class)
-        ->name('documents.company.folders.update');
-    Route::delete('documents/company/folders/{companyDocumentFolder}', DestroyCompanyDocumentFolderController::class)
-        ->name('documents.company.folders.destroy');
-    Route::post('documents/company/files', StoreCompanyDocumentController::class)
-        ->name('documents.company.files.store');
-    Route::patch('documents/company/files/{companyDocument}', UpdateCompanyDocumentController::class)
-        ->name('documents.company.files.update');
-    Route::patch('documents/company/files/{companyDocument}/internal-metadata', UpdateCompanyDocumentInternalMetadataController::class)
-        ->name('documents.company.files.internal-metadata.update');
-    Route::delete('documents/company/files/{companyDocument}', DestroyCompanyDocumentController::class)
-        ->name('documents.company.files.destroy');
-    Route::get('documents/company/files/{companyDocument}/download', DownloadCompanyDocumentController::class)
-        ->name('documents.company.files.download');
-    Route::get('documents/company/files/{companyDocument}/preview', PreviewCompanyDocumentController::class)
-        ->name('documents.company.files.preview');
-    Route::inertia('documents/trash', 'Documents/Trash')->name('documents.trash');
 
     Route::middleware(['non.employee', 'administration.access'])->group(function () {
         Route::get('admin/users', AdminUsersIndexController::class)->name('admin.users');

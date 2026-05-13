@@ -14,8 +14,8 @@ class DemoCooperativeSeeder extends Seeder
     /**
      * Local demo org: Panabo Multipurpose Cooperative (PMPC).
      * Lean branch footprint: two roots (PAN, TAG) under Davao del Norte.
-     * PAN has IT + HR (Interns, Talent Acquisition), TAG has HR (Employee Relations).
-     * Job-title positions are seeded as an organization-scoped catalog.
+     * PAN has Human Resources (Interns, Talent Acquisition); TAG has HR (Employee Relations).
+     * Position catalog is HR Admin + Intern (titles for future hires only; no intern employees in dev seed).
      */
     public function run(): void
     {
@@ -57,9 +57,8 @@ class DemoCooperativeSeeder extends Seeder
             $departmentType->id,
             $sectionType->id,
             'PAN',
-            ['Information Technology', 'Human Resources'],
+            ['Human Resources'],
             [
-                'Information Technology' => [],
                 'Human Resources' => ['Interns', 'Talent Acquisition'],
             ],
         );
@@ -168,16 +167,8 @@ class DemoCooperativeSeeder extends Seeder
     private function seedPositionCatalog(Organization $organization): void
     {
         $positionCatalog = [
-            ['code' => 'HR-MGR', 'title' => 'HR Manager', 'description' => 'Leads HR operations, policy implementation, and workforce planning.'],
-            ['code' => 'HR-SPEC', 'title' => 'HR Specialist', 'description' => 'Handles recruitment, onboarding, and employee records.'],
-            ['code' => 'PAYROLL-OFF', 'title' => 'Payroll Officer', 'description' => 'Processes payroll cycles and statutory contributions.'],
-            ['code' => 'LOAN-OFC', 'title' => 'Loan Officer', 'description' => 'Manages member loan applications and client interviews.'],
-            ['code' => 'CREDIT-ANL', 'title' => 'Credit Analyst', 'description' => 'Evaluates repayment capacity and credit risk.'],
-            ['code' => 'MEMBER-SVC', 'title' => 'Member Services Representative', 'description' => 'Supports member concerns and account inquiries.'],
-            ['code' => 'BR-OPS-SUP', 'title' => 'Branch Operations Supervisor', 'description' => 'Oversees daily branch operations and service delivery.'],
-            ['code' => 'TELLER', 'title' => 'Teller', 'description' => 'Handles over-the-counter transactions and cash balancing.'],
-            ['code' => 'IT-SUP', 'title' => 'IT Support Specialist', 'description' => 'Provides user support and endpoint maintenance.'],
-            ['code' => 'COMPLIANCE-OFF', 'title' => 'Compliance Officer', 'description' => 'Monitors policy adherence and regulatory compliance.'],
+            ['code' => 'HR-ADM', 'title' => 'HR Admin', 'description' => 'Human resources administration and records.'],
+            ['code' => 'INTERN', 'title' => 'Intern', 'description' => 'Entry-level internship (catalog for future hires).'],
         ];
 
         foreach ($positionCatalog as $row) {

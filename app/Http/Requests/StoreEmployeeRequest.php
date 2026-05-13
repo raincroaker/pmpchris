@@ -6,6 +6,7 @@ use App\Models\EmployeeEmployment;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\BranchContextService;
+use App\Support\EmployeeDemographicsFormOptions;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
@@ -17,8 +18,23 @@ class StoreEmployeeRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
+        $addresses = $this->input('addresses');
+        $personalInfo = $this->input('personal_info', []);
+        if (! is_array($personalInfo)) {
+            $personalInfo = [];
+        }
+
+        foreach (['civil_status', 'nationality', 'religion'] as $key) {
+            $raw = $personalInfo[$key] ?? null;
+            if ($raw === '' || (is_string($raw) && trim($raw) === '')) {
+                $personalInfo[$key] = null;
+            }
+        }
+
         $this->merge([
             'create_user_account' => $this->boolean('create_user_account'),
+            'addresses' => is_array($addresses) ? $addresses : [],
+            'personal_info' => $personalInfo,
         ]);
     }
 
@@ -46,9 +62,9 @@ class StoreEmployeeRequest extends FormRequest
             'personal_info.middle_name' => ['nullable', 'string', 'max:100'],
             'personal_info.suffix' => ['nullable', 'string', 'max:20'],
             'personal_info.birthdate' => ['required', 'date'],
-            'personal_info.sex' => ['required', 'string', 'max:20'],
-            'personal_info.civil_status' => ['required', 'string', 'max:30'],
-            'personal_info.nationality' => ['required', 'string', 'max:50'],
+            'personal_info.sex' => ['required', 'string', Rule::in(EmployeeDemographicsFormOptions::SEX_OPTIONS)],
+            'personal_info.civil_status' => ['nullable', 'string', Rule::in(EmployeeDemographicsFormOptions::CIVIL_STATUS_OPTIONS)],
+            'personal_info.nationality' => ['nullable', 'string', Rule::in(EmployeeDemographicsFormOptions::NATIONALITY_OPTIONS)],
             'personal_info.religion' => ['nullable', 'string', 'max:100'],
 
             'employment' => ['required', 'array'],
@@ -70,7 +86,7 @@ class StoreEmployeeRequest extends FormRequest
             'employment.positions.*.end_date' => ['nullable', 'date', 'after_or_equal:employment.hire_date', 'after_or_equal:employment.positions.*.start_date'],
             'employment.positions.*.is_primary' => ['required', 'boolean'],
 
-            'addresses' => ['required', 'array', 'min:1'],
+            'addresses' => ['array'],
             'addresses.*.type' => ['required', Rule::in(['current', 'permanent'])],
             'addresses.*.address_line_1' => ['required', 'string', 'max:255'],
             'addresses.*.address_line_2' => ['nullable', 'string', 'max:255'],

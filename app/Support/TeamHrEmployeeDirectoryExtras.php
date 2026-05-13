@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Http\Controllers\ScheduleAssignmentController;
 use App\Models\Employee;
-use App\Models\EmployeeAttendanceDay;
 use App\Models\EmployeePosition;
 use App\Models\OrganizationalUnit;
 
@@ -96,51 +95,6 @@ final class TeamHrEmployeeDirectoryExtras
                             $q2->whereNull('end_date')
                                 ->orWhereDate('end_date', '>=', $today);
                         });
-                },
-            ]);
-        };
-    }
-
-    /**
-     * Same as {@see eagerLoadEmployeeForPresenters} plus {@see EmployeeAssignment::$organizationalUnit}
-     * for team attendance rows when {@see EmployeeAttendanceDay::$organizational_unit_id} is null.
-     *
-     * @return \Closure(object): void
-     */
-    public static function eagerLoadEmployeeForAttendancePresenters(string $today): \Closure
-    {
-        return function ($query) use ($today): void {
-            $query->with([
-                'user:id,employee_id,avatar_path',
-                'positions' => function ($q) use ($today): void {
-                    $q->whereNull('deleted_at')
-                        ->where(function ($q2) use ($today): void {
-                            $q2->whereNull('end_date')
-                                ->orWhereDate('end_date', '>=', $today);
-                        })
-                        ->with(['position' => function ($q3): void {
-                            $q3->select(['positions.id', 'positions.code', 'positions.title']);
-                        }])
-                        ->orderByDesc('is_primary')
-                        ->orderBy('id');
-                },
-                'assignments' => function ($q) use ($today): void {
-                    $q->whereNull('deleted_at')
-                        ->where(function ($q2) use ($today): void {
-                            $q2->whereNull('end_date')
-                                ->orWhereDate('end_date', '>=', $today);
-                        })
-                        ->with([
-                            'organizationalUnit' => function ($ou): void {
-                                $ou->select([
-                                    'organizational_units.id',
-                                    'organizational_units.code',
-                                    'organizational_units.name',
-                                    'organizational_units.organization_id',
-                                    'organizational_units.unit_type_id',
-                                ])->with(['unitType:id,name,color']);
-                            },
-                        ]);
                 },
             ]);
         };

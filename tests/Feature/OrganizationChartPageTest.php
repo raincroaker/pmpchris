@@ -217,7 +217,7 @@ test('organization chart supports active and all unit visibility modes', functio
     (new DemoCooperativeSeeder)->run();
 
     $panabo = OrganizationalUnit::query()->where('code', 'PAN')->whereNull('parent_id')->firstOrFail();
-    $inactiveUnit = OrganizationalUnit::query()->where('code', 'PAN-D2-S1')->firstOrFail();
+    $inactiveUnit = OrganizationalUnit::query()->where('code', 'PAN-D1-S1')->firstOrFail();
     $inactiveUnit->is_active = false;
     $inactiveUnit->save();
 

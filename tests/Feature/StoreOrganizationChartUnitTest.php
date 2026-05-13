@@ -136,7 +136,7 @@ test('create unit rejects duplicate code within organization', function () {
             'node_id' => 'unit-'.$panaboDepartment->id,
             'unit_type_name' => 'Section',
             'name' => 'Duplicate Code Section',
-            'code' => 'PAN-D2-S1',
+            'code' => 'PAN-D1-S1',
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['code']);

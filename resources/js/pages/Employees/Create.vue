@@ -16,6 +16,7 @@ import {
     Info,
     KeyRound,
     LifeBuoy,
+    Loader2,
     MapPin,
     Minus,
     Phone,
@@ -65,6 +66,7 @@ import {
 import { useInitials } from '@/composables/useInitials';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { appToast } from '@/lib/app-toast-client';
+import { calendarDateValueToIsoYmd } from '@/lib/calendarDateValueToIsoYmd';
 import { formatCalendarTriggerFromDate } from '@/lib/formatCalendarTriggerDate';
 import { cn } from '@/lib/utils';
 import {
@@ -152,6 +154,9 @@ const {
 } = toRefs(props);
 
 const currentStep = ref(1);
+
+/** True while `POST /employees` is in flight — blocks duplicate submits and step navigation. */
+const isSavingEmployee = ref(false);
 
 const suffixOptions = ['Jr.', 'Sr.', 'II', 'III', 'IV', 'V'] as const;
 
@@ -420,6 +425,7 @@ void permanentAddressType;
 const currentAddressType = 'current' as const;
 void currentAddressType;
 
+/** Permanent address is optional; only included in the store payload when this panel is open. */
 const showPermanentAddress = ref(false);
 
 /** Step 2 optional panels; when open, fields are required to proceed (see `stepTwo*` validation). */
@@ -572,9 +578,9 @@ function setPrimaryEmployeePosition(index: number, checked: unknown): void {
     });
 }
 
-/** Serialize calendar value to `Y-m-d` for `employee_positions.start_date` / `end_date`. */
+/** Serialize calendar value to `Y-m-d` (timezone-safe; see {@link calendarDateValueToIsoYmd}). */
 function dateValueToIsoDate(value: DateValue): string {
-    return value.toDate(getLocalTimeZone()).toISOString().slice(0, 10);
+    return calendarDateValueToIsoYmd(value);
 }
 
 /** Compare ISO `Y-m-d` strings (lexicographic order matches calendar order). */
@@ -788,19 +794,6 @@ function clearEmployeePositionRowEnd(index: number): void {
     }
 }
 
-watch(
-    employeePositionRows,
-    () => {
-        const hasSeparation = employmentSeparationDate.value.trim() !== '';
-        employeePositionRows.forEach((row) => {
-            if (!hasSeparation && row.endDate.trim() !== '') {
-                row.isPrimary = false;
-            }
-        });
-    },
-    { deep: true },
-);
-
 /** Required company employee identifier → future `employees.id_number` on submit. */
 const employmentIdNumber = ref('');
 
@@ -861,12 +854,85 @@ const employmentNotes = ref('');
 /** → `employee_employments.employment_status` */
 const employmentStatus = ref<(typeof employmentStatusValues)[number]>('active');
 
+/**
+ * Keeps a single primary position when rows change. With no employment separation, primary
+ * must sit on a still-open span when one exists (avoids deadlock when an ended row was primary).
+ */
+function ensureEmployeePositionPrimary(): void {
+    const hasSep = employmentSeparationDate.value.trim() !== '';
+    const rows = employeePositionRows;
+    const filledIndices: number[] = [];
+    const openIndices: number[] = [];
+    rows.forEach((row, i) => {
+        if (row.positionId !== '' && row.startDate.trim() !== '') {
+            filledIndices.push(i);
+            if (row.endDate.trim() === '') {
+                openIndices.push(i);
+            }
+        }
+    });
+    if (filledIndices.length === 0) {
+        rows.forEach((r) => {
+            r.isPrimary = false;
+        });
+
+        return;
+    }
+
+    const primaryIndices = rows
+        .map((r, i) => (r.isPrimary ? i : -1))
+        .filter((i) => i >= 0);
+
+    const pickPrimaryIndex = (): number => {
+        if (! hasSep && openIndices.length > 0) {
+            return openIndices[0]!;
+        }
+
+        return filledIndices[0]!;
+    };
+
+    if (primaryIndices.length === 0) {
+        rows.forEach((r) => {
+            r.isPrimary = false;
+        });
+        rows[pickPrimaryIndex()]!.isPrimary = true;
+
+        return;
+    }
+
+    if (primaryIndices.length > 1) {
+        const keep = primaryIndices[0]!;
+        rows.forEach((r, i) => {
+            r.isPrimary = i === keep;
+        });
+
+        return;
+    }
+
+    const only = primaryIndices[0]!;
+    const onlyRow = rows[only];
+    if (
+        onlyRow !== undefined &&
+        ! hasSep &&
+        onlyRow.endDate.trim() !== '' &&
+        openIndices.length > 0
+    ) {
+        rows.forEach((r) => {
+            r.isPrimary = false;
+        });
+        rows[openIndices[0]!]!.isPrimary = true;
+    }
+}
+
 watch(employmentSeparationDate, (value) => {
     const separationIso = value.trim();
     if (separationIso === '') {
         employmentStatus.value = 'active';
         employmentSeparationReason.value = '';
         employmentNotes.value = '';
+        ensureEmployeePositionPrimary();
+        ensureEmployeeAffiliationPrimary();
+
         return;
     }
 
@@ -894,7 +960,18 @@ watch(employmentSeparationDate, (value) => {
             row.endDate = separationIso;
         }
     });
+
+    ensureEmployeePositionPrimary();
+    ensureEmployeeAffiliationPrimary();
 });
+
+watch(
+    employeePositionRows,
+    () => {
+        ensureEmployeePositionPrimary();
+    },
+    { deep: true },
+);
 
 /** Upper bound for affiliation / position calendars when separation is set. */
 const employmentSeparationCalendarMax = computed((): DateValue | undefined =>
@@ -963,6 +1040,121 @@ function setPrimaryEmployeeAffiliation(index: number, checked: unknown): void {
         row.isPrimary = shouldBePrimary && rowIndex === index;
     });
 }
+
+/**
+ * Same primary invariant as {@link ensureEmployeePositionPrimary} for affiliation rows
+ * (filled = has start date).
+ */
+function ensureEmployeeAffiliationPrimary(): void {
+    const hasSep = employmentSeparationDate.value.trim() !== '';
+    const rows = employeeAffiliationRows;
+    const filledIndices: number[] = [];
+    const openIndices: number[] = [];
+    rows.forEach((row, i) => {
+        if (row.startDate.trim() !== '') {
+            filledIndices.push(i);
+            if (row.endDate.trim() === '') {
+                openIndices.push(i);
+            }
+        }
+    });
+    if (filledIndices.length === 0) {
+        rows.forEach((r) => {
+            r.isPrimary = false;
+        });
+
+        return;
+    }
+
+    const primaryIndices = rows
+        .map((r, i) => (r.isPrimary ? i : -1))
+        .filter((i) => i >= 0);
+
+    const pickPrimaryIndex = (): number => {
+        if (! hasSep && openIndices.length > 0) {
+            return openIndices[0]!;
+        }
+
+        return filledIndices[0]!;
+    };
+
+    if (primaryIndices.length === 0) {
+        rows.forEach((r) => {
+            r.isPrimary = false;
+        });
+        rows[pickPrimaryIndex()]!.isPrimary = true;
+
+        return;
+    }
+
+    if (primaryIndices.length > 1) {
+        const keep = primaryIndices[0]!;
+        rows.forEach((r, i) => {
+            r.isPrimary = i === keep;
+        });
+
+        return;
+    }
+
+    const only = primaryIndices[0]!;
+    const onlyRow = rows[only];
+    if (
+        onlyRow !== undefined &&
+        ! hasSep &&
+        onlyRow.endDate.trim() !== '' &&
+        openIndices.length > 0
+    ) {
+        rows.forEach((r) => {
+            r.isPrimary = false;
+        });
+        rows[openIndices[0]!]!.isPrimary = true;
+    }
+}
+
+watch(
+    employeeAffiliationRows,
+    () => {
+        ensureEmployeeAffiliationPrimary();
+    },
+    { deep: true },
+);
+
+/**
+ * When hire date is set or changed, align row start dates that are still empty or still matched
+ * the previous hire date (does not overwrite custom starts that differ from hire).
+ */
+watch(employmentHireDate, (newHire, oldHire) => {
+    const hire = newHire.trim();
+    if (hire === '') {
+        return;
+    }
+
+    const prev = oldHire.trim();
+
+    const shouldSyncRowStart = (start: string): boolean => {
+        const s = start.trim();
+        if (s === '') {
+            return true;
+        }
+
+        return prev !== '' && s === prev;
+    };
+
+    employeePositionRows.forEach((row) => {
+        if (shouldSyncRowStart(row.startDate)) {
+            row.startDate = hire;
+        }
+    });
+
+    employeeAffiliationRows.forEach((row) => {
+        if (shouldSyncRowStart(row.startDate)) {
+            row.startDate = hire;
+        }
+    });
+
+    ensureEmployeePositionPrimary();
+    ensureEmployeeAffiliationPrimary();
+});
 
 /** Calendar `model-value` from stored ISO date string for affiliation row dates. */
 function employeeAffiliationRowCalendarValue(
@@ -1223,19 +1415,6 @@ const affiliationRootsByGroup = computed(
     },
 );
 
-watch(
-    employeeAffiliationRows,
-    () => {
-        const hasSeparation = employmentSeparationDate.value.trim() !== '';
-        employeeAffiliationRows.forEach((row) => {
-            if (!hasSeparation && row.endDate.trim() !== '') {
-                row.isPrimary = false;
-            }
-        });
-    },
-    { deep: true },
-);
-
 const stepOneAttempted = ref(false);
 const birthdateDisplay = computed(() => {
     const selectedBirthdate = personalInfo.birthdate;
@@ -1318,6 +1497,40 @@ const canProceedStepOne = computed(() => {
         v.zipCode
     );
 });
+
+/** Expand step 1 permanent address when it failed validation but the panel was collapsed. */
+function expandStepOneIfPermanentAddressErrors(): void {
+    const v = stepOneFieldInvalid.value;
+    if (
+        v.addressLine1 ||
+        v.provinceCode ||
+        v.cityCode ||
+        v.barangayCode ||
+        v.zipCode
+    ) {
+        showPermanentAddress.value = true;
+    }
+}
+
+function expandStepTwoOptionalPanelsIfInvalid(): void {
+    const cur = stepTwoCurrentAddressInvalid.value;
+    if (
+        cur.addressLine1 ||
+        cur.provinceCode ||
+        cur.cityCode ||
+        cur.barangayCode ||
+        cur.zipCode
+    ) {
+        showCurrentAddress.value = true;
+    }
+    if (
+        stepTwoEmergencyContactRowInvalid.value.some(
+            (row) => row.contactPerson || row.relationship || row.contactNumber,
+        )
+    ) {
+        showEmergencyContacts.value = true;
+    }
+}
 
 const stepTwoPersonalContactRowInvalid = computed(
     (): { type: boolean; contactNumber: boolean }[] => {
@@ -2122,10 +2335,125 @@ function completeButtonTitle(): string {
     return 'Fill in all required fields to continue';
 }
 
+type StoreEmployeeAddressPayload = {
+    type: 'permanent' | 'current';
+    address_line_1: string;
+    address_line_2: string | null;
+    barangay: string;
+    barangay_code: string | null;
+    city: string;
+    city_code: string | null;
+    province: string;
+    province_code: string | null;
+    zip_code: string;
+    country: string;
+    is_primary: boolean;
+};
+
+/** Matches `StoreEmployeeRequest`: only rows the user opted into (open panels) are submitted. */
+function buildAddressesPayload(): StoreEmployeeAddressPayload[] {
+    const rows: StoreEmployeeAddressPayload[] = [];
+
+    if (showPermanentAddress.value) {
+        rows.push({
+            type: 'permanent',
+            address_line_1: permanentAddress.addressLine1.trim(),
+            address_line_2:
+                permanentAddress.addressLine2.trim() === ''
+                    ? null
+                    : permanentAddress.addressLine2.trim(),
+            barangay: permanentAddress.barangay,
+            barangay_code:
+                permanentAddress.barangayCode === ''
+                    ? null
+                    : permanentAddress.barangayCode,
+            city: permanentAddress.city,
+            city_code:
+                permanentAddress.cityCode === ''
+                    ? null
+                    : permanentAddress.cityCode,
+            province: permanentAddress.province,
+            province_code:
+                permanentAddress.provinceCode === ''
+                    ? null
+                    : permanentAddress.provinceCode,
+            zip_code: permanentAddress.zipCode.trim(),
+            country: permanentAddress.country,
+            is_primary: permanentAddress.isPrimary,
+        });
+    }
+
+    if (showCurrentAddress.value) {
+        rows.push({
+            type: 'current',
+            address_line_1: currentAddress.addressLine1.trim(),
+            address_line_2:
+                currentAddress.addressLine2.trim() === ''
+                    ? null
+                    : currentAddress.addressLine2.trim(),
+            barangay: currentAddress.barangay,
+            barangay_code:
+                currentAddress.barangayCode === ''
+                    ? null
+                    : currentAddress.barangayCode,
+            city: currentAddress.city,
+            city_code:
+                currentAddress.cityCode === ''
+                    ? null
+                    : currentAddress.cityCode,
+            province: currentAddress.province,
+            province_code:
+                currentAddress.provinceCode === ''
+                    ? null
+                    : currentAddress.provinceCode,
+            zip_code: currentAddress.zipCode.trim(),
+            country: currentAddress.country,
+            is_primary: currentAddress.isPrimary,
+        });
+    }
+
+    return rows;
+}
+
 function onWizardCompleteClick(): void {
+    stepOneAttempted.value = true;
+    stepTwoAttempted.value = true;
+    stepThreeAttempted.value = true;
+
+    if (!canProceedStepOne.value) {
+        expandStepOneIfPermanentAddressErrors();
+        currentStep.value = 1;
+        appToast.error(
+            'Step 1 still has required fields. Expand optional sections if they are incomplete.',
+        );
+
+        return;
+    }
+
+    if (!canProceedStepTwo.value) {
+        expandStepTwoOptionalPanelsIfInvalid();
+        currentStep.value = 2;
+        appToast.error(
+            'Step 2 still has required fields. Open optional sections if they apply.',
+        );
+
+        return;
+    }
+
+    if (!canProceedStepThree.value) {
+        currentStep.value = 3;
+        appToast.error('Step 3 still has required employment fields.');
+
+        return;
+    }
+
     if (!canCompleteStepFour.value) {
         stepFourAttempted.value = true;
 
+        return;
+    }
+
+    if (isSavingEmployee.value) {
         return;
     }
 
@@ -2146,8 +2474,14 @@ function onWizardCompleteClick(): void {
                     ? null
                     : dateValueToIsoDate(personalInfo.birthdate as DateValue),
             sex: personalInfo.sex,
-            civil_status: personalInfo.civilStatus,
-            nationality: personalInfo.nationality,
+            civil_status:
+                personalInfo.civilStatus.trim() === ''
+                    ? null
+                    : personalInfo.civilStatus.trim(),
+            nationality:
+                personalInfo.nationality.trim() === ''
+                    ? null
+                    : personalInfo.nationality.trim(),
             religion:
                 personalInfo.religion === 'Other'
                     ? personalInfo.religionOther.trim()
@@ -2192,64 +2526,7 @@ function onWizardCompleteClick(): void {
                     is_primary: row.isPrimary,
                 })),
         },
-        addresses: [
-            {
-                type: 'permanent',
-                address_line_1: permanentAddress.addressLine1.trim(),
-                address_line_2:
-                    permanentAddress.addressLine2.trim() === ''
-                        ? null
-                        : permanentAddress.addressLine2.trim(),
-                barangay: permanentAddress.barangay,
-                barangay_code:
-                    permanentAddress.barangayCode === ''
-                        ? null
-                        : permanentAddress.barangayCode,
-                city: permanentAddress.city,
-                city_code:
-                    permanentAddress.cityCode === ''
-                        ? null
-                        : permanentAddress.cityCode,
-                province: permanentAddress.province,
-                province_code:
-                    permanentAddress.provinceCode === ''
-                        ? null
-                        : permanentAddress.provinceCode,
-                zip_code: permanentAddress.zipCode.trim(),
-                country: permanentAddress.country,
-                is_primary: permanentAddress.isPrimary,
-            },
-            ...(showCurrentAddress.value
-                ? [
-                      {
-                          type: 'current',
-                          address_line_1: currentAddress.addressLine1.trim(),
-                          address_line_2:
-                              currentAddress.addressLine2.trim() === ''
-                                  ? null
-                                  : currentAddress.addressLine2.trim(),
-                          barangay: currentAddress.barangay,
-                          barangay_code:
-                              currentAddress.barangayCode === ''
-                                  ? null
-                                  : currentAddress.barangayCode,
-                          city: currentAddress.city,
-                          city_code:
-                              currentAddress.cityCode === ''
-                                  ? null
-                                  : currentAddress.cityCode,
-                          province: currentAddress.province,
-                          province_code:
-                              currentAddress.provinceCode === ''
-                                  ? null
-                                  : currentAddress.provinceCode,
-                          zip_code: currentAddress.zipCode.trim(),
-                          country: currentAddress.country,
-                          is_primary: currentAddress.isPrimary,
-                      },
-                  ]
-                : []),
-        ],
+        addresses: buildAddressesPayload(),
         contacts: [
             ...personalContacts.map((contact) => ({
                 category: 'personal',
@@ -2285,6 +2562,8 @@ function onWizardCompleteClick(): void {
             : {}),
     };
 
+    isSavingEmployee.value = true;
+
     router.post(
         '/employees',
         {
@@ -2296,10 +2575,21 @@ function onWizardCompleteClick(): void {
         {
             forceFormData:
                 createUserAccount.value && stepFourAvatarFile.value !== null,
-            onError: () =>
+            onError: (errors) => {
+                console.warn(
+                    '[Add Employee] save failed (server validation)',
+                    errors,
+                );
+                for (const [key, messages] of Object.entries(errors)) {
+                    console.warn(`  ${key}:`, messages);
+                }
                 appToast.error(
-                    'Could not save employee. Please review highlighted fields.',
-                ),
+                    'Could not save the employee. Review validation messages on each step and expand any collapsed sections that show errors.',
+                );
+            },
+            onFinish: () => {
+                isSavingEmployee.value = false;
+            },
         },
     );
 }
@@ -2318,6 +2608,7 @@ onUnmounted(() => {
     attendanceIdAbortController?.abort();
     emailAbortController?.abort();
     clearStepFourAvatarSelection();
+    isSavingEmployee.value = false;
 });
 
 /** Label row + badges; `pr-8` reserves space for the absolutely positioned clear control. */
@@ -2423,9 +2714,15 @@ watch(currentStep, (newStep, oldStep) => {
 });
 
 function handleNextStep(next: () => void, step: number): void {
+    if (isSavingEmployee.value) {
+        return;
+    }
+
     if (step === 1) {
         stepOneAttempted.value = true;
         if (!canProceedStepOne.value) {
+            expandStepOneIfPermanentAddressErrors();
+
             return;
         }
     }
@@ -2433,6 +2730,8 @@ function handleNextStep(next: () => void, step: number): void {
     if (step === 2) {
         stepTwoAttempted.value = true;
         if (!canProceedStepTwo.value) {
+            expandStepTwoOptionalPanelsIfInvalid();
+
             return;
         }
     }
@@ -2499,6 +2798,7 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                     <div class="flex flex-col gap-4">
                         <section
                             aria-label="Progress steps"
+                            :aria-busy="isSavingEmployee"
                             class="shrink-0 overflow-visible rounded-lg border border-border/60 bg-muted/90 px-3 py-2.5 sm:px-4 sm:py-3"
                         >
                             <div
@@ -2522,6 +2822,7 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                     />
                                     <StepperTrigger
                                         class="flex min-h-10 min-w-0 shrink-0 cursor-pointer flex-row items-center gap-2 rounded-md px-1 py-1 text-left group-data-disabled:cursor-not-allowed hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none max-sm:max-w-none max-sm:justify-center sm:max-w-none sm:justify-start sm:px-2"
+                                        :disabled="isSavingEmployee"
                                         :aria-invalid="
                                             stepperStepSkippedInvalid(item.step)
                                                 ? true
@@ -5986,12 +6287,6 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                                                 row.isPrimary
                                                             "
                                                             class="shrink-0 self-center"
-                                                            :disabled="
-                                                                row.endDate !==
-                                                                    '' &&
-                                                                employmentSeparationDate.trim() ===
-                                                                    ''
-                                                            "
                                                             :aria-labelledby="`employee_position_primary_heading_${index}`"
                                                             @update:model-value="
                                                                 (value) =>
@@ -6007,14 +6302,6 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                                             <label
                                                                 :id="`employee_position_primary_heading_${index}`"
                                                                 class="cursor-pointer"
-                                                                :class="
-                                                                    row.endDate !==
-                                                                        '' &&
-                                                                    employmentSeparationDate.trim() ===
-                                                                        ''
-                                                                        ? 'cursor-not-allowed opacity-60'
-                                                                        : ''
-                                                                "
                                                                 :for="`employee_position_is_primary_${index}`"
                                                             >
                                                                 <Badge
@@ -6574,12 +6861,6 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                                                 row.isPrimary
                                                             "
                                                             class="shrink-0 self-center"
-                                                            :disabled="
-                                                                row.endDate !==
-                                                                    '' &&
-                                                                employmentSeparationDate.trim() ===
-                                                                    ''
-                                                            "
                                                             :aria-labelledby="`employee_affiliation_primary_heading_${index}`"
                                                             @update:model-value="
                                                                 (value) =>
@@ -6595,14 +6876,6 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                                             <label
                                                                 :id="`employee_affiliation_primary_heading_${index}`"
                                                                 class="cursor-pointer"
-                                                                :class="
-                                                                    row.endDate !==
-                                                                        '' &&
-                                                                    employmentSeparationDate.trim() ===
-                                                                        ''
-                                                                        ? 'cursor-not-allowed opacity-60'
-                                                                        : ''
-                                                                "
                                                                 :for="`employee_affiliation_is_primary_${index}`"
                                                             >
                                                                 <Badge
@@ -7737,7 +8010,7 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                     type="button"
                                     variant="outline"
                                     class="flex-1 sm:flex-none"
-                                    :disabled="sp.isFirstStep"
+                                    :disabled="sp.isFirstStep || isSavingEmployee"
                                     @click="sp.prevStep"
                                 >
                                     Back
@@ -7746,6 +8019,7 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                     <Button
                                         v-if="!sp.isLastStep"
                                         type="button"
+                                        :disabled="isSavingEmployee"
                                         @click="
                                             handleNextStep(
                                                 sp.nextStep,
@@ -7759,11 +8033,22 @@ function onBirthdateSelect(value: unknown, close: () => void): void {
                                     <Button
                                         v-else
                                         type="button"
-                                        class="w-full sm:w-auto"
+                                        class="inline-flex w-full items-center justify-center gap-2 sm:w-auto"
+                                        :disabled="isSavingEmployee"
+                                        :aria-busy="isSavingEmployee"
                                         :title="completeButtonTitle()"
                                         @click="onWizardCompleteClick"
                                     >
-                                        Complete
+                                        <Loader2
+                                            v-if="isSavingEmployee"
+                                            class="size-4 shrink-0 animate-spin"
+                                            aria-hidden="true"
+                                        />
+                                        {{
+                                            isSavingEmployee
+                                                ? 'Saving…'
+                                                : 'Complete'
+                                        }}
                                     </Button>
                                 </div>
                             </div>

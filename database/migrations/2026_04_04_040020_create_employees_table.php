@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('suffix', 20)->nullable();
             $table->date('birthdate');
             $table->string('sex', 20);
-            $table->string('civil_status', 30);
-            $table->string('nationality', 50);
+            $table->string('civil_status', 30)->nullable();
+            $table->string('nationality', 50)->nullable();
             $table->string('religion', 100)->nullable();
             $table->timestamps();
             $table->softDeletes();
