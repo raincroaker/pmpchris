@@ -148,6 +148,51 @@ test('employees linked by current position in default org appear in the index', 
             ->where('employees.data.0.current_employment.employee.id_number', 'EMP-T-IDX-001'));
 });
 
+test('employees index omits employees without an active current employment', function () {
+    config(['hris.default_organization_code' => 'T-EMP-SEP']);
+
+    $organization = Organization::factory()->create([
+        'code' => 'T-EMP-SEP',
+        'is_active' => true,
+    ]);
+
+    $position = Position::factory()->create([
+        'organization_id' => $organization->id,
+        'code' => 'EMP-POS-SEP',
+        'title' => 'Legacy role',
+    ]);
+
+    $employee = Employee::factory()->create([
+        'first_name' => 'Separated',
+        'last_name' => 'Former',
+        'id_number' => 'EMP-T-SEP-001',
+    ]);
+
+    $employment = EmployeeEmployment::factory()->for($employee)->create([
+        'employment_status' => EmployeeEmployment::STATUS_RESIGNED,
+        'is_current' => false,
+        'separation_date' => '2024-01-15',
+        'hire_date' => '2020-01-01',
+    ]);
+
+    EmployeePosition::factory()->create([
+        'employee_id' => $employee->id,
+        'employee_employment_id' => $employment->id,
+        'position_id' => $position->id,
+        'end_date' => null,
+        'is_primary' => true,
+    ]);
+
+    $user = createUser();
+    $this->actingAs($user)
+        ->get(route('employees'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Employees/Index')
+            ->has('employees.data', 0)
+            ->where('employees.total', 0));
+});
+
 test('position_id filter limits rows to employees with that current position', function () {
     config(['hris.default_organization_code' => 'T-EMP-FIL']);
 

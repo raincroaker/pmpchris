@@ -2,10 +2,10 @@
 import { router } from '@inertiajs/vue3';
 import type { DateValue } from '@internationalized/date';
 import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
-import { calendarDateValueToIsoYmd } from '@/lib/calendarDateValueToIsoYmd';
 import { CalendarIcon, ChevronDownIcon } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import updateEmployeeEmploymentDates from '@/actions/App/Http/Controllers/UpdateEmployeeEmploymentDatesController';
+import CurrentPasswordConfirmDialog from '@/components/hris/CurrentPasswordConfirmDialog.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { appToast } from '@/lib/app-toast-client';
+import { calendarDateValueToIsoYmd } from '@/lib/calendarDateValueToIsoYmd';
 import { formatCalendarTriggerFromDate } from '@/lib/formatCalendarTriggerDate';
 import { cn } from '@/lib/utils';
 import type {
@@ -55,6 +56,28 @@ const dialogScrollAreaClass =
 
 type PageErrorsBag = Record<string, string>;
 
+const PASSWORD_FIELD_KEYS = new Set([
+    'current_password',
+    'current_password_confirmation',
+]);
+
+function partitionPasswordFieldErrors(pageErrors: PageErrorsBag): {
+    main: PageErrorsBag;
+    password: PageErrorsBag;
+} {
+    const main: PageErrorsBag = {};
+    const password: PageErrorsBag = {};
+    for (const [key, message] of Object.entries(pageErrors)) {
+        if (PASSWORD_FIELD_KEYS.has(key)) {
+            password[key] = message;
+        } else {
+            main[key] = message;
+        }
+    }
+
+    return { main, password };
+}
+
 const props = defineProps<{
     row: EmploymentHistoryRow | null;
     open: boolean;
@@ -73,9 +96,9 @@ const separationDateIso = ref('');
 const employmentStatus = ref<EmploymentSeparationStatusApi | ''>('');
 const separationReason = ref('');
 const employmentNotes = ref('');
-const currentPassword = ref('');
-const currentPasswordConfirmation = ref('');
 const fieldErrors = ref<PageErrorsBag>({});
+const passwordConfirmOpen = ref(false);
+const passwordConfirmErrors = ref<PageErrorsBag>({});
 const processing = ref(false);
 
 function isoToCalendarValue(iso: string): DateValue | undefined {
@@ -141,6 +164,16 @@ const dialogDescription = computed((): string => {
     return 'Update the hire date for this active employment. Separated records cannot be edited here.';
 });
 
+const passwordConfirmDescription = computed((): string => {
+    return isRecordSeparation.value
+        ? 'Enter your current account password to record this separation.'
+        : 'Enter your current account password to save the updated hire date.';
+});
+
+const passwordConfirmLabel = computed((): string => {
+    return isRecordSeparation.value ? 'Record separation' : 'Save changes';
+});
+
 const resolvedStatusDisplay = computed((): string => {
     const s = props.row?.employment_status;
     if (s === undefined) {
@@ -152,8 +185,8 @@ const resolvedStatusDisplay = computed((): string => {
 
 function resetFromRow(): void {
     fieldErrors.value = {};
-    currentPassword.value = '';
-    currentPasswordConfirmation.value = '';
+    passwordConfirmErrors.value = {};
+    passwordConfirmOpen.value = false;
     if (!props.row) {
         hireDateIso.value = '';
         separationDateIso.value = '';
@@ -180,9 +213,13 @@ function resetFromRow(): void {
 watch(
     () => [props.open, props.row?.id, props.mode] as const,
     ([isOpen]) => {
-        if (isOpen) {
-            resetFromRow();
+        if (!isOpen) {
+            passwordConfirmOpen.value = false;
+            passwordConfirmErrors.value = {};
+
+            return;
         }
+        resetFromRow();
     },
 );
 
@@ -235,17 +272,21 @@ function onSeparationSelect(value: unknown, close: () => void): void {
 }
 
 function closeDialog(): void {
+    passwordConfirmOpen.value = false;
     emit('update:open', false);
 }
 
-function buildPayload(): Record<string, string> {
+function buildPayload(auth: {
+    current_password: string;
+    current_password_confirmation: string;
+}): Record<string, string> {
     if (!props.row) {
         return {};
     }
 
     const authFields: Record<string, string> = {
-        current_password: currentPassword.value,
-        current_password_confirmation: currentPasswordConfirmation.value,
+        current_password: auth.current_password,
+        current_password_confirmation: auth.current_password_confirmation,
     };
 
     if (props.mode === 'record_separation') {
@@ -273,22 +314,6 @@ function submit(): void {
         return;
     }
 
-    if (currentPassword.value.trim() === '') {
-        fieldErrors.value = {
-            current_password: 'Enter your current password.',
-        };
-
-        return;
-    }
-
-    if (currentPasswordConfirmation.value.trim() === '') {
-        fieldErrors.value = {
-            current_password_confirmation: 'Confirm your current password.',
-        };
-
-        return;
-    }
-
     if (props.mode === 'record_separation') {
         fieldErrors.value = {};
         if (employmentStatus.value === '') {
@@ -308,7 +333,6 @@ function submit(): void {
         }
     }
 
-    const employmentId = props.row.id;
     fieldErrors.value = {};
 
     if (!isRecordSeparation.value && hireDateIso.value.trim() !== '') {
@@ -325,12 +349,25 @@ function submit(): void {
         }
     }
 
-    const payload = buildPayload();
+    passwordConfirmErrors.value = {};
+    passwordConfirmOpen.value = true;
+}
 
+function submitWithPassword(auth: {
+    current_password: string;
+    current_password_confirmation: string;
+}): void {
+    if (!props.row) {
+        return;
+    }
+
+    const employmentId = props.row.id;
+    passwordConfirmErrors.value = {};
     processing.value = true;
+
     router.patch(
         updateEmployeeEmploymentDates.url({ employment: employmentId }),
-        payload,
+        buildPayload(auth),
         {
             preserveScroll: true,
             onFinish: () => {
@@ -342,6 +379,7 @@ function submit(): void {
                         ? 'Separation recorded.'
                         : 'Employment updated.',
                 );
+                passwordConfirmOpen.value = false;
                 closeDialog();
                 if (
                     Array.isArray(props.inertiaReloadOnly) &&
@@ -353,7 +391,15 @@ function submit(): void {
                 }
             },
             onError: (pageErrors: PageErrorsBag) => {
-                fieldErrors.value = pageErrors;
+                const bag = pageErrors ?? {};
+                const { main, password } = partitionPasswordFieldErrors(bag);
+                fieldErrors.value = main;
+                if (Object.keys(main).length > 0) {
+                    passwordConfirmOpen.value = false;
+                    passwordConfirmErrors.value = {};
+                } else {
+                    passwordConfirmErrors.value = password;
+                }
                 if (
                     pageErrors !== null &&
                     typeof pageErrors === 'object' &&
@@ -681,64 +727,6 @@ function submit(): void {
                         >
                         once assignments are fully ended under this employment.
                     </p>
-
-                    <div class="border-t border-border/70 pt-4">
-                        <p
-                            class="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Confirm identity
-                        </p>
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="grid gap-2 sm:col-span-1">
-                                <Label for="adj_emp_current_pw"
-                                    >Current password</Label
-                                >
-                                <Input
-                                    id="adj_emp_current_pw"
-                                    v-model="currentPassword"
-                                    type="password"
-                                    autocomplete="current-password"
-                                    class="font-normal"
-                                    :aria-invalid="
-                                        Boolean(fieldErrors.current_password)
-                                    "
-                                />
-                                <p
-                                    v-if="fieldErrors.current_password"
-                                    class="text-sm text-destructive"
-                                >
-                                    {{ fieldErrors.current_password }}
-                                </p>
-                            </div>
-                            <div class="grid gap-2 sm:col-span-1">
-                                <Label for="adj_emp_current_pw_conf"
-                                    >Confirm current password</Label
-                                >
-                                <Input
-                                    id="adj_emp_current_pw_conf"
-                                    v-model="currentPasswordConfirmation"
-                                    type="password"
-                                    autocomplete="current-password"
-                                    class="font-normal"
-                                    :aria-invalid="
-                                        Boolean(
-                                            fieldErrors.current_password_confirmation,
-                                        )
-                                    "
-                                />
-                                <p
-                                    v-if="
-                                        fieldErrors.current_password_confirmation
-                                    "
-                                    class="text-sm text-destructive"
-                                >
-                                    {{
-                                        fieldErrors.current_password_confirmation
-                                    }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </ScrollArea>
 
@@ -766,4 +754,14 @@ function submit(): void {
             </DialogFooter>
         </DialogContent>
     </Dialog>
+
+    <CurrentPasswordConfirmDialog
+        v-model:open="passwordConfirmOpen"
+        :submitting="processing"
+        :errors="passwordConfirmErrors"
+        title="Confirm your password"
+        :description="passwordConfirmDescription"
+        :confirm-label="passwordConfirmLabel"
+        @confirm="submitWithPassword"
+    />
 </template>

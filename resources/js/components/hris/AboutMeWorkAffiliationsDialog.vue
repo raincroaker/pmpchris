@@ -6,6 +6,7 @@ import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
 import { CalendarIcon, Minus, Plus, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import syncEmployeeEmploymentPositionsAffiliations from '@/actions/App/Http/Controllers/SyncEmployeeEmploymentPositionsAffiliationsController';
+import CurrentPasswordConfirmDialog from '@/components/hris/CurrentPasswordConfirmDialog.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -18,7 +19,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Popover,
@@ -60,6 +60,28 @@ type AffiliationDraftRow = {
 
 type PageErrorsBag = Record<string, string>;
 
+const PASSWORD_FIELD_KEYS = new Set([
+    'current_password',
+    'current_password_confirmation',
+]);
+
+function partitionPasswordFieldErrors(pageErrors: PageErrorsBag): {
+    main: PageErrorsBag;
+    password: PageErrorsBag;
+} {
+    const main: PageErrorsBag = {};
+    const password: PageErrorsBag = {};
+    for (const [key, message] of Object.entries(pageErrors)) {
+        if (PASSWORD_FIELD_KEYS.has(key)) {
+            password[key] = message;
+        } else {
+            main[key] = message;
+        }
+    }
+
+    return { main, password };
+}
+
 const props = defineProps<{
     work: AboutMeWorkPayload | null;
     open: boolean;
@@ -75,9 +97,9 @@ function newRowKey(prefix: string): string {
 }
 
 const affiliationDrafts = ref<AffiliationDraftRow[]>([]);
-const currentPassword = ref('');
-const currentPasswordConfirmation = ref('');
 const fieldErrors = ref<PageErrorsBag>({});
+const passwordConfirmOpen = ref(false);
+const passwordConfirmErrors = ref<PageErrorsBag>({});
 const processing = ref(false);
 
 const affiliationRootsByGroup = computed(() => {
@@ -170,23 +192,28 @@ function resetDraftsFromWork(): void {
     }));
 }
 
-function resetSecrets(): void {
-    currentPassword.value = '';
-    currentPasswordConfirmation.value = '';
+function resetFormErrors(): void {
     fieldErrors.value = {};
+    passwordConfirmErrors.value = {};
+    passwordConfirmOpen.value = false;
 }
 
 watch(
     () => [props.open, props.work?.employment_id] as const,
     ([isOpen]) => {
+        if (!isOpen) {
+            passwordConfirmOpen.value = false;
+            passwordConfirmErrors.value = {};
+        }
         if (isOpen && props.work) {
             resetDraftsFromWork();
-            resetSecrets();
+            resetFormErrors();
         }
     },
 );
 
 function closeDialog(): void {
+    passwordConfirmOpen.value = false;
     emit('update:open', false);
 }
 
@@ -308,7 +335,10 @@ function affiliationSelectCommit(row: AffiliationDraftRow, v: unknown): void {
               : String(v);
 }
 
-function buildPayload(): RequestPayload {
+function buildPayload(auth: {
+    current_password: string;
+    current_password_confirmation: string;
+}): RequestPayload {
     const w = props.work;
     if (!w) {
         return {};
@@ -334,8 +364,8 @@ function buildPayload(): RequestPayload {
     return {
         positions: positionsPayloadFromWork(w),
         affiliations,
-        current_password: currentPassword.value,
-        current_password_confirmation: currentPasswordConfirmation.value,
+        current_password: auth.current_password,
+        current_password_confirmation: auth.current_password_confirmation,
     };
 }
 
@@ -387,22 +417,6 @@ function submit(): void {
         return;
     }
 
-    if (currentPassword.value.trim() === '') {
-        fieldErrors.value = {
-            current_password: 'Enter your current password.',
-        };
-
-        return;
-    }
-
-    if (currentPasswordConfirmation.value.trim() === '') {
-        fieldErrors.value = {
-            current_password_confirmation: 'Confirm your current password.',
-        };
-
-        return;
-    }
-
     const client = clientValidate();
     if (Object.keys(client).length > 0) {
         fieldErrors.value = client;
@@ -411,13 +425,27 @@ function submit(): void {
     }
 
     fieldErrors.value = {};
+    passwordConfirmErrors.value = {};
+    passwordConfirmOpen.value = true;
+}
+
+function submitWithPassword(auth: {
+    current_password: string;
+    current_password_confirmation: string;
+}): void {
+    const w = props.work;
+    if (!w) {
+        return;
+    }
+
+    passwordConfirmErrors.value = {};
     processing.value = true;
 
     router.patch(
         syncEmployeeEmploymentPositionsAffiliations.url({
             employment: w.employment_id,
         }),
-        buildPayload(),
+        buildPayload(auth),
         {
             preserveScroll: true,
             onFinish: () => {
@@ -425,6 +453,7 @@ function submit(): void {
             },
             onSuccess: () => {
                 appToast.success('Affiliations updated.');
+                passwordConfirmOpen.value = false;
                 closeDialog();
                 if (
                     Array.isArray(props.inertiaReloadOnly) &&
@@ -436,7 +465,15 @@ function submit(): void {
                 }
             },
             onError: (pageErrors: PageErrorsBag) => {
-                fieldErrors.value = pageErrors ?? {};
+                const bag = pageErrors ?? {};
+                const { main, password } = partitionPasswordFieldErrors(bag);
+                fieldErrors.value = main;
+                if (Object.keys(main).length > 0) {
+                    passwordConfirmOpen.value = false;
+                    passwordConfirmErrors.value = {};
+                } else {
+                    passwordConfirmErrors.value = password;
+                }
                 if (
                     pageErrors !== null &&
                     typeof pageErrors === 'object' &&
@@ -787,60 +824,6 @@ function submit(): void {
                             </div>
                         </div>
                     </section>
-
-                    <section class="space-y-4 border-t border-border/70 pt-4">
-                        <p
-                            class="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Confirm identity
-                        </p>
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="grid gap-2">
-                                <Label for="amaw_pw">Current password</Label>
-                                <Input
-                                    id="amaw_pw"
-                                    v-model="currentPassword"
-                                    type="password"
-                                    autocomplete="current-password"
-                                    :aria-invalid="
-                                        Boolean(fieldErrors.current_password)
-                                    "
-                                />
-                                <p
-                                    v-if="fieldErrors.current_password"
-                                    class="text-xs text-destructive"
-                                >
-                                    {{ fieldErrors.current_password }}
-                                </p>
-                            </div>
-                            <div class="grid gap-2">
-                                <Label for="amaw_pw_c"
-                                    >Confirm current password</Label
-                                >
-                                <Input
-                                    id="amaw_pw_c"
-                                    v-model="currentPasswordConfirmation"
-                                    type="password"
-                                    autocomplete="current-password"
-                                    :aria-invalid="
-                                        Boolean(
-                                            fieldErrors.current_password_confirmation,
-                                        )
-                                    "
-                                />
-                                <p
-                                    v-if="
-                                        fieldErrors.current_password_confirmation
-                                    "
-                                    class="text-xs text-destructive"
-                                >
-                                    {{
-                                        fieldErrors.current_password_confirmation
-                                    }}
-                                </p>
-                            </div>
-                        </div>
-                    </section>
                 </div>
             </ScrollArea>
 
@@ -858,4 +841,14 @@ function submit(): void {
             </DialogFooter>
         </DialogContent>
     </Dialog>
+
+    <CurrentPasswordConfirmDialog
+        v-model:open="passwordConfirmOpen"
+        :submitting="processing"
+        :errors="passwordConfirmErrors"
+        title="Confirm your password"
+        description="Enter your current account password to save these affiliation assignments."
+        confirm-label="Save affiliations"
+        @confirm="submitWithPassword"
+    />
 </template>

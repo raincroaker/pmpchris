@@ -246,7 +246,12 @@ class EmployeesIndexController extends Controller
                 'employees.suffix',
                 'employees.id_number',
             ])
-            ->whereNull('employees.deleted_at');
+            ->whereNull('employees.deleted_at')
+            ->whereHas('currentEmployment', function ($q): void {
+                $q->whereNull('employee_employments.deleted_at')
+                    ->where('employee_employments.employment_status', EmployeeEmployment::STATUS_ACTIVE)
+                    ->whereNull('employee_employments.separation_date');
+            });
 
         if ($branchRootId !== null) {
             $query->whereExists(function ($q) use ($orgId, $branchRootId, $today): void {
