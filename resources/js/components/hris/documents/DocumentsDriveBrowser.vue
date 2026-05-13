@@ -847,6 +847,40 @@ const companyItemsLoadedOnce = ref(false);
 const searchQuery = ref('');
 const sortKey = ref<DriveSortKey>('name');
 const sortOrder = ref<DriveSortOrder>('asc');
+const MOCK_ACCESS_REQUEST_ITEM_ID = 'file-mock-access-request-approval';
+
+function buildMockAccessRequestItem(): DriveFileItem {
+    const now = new Date();
+    const submittedAt = new Date(now.getTime() - 1000 * 60 * 45).toISOString();
+    const modifiedAt = new Date(now.getTime() - 1000 * 60 * 8).toISOString();
+
+    return {
+        id: MOCK_ACCESS_REQUEST_ITEM_ID,
+        parentId: null,
+        type: 'file',
+        name: 'Temporary Payroll Summary Q1 2026.xlsx',
+        kind: 'xlsx',
+        sizeLabel: '214 KB',
+        modifiedAt,
+        uploadedAt: submittedAt,
+        ownerLabel: 'Lealyn Gentica',
+        primaryOwnerLabel: 'HR Operations',
+        visibilityLabel: 'Company library',
+        accessMode: 'private',
+        approvalStatusLabel: 'Pending',
+        approverLabel: 'Awaiting HR Head review',
+        tags: ['access-request', 'finance'],
+        notesLabel: 'Access request is waiting for an HR decision.',
+        mockOutgoingRequest: 'access',
+        mockSubmissionStatus: 'pending',
+    };
+}
+
+function withMockAccessRequestItem(sourceItems: DriveItem[]): DriveItem[] {
+    const withoutMock = sourceItems.filter((item) => item.id !== MOCK_ACCESS_REQUEST_ITEM_ID);
+
+    return [...withoutMock, buildMockAccessRequestItem()];
+}
 
 async function reloadCompanyDriveItems(): Promise<void> {
     if (!isCompanyDriveScope.value) {
@@ -855,12 +889,13 @@ async function reloadCompanyDriveItems(): Promise<void> {
 
     companyItemsLoading.value = true;
     try {
-        items.value = await fetchCompanyDocumentsItems({
+        const remoteItems = await fetchCompanyDocumentsItems({
             q: searchQuery.value,
             sortKey: sortKey.value,
             sortOrder: sortOrder.value,
             type: typeFilter.value,
         });
+        items.value = withMockAccessRequestItem(remoteItems);
         selectedIds.value = [];
         companyItemsLoadedOnce.value = true;
     } catch (error) {
@@ -1179,6 +1214,10 @@ function outgoingRequestKindForItem(item: DriveItem): DriveOutgoingRequestKind {
     return item.mockOutgoingRequest ?? 'none';
 }
 
+function isMockAccessRequestItem(item: DriveItem | null): item is DriveFileItem {
+    return item?.type === 'file' && item.id === MOCK_ACCESS_REQUEST_ITEM_ID;
+}
+
 function matchesStatusChipFilter(
     item: DriveItem,
     filter: DriveStatusChipFilter,
@@ -1204,6 +1243,10 @@ function matchesRequestTypeView(item: DriveItem): boolean {
         return true;
     }
     if (requestTypeView.value === 'library') {
+        if (isMockAccessRequestItem(item)) {
+            return false;
+        }
+
         return true;
     }
 
@@ -1473,6 +1516,55 @@ function requestAccessForFile(item: DriveFileItem): void {
     };
     appToast.success(`Access request sent for “${item.name}”. (Session mock.)`);
 }
+
+function updateMockAccessRequestDecision(nextStatus: 'approved' | 'rejected'): void {
+    const itemIndex = items.value.findIndex(
+        (item) => item.id === MOCK_ACCESS_REQUEST_ITEM_ID,
+    );
+    if (itemIndex === -1) {
+        return;
+    }
+
+    const currentItem = items.value[itemIndex];
+    if (currentItem.type !== 'file') {
+        return;
+    }
+
+    const decisionLabel = nextStatus === 'approved' ? 'Approved' : 'Rejected';
+    const decisionNote =
+        nextStatus === 'approved'
+            ? 'Access request approved by HR Head.'
+            : 'Access request rejected. Requester must provide supporting reason.';
+
+    items.value[itemIndex] = {
+        ...currentItem,
+        mockSubmissionStatus: nextStatus,
+        approvalStatusLabel: decisionLabel,
+        approverLabel: 'Kenneth Martinez',
+        notesLabel: decisionNote,
+    };
+}
+
+function confirmMockAccessRequest(): void {
+    updateMockAccessRequestDecision('approved');
+    appToast.success('Access request approved.');
+}
+
+function rejectMockAccessRequest(): void {
+    updateMockAccessRequestDecision('rejected');
+    appToast.error('Access request rejected.');
+}
+
+const showMockAccessRequestDecisionActions = computed((): boolean => {
+    if (requestTypeView.value !== 'access') {
+        return false;
+    }
+    if (!isMockAccessRequestItem(detailItem.value)) {
+        return false;
+    }
+
+    return submissionStatusForFile(detailItem.value) === 'pending';
+});
 
 function approverInformationDisplay(item: DriveItem): string {
     if (item.approverLabel === null) {
@@ -3362,6 +3454,36 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                                         {{ item.name }}
                                     </span>
                                     <Badge
+                                        v-if="isMockAccessRequestItem(item)"
+                                        variant="outline"
+                                        class="w-fit gap-1 text-[10px] font-normal"
+                                        :class="
+                                            mySubmissionStatusListBadgeClass(
+                                                item.mockSubmissionStatus,
+                                            )
+                                        "
+                                    >
+                                        <component
+                                            :is="
+                                                mySubmissionStatusIconComponent(
+                                                    item.mockSubmissionStatus,
+                                                )
+                                            "
+                                            class="size-3 shrink-0"
+                                            :class="
+                                                mySubmissionStatusIconClass(
+                                                    item.mockSubmissionStatus,
+                                                )
+                                            "
+                                            aria-hidden="true"
+                                        />
+                                        {{
+                                            mySubmissionStatusListBadgeLabel(
+                                                item.mockSubmissionStatus,
+                                            )
+                                        }}
+                                    </Badge>
+                                    <Badge
                                         v-if="
                                             isTrashView && item.trashSourceScope
                                         "
@@ -3867,6 +3989,36 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                                                 class="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
                                                 >{{ item.name }}</span
                                             >
+                                            <Badge
+                                                v-if="isMockAccessRequestItem(item)"
+                                                variant="outline"
+                                                class="gap-1 text-[10px] font-normal"
+                                                :class="
+                                                    mySubmissionStatusListBadgeClass(
+                                                        item.mockSubmissionStatus,
+                                                    )
+                                                "
+                                            >
+                                                <component
+                                                    :is="
+                                                        mySubmissionStatusIconComponent(
+                                                            item.mockSubmissionStatus,
+                                                        )
+                                                    "
+                                                    class="size-3 shrink-0"
+                                                    :class="
+                                                        mySubmissionStatusIconClass(
+                                                            item.mockSubmissionStatus,
+                                                        )
+                                                    "
+                                                    aria-hidden="true"
+                                                />
+                                                {{
+                                                    mySubmissionStatusListBadgeLabel(
+                                                        item.mockSubmissionStatus,
+                                                    )
+                                                }}
+                                            </Badge>
                                         </div>
                                     </td>
                                     <td
@@ -4875,6 +5027,29 @@ function gridCheckboxSlotClass(item: DriveItem): string {
                                         Request access
                                     </Button>
                                     <Button
+                                        v-if="showMockAccessRequestDecisionActions"
+                                        type="button"
+                                        variant="outline"
+                                        class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
+                                        @click="confirmMockAccessRequest"
+                                    >
+                                        <ClipboardCheck
+                                            class="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Confirm
+                                    </Button>
+                                    <Button
+                                        v-if="showMockAccessRequestDecisionActions"
+                                        type="button"
+                                        variant="destructive"
+                                        class="inline-flex min-h-9 min-w-0 flex-1 basis-0 justify-center gap-2"
+                                        @click="rejectMockAccessRequest"
+                                    >
+                                        <X class="size-4" aria-hidden="true" />
+                                        Reject
+                                    </Button>
+                                    <Button
                                         v-if="
                                             detailItem.type === 'file' &&
                                             driveFileMayDownloadInUi(detailItem)
@@ -5273,199 +5448,221 @@ function gridCheckboxSlotClass(item: DriveItem): string {
             </Dialog>
 
             <Dialog v-model:open="aiSearchDialogOpen">
-                <DialogContent class="sm:max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle class="flex items-center gap-2">
-                            <Sparkles
-                                class="size-4 text-violet-600 dark:text-violet-300"
-                            />
-                            Smart Search AI
-                        </DialogTitle>
-                        <DialogDescription>
-                            Mock design preview for semantic document search in
-                            Company Documents. This is UI-only for now.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div class="grid gap-4 py-1">
-                        <div class="grid gap-2 sm:grid-cols-2">
-                            <label
-                                class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
-                            >
-                                <Checkbox
-                                    :model-value="aiSearchMode === 'keywords'"
-                                    @update:model-value="
-                                        (next) => {
-                                            if (next === true) {
-                                                aiSearchMode = 'keywords';
-                                            }
-                                        }
-                                    "
+                <DialogContent
+                    class="w-[min(98vw,84rem)] max-w-[min(98vw,84rem)] overflow-hidden p-0"
+                >
+                    <div class="flex max-h-[90dvh] min-h-0 flex-col">
+                        <DialogHeader
+                            class="shrink-0 border-b px-5 pt-5 pb-4 sm:px-6"
+                        >
+                            <DialogTitle class="flex items-center gap-2">
+                                <Sparkles
+                                    class="size-4 text-violet-600 dark:text-violet-300"
                                 />
-                                <div class="grid gap-0.5">
-                                    <span class="text-sm font-medium"
-                                        >Keyword search</span
-                                    >
-                                    <span class="text-xs text-muted-foreground">
-                                        Add terms like policy names, tags, or
-                                        document themes.
-                                    </span>
-                                </div>
-                            </label>
-                            <label
-                                class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
-                            >
-                                <Checkbox
-                                    :model-value="aiSearchMode === 'prompt'"
-                                    @update:model-value="
-                                        (next) => {
-                                            if (next === true) {
-                                                aiSearchMode = 'prompt';
-                                            }
-                                        }
-                                    "
-                                />
-                                <div class="grid gap-0.5">
-                                    <span class="text-sm font-medium"
-                                        >Prompt search</span
-                                    >
-                                    <span class="text-xs text-muted-foreground">
-                                        Describe what you need in natural
-                                        language.
-                                    </span>
-                                </div>
-                            </label>
-                        </div>
+                                Smart Search AI
+                            </DialogTitle>
+                            <DialogDescription>
+                                Mock design preview for semantic document search
+                                in Company Documents. This is UI-only for now.
+                            </DialogDescription>
+                        </DialogHeader>
 
                         <div
-                            v-if="aiSearchMode === 'keywords'"
-                            class="grid gap-2 rounded-md border p-3"
+                            class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6"
                         >
-                            <Label for="company-ai-keywords">Keywords</Label>
-                            <Input
-                                id="company-ai-keywords"
-                                v-model="aiKeywordDraft"
-                                placeholder="Type keyword and press Enter or comma"
-                                @keydown="onAiKeywordInputKeydown"
-                            />
-                            <div class="flex flex-wrap gap-2">
-                                <Badge
-                                    v-for="(tag, idx) in aiKeywords"
-                                    :key="`${tag}-${idx}`"
-                                    variant="secondary"
-                                    class="inline-flex items-center gap-1"
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <label
+                                    class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
                                 >
-                                    {{ tag }}
-                                    <button
-                                        type="button"
-                                        class="rounded-sm p-0.5 hover:bg-muted"
-                                        :aria-label="`Remove keyword ${tag}`"
-                                        @click="removeAiKeyword(idx)"
-                                    >
-                                        <X class="size-3" />
-                                    </button>
-                                </Badge>
-                                <span
-                                    v-if="aiKeywords.length === 0"
-                                    class="text-xs text-muted-foreground"
+                                    <Checkbox
+                                        :model-value="aiSearchMode === 'keywords'"
+                                        @update:model-value="
+                                            (next) => {
+                                                if (next === true) {
+                                                    aiSearchMode = 'keywords';
+                                                }
+                                            }
+                                        "
+                                    />
+                                    <div class="grid gap-0.5">
+                                        <span class="text-sm font-medium"
+                                            >Keyword search</span
+                                        >
+                                        <span
+                                            class="text-xs text-muted-foreground"
+                                        >
+                                            Add terms like policy names, tags,
+                                            or document themes.
+                                        </span>
+                                    </div>
+                                </label>
+                                <label
+                                    class="flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2"
                                 >
-                                    No keywords yet.
-                                </span>
+                                    <Checkbox
+                                        :model-value="aiSearchMode === 'prompt'"
+                                        @update:model-value="
+                                            (next) => {
+                                                if (next === true) {
+                                                    aiSearchMode = 'prompt';
+                                                }
+                                            }
+                                        "
+                                    />
+                                    <div class="grid gap-0.5">
+                                        <span class="text-sm font-medium"
+                                            >Prompt search</span
+                                        >
+                                        <span
+                                            class="text-xs text-muted-foreground"
+                                        >
+                                            Describe what you need in natural
+                                            language.
+                                        </span>
+                                    </div>
+                                </label>
                             </div>
-                        </div>
 
-                        <div v-else class="grid gap-2 rounded-md border p-3">
-                            <Label for="company-ai-prompt">Prompt</Label>
-                            <Textarea
-                                id="company-ai-prompt"
-                                v-model="aiPromptDraft"
-                                placeholder="Example: Find approved company policy updates related to leave, attendance, and onboarding."
-                                class="min-h-24"
-                            />
-                        </div>
-
-                        <div class="grid gap-2 rounded-md border p-3">
                             <div
-                                class="flex items-center justify-between gap-2"
+                                v-if="aiSearchMode === 'keywords'"
+                                class="grid gap-2 rounded-md border p-3"
                             >
-                                <p class="text-sm font-medium">AI results</p>
-                                <Badge variant="outline">
-                                    {{ aiSearchResults.length }} match{{
-                                        aiSearchResults.length === 1 ? '' : 'es'
-                                    }}
-                                </Badge>
-                            </div>
-                            <div
-                                v-if="aiSearching"
-                                class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
-                            >
-                                Searching documents...
-                            </div>
-                            <div
-                                v-else-if="
-                                    aiSearchExecuted &&
-                                    aiSearchResults.length === 0
-                                "
-                                class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
-                            >
-                                No documents matched your search terms.
-                            </div>
-                            <div v-else class="grid gap-2">
-                                <div
-                                    v-for="result in aiSearchResults"
-                                    :key="result.id"
-                                    class="rounded-md border bg-muted/20 p-3"
-                                >
-                                    <div
-                                        class="flex items-start justify-between gap-3"
+                                <Label for="company-ai-keywords">Keywords</Label>
+                                <Input
+                                    id="company-ai-keywords"
+                                    v-model="aiKeywordDraft"
+                                    placeholder="Type keyword and press Enter or comma"
+                                    @keydown="onAiKeywordInputKeydown"
+                                />
+                                <div class="flex flex-wrap gap-2">
+                                    <Badge
+                                        v-for="(tag, idx) in aiKeywords"
+                                        :key="`${tag}-${idx}`"
+                                        variant="secondary"
+                                        class="inline-flex items-center gap-1"
                                     >
+                                        {{ tag }}
                                         <button
                                             type="button"
-                                            class="text-left text-sm font-medium text-foreground hover:underline"
-                                            @click="openAiResult(result)"
+                                            class="rounded-sm p-0.5 hover:bg-muted"
+                                            :aria-label="`Remove keyword ${tag}`"
+                                            @click="removeAiKeyword(idx)"
                                         >
-                                            {{ result.title }}
+                                            <X class="size-3" />
                                         </button>
-                                        <Badge
-                                            variant="secondary"
-                                            class="text-[11px] whitespace-nowrap"
-                                        >
-                                            {{ result.confidence }}
-                                        </Badge>
-                                    </div>
-                                    <p
-                                        class="mt-1 text-xs text-muted-foreground"
+                                    </Badge>
+                                    <span
+                                        v-if="aiKeywords.length === 0"
+                                        class="text-xs text-muted-foreground"
                                     >
-                                        {{ result.snippet }}
+                                        No keywords yet.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div v-else class="grid gap-2 rounded-md border p-3">
+                                <Label for="company-ai-prompt">Prompt</Label>
+                                <Textarea
+                                    id="company-ai-prompt"
+                                    v-model="aiPromptDraft"
+                                    placeholder="Example: Find approved company policy updates related to leave, attendance, and onboarding."
+                                    class="min-h-24"
+                                />
+                            </div>
+
+                            <div class="grid gap-2 rounded-md border p-3">
+                                <div
+                                    class="flex items-center justify-between gap-2"
+                                >
+                                    <p class="text-sm font-medium">
+                                        AI results
                                     </p>
-                                    <div class="mt-2 flex flex-wrap gap-1.5">
-                                        <Badge
-                                            v-for="tag in result.tags"
-                                            :key="`${result.id}-${tag}`"
-                                            variant="outline"
-                                            class="text-[10px]"
+                                    <Badge variant="outline">
+                                        {{ aiSearchResults.length }} match{{
+                                            aiSearchResults.length === 1
+                                                ? ''
+                                                : 'es'
+                                        }}
+                                    </Badge>
+                                </div>
+                                <div
+                                    v-if="aiSearching"
+                                    class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+                                >
+                                    Searching documents...
+                                </div>
+                                <div
+                                    v-else-if="
+                                        aiSearchExecuted &&
+                                        aiSearchResults.length === 0
+                                    "
+                                    class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+                                >
+                                    No documents matched your search terms.
+                                </div>
+                                <div v-else class="max-h-[45dvh] overflow-y-auto">
+                                    <div class="grid gap-2 pr-1">
+                                        <div
+                                            v-for="result in aiSearchResults"
+                                            :key="result.id"
+                                            class="rounded-md border bg-muted/20 p-3 transition-colors hover:bg-muted/30"
                                         >
-                                            {{ tag }}
-                                        </Badge>
+                                            <div
+                                                class="flex items-start justify-between gap-3"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    class="line-clamp-2 text-left text-sm font-medium text-foreground hover:underline"
+                                                    @click="openAiResult(result)"
+                                                >
+                                                    {{ result.title }}
+                                                </button>
+                                                <Badge
+                                                    variant="secondary"
+                                                    class="text-[11px] whitespace-nowrap"
+                                                >
+                                                    {{ result.confidence }}
+                                                </Badge>
+                                            </div>
+                                            <p
+                                                class="mt-1 line-clamp-2 text-xs text-muted-foreground"
+                                            >
+                                                {{ result.snippet }}
+                                            </p>
+                                            <div
+                                                class="mt-2 flex flex-wrap gap-1.5"
+                                            >
+                                                <Badge
+                                                    v-for="tag in result.tags"
+                                                    :key="`${result.id}-${tag}`"
+                                                    variant="outline"
+                                                    class="text-[10px]"
+                                                >
+                                                    {{ tag }}
+                                                </Badge>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <DialogFooter class="gap-2 sm:justify-end">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            @click="aiSearchDialogOpen = false"
+                        <DialogFooter
+                            class="shrink-0 border-t px-5 pt-3 pb-5 sm:justify-end sm:px-6"
                         >
-                            Close
-                        </Button>
-                        <Button type="button" @click="runAiSearch">
-                            <Sparkles class="size-4" />
-                            Search
-                        </Button>
-                    </DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                @click="aiSearchDialogOpen = false"
+                            >
+                                Close
+                            </Button>
+                            <Button type="button" @click="runAiSearch">
+                                <Sparkles class="size-4" />
+                                Search
+                            </Button>
+                        </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
 

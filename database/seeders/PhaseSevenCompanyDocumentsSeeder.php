@@ -266,6 +266,8 @@ class PhaseSevenCompanyDocumentsSeeder extends Seeder
             ['doc_key' => 'memo-013', 'original_name' => 'month end reports advisory.pdf', 'mime_type' => 'application/pdf', 'extension' => 'pdf', 'size_bytes' => 199775, 'uploaded_at' => CarbonImmutable::parse('2026-03-07 09:09:22'), 'tags' => ['month-end', 'reports'], 'notes' => 'remind fm/mm/hr'],
             ['doc_key' => 'memo-014', 'original_name' => 'MEMO 302 leave form cut-off.pdf', 'mime_type' => 'application/pdf', 'extension' => 'pdf', 'size_bytes' => 183956, 'uploaded_at' => CarbonImmutable::parse('2026-03-07 09:18:11'), 'tags' => ['leave', 'forms', 'cutoff'], 'notes' => null],
             ['doc_key' => 'memo-015', 'original_name' => 'unauthorized_file_sharing_notice_2021.pdf', 'mime_type' => 'application/pdf', 'extension' => 'pdf', 'size_bytes' => 186420, 'uploaded_at' => CarbonImmutable::parse('2026-03-07 09:26:58'), 'tags' => ['file-share', 'notice'], 'notes' => 'old memo pero gamit pa'],
+            ['doc_key' => 'pdf-policy-005', 'original_name' => 'employee_contract_scanned.pdf', 'mime_type' => 'application/pdf', 'extension' => 'pdf', 'size_bytes' => 492311, 'uploaded_at' => CarbonImmutable::parse('2026-03-07 09:34:42'), 'tags' => ['contract', 'scan'], 'notes' => 'scanned copy for reference'],
+            ['doc_key' => 'pdf-policy-006', 'original_name' => 'Remote Work and Telecommuting Agreement.pdf', 'mime_type' => 'application/pdf', 'extension' => 'pdf', 'size_bytes' => 538904, 'uploaded_at' => CarbonImmutable::parse('2026-03-07 09:43:09'), 'tags' => ['remote-work', 'agreement'], 'notes' => null],
         ];
     }
 }

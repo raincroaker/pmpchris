@@ -3,13 +3,6 @@ import type { RequestPayload } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { getCoreRowModel, useVueTable } from '@tanstack/vue-table';
 import type { ColumnDef } from '@tanstack/vue-table';
-import { StackedBar } from '@unovis/ts';
-import {
-    VisAxis,
-    VisStackedBar,
-    VisTooltip,
-    VisXYContainer,
-} from '@unovis/vue';
 import {
     FileSpreadsheet,
     Info,
@@ -144,6 +137,41 @@ type AttendanceTeamChartRow = {
     on_time: number;
     late: number;
     absent: number;
+    on_leave: number;
+};
+
+type DummyChartEmployee = {
+    id: number;
+    display_name: string;
+    id_number: string;
+    avatar_url: string | null;
+    unit_name: string;
+    unit_code: string | null;
+};
+
+type DummyLateEntry = {
+    employee: DummyChartEmployee;
+    scheduled_in: string;
+    actual_in: string;
+    reason: string;
+};
+
+type DummyAbsentEntry = {
+    employee: DummyChartEmployee;
+    reason: string;
+};
+
+type DummyOnLeaveEntry = {
+    employee: DummyChartEmployee;
+    leave_type: string;
+    reason: string;
+};
+
+type DummyChartDayDetail = {
+    date: string;
+    late: DummyLateEntry[];
+    absent: DummyAbsentEntry[];
+    on_leave: DummyOnLeaveEntry[];
 };
 
 type AttendanceTeamChartProp = {
@@ -367,7 +395,358 @@ const halfMonthLabel = computed(() =>
     props.attendanceTeamChart.half === 'second_half' ? '2nd half' : '1st half',
 );
 
-const chartData = computed(() => props.attendanceTeamChart.rows);
+const useDummyChartData = true;
+const dummyChartRows: AttendanceTeamChartRow[] = [
+    { date: 'May 1', on_time: 18, late: 0, absent: 0, on_leave: 1 },
+    { date: 'May 2', on_time: 16, late: 2, absent: 0, on_leave: 1 },
+    { date: 'May 3', on_time: 15, late: 0, absent: 3, on_leave: 2 },
+    { date: 'May 4', on_time: 17, late: 1, absent: 0, on_leave: 1 },
+    { date: 'May 5', on_time: 14, late: 0, absent: 2, on_leave: 2 },
+    { date: 'May 6', on_time: 19, late: 0, absent: 0, on_leave: 0 },
+    { date: 'May 7', on_time: 13, late: 0, absent: 4, on_leave: 1 },
+];
+const dummyChartDayDetails: DummyChartDayDetail[] = [
+    {
+        date: 'May 1',
+        late: [],
+        absent: [],
+        on_leave: [
+            {
+                employee: {
+                    id: 701,
+                    display_name: 'Arielle Gomez',
+                    id_number: 'PMPC-11701',
+                    avatar_url: null,
+                    unit_name: 'Tagum Branch',
+                    unit_code: 'TAG',
+                },
+                leave_type: 'Vacation leave',
+                reason: 'Pre-approved family trip',
+            },
+        ],
+    },
+    {
+        date: 'May 2',
+        late: [
+            {
+                employee: {
+                    id: 492,
+                    display_name: 'Ana Morales',
+                    id_number: 'PMPC-10492',
+                    avatar_url: null,
+                    unit_name: 'Panabo Branch',
+                    unit_code: 'PNB',
+                },
+                scheduled_in: '08:30',
+                actual_in: '08:41',
+                reason: 'Heavy traffic on main highway',
+            },
+            {
+                employee: {
+                    id: 901,
+                    display_name: 'Noah Ramos',
+                    id_number: 'PMPC-19001',
+                    avatar_url: null,
+                    unit_name: 'Head Office',
+                    unit_code: 'HQ',
+                },
+                scheduled_in: '09:00',
+                actual_in: '09:08',
+                reason: 'Late bus arrival',
+            },
+        ],
+        absent: [],
+        on_leave: [
+            {
+                employee: {
+                    id: 821,
+                    display_name: 'Mia Salazar',
+                    id_number: 'PMPC-11821',
+                    avatar_url: null,
+                    unit_name: 'Panabo Branch',
+                    unit_code: 'PNB',
+                },
+                leave_type: 'Sick leave',
+                reason: 'Medical rest',
+            },
+        ],
+    },
+    {
+        date: 'May 3',
+        late: [],
+        absent: [
+            {
+                employee: {
+                    id: 2,
+                    display_name: 'Leo Villarin',
+                    id_number: 'PMPC-10002',
+                    avatar_url: null,
+                    unit_name: 'Head Office',
+                    unit_code: 'HQ',
+                },
+                reason: 'Sick leave not filed yet',
+            },
+            {
+                employee: {
+                    id: 801,
+                    display_name: 'Mira Fernandez',
+                    id_number: 'PMPC-10801',
+                    avatar_url: null,
+                    unit_name: 'Panabo - Section A',
+                    unit_code: 'PNB-A',
+                },
+                reason: 'No time-in record',
+            },
+            {
+                employee: {
+                    id: 177,
+                    display_name: 'Jordan Cruz',
+                    id_number: 'PMPC-10177',
+                    avatar_url: null,
+                    unit_name: 'Tagum Branch',
+                    unit_code: 'TAG',
+                },
+                reason: 'Unexcused absence',
+            },
+        ],
+        on_leave: [
+            {
+                employee: {
+                    id: 735,
+                    display_name: 'Luna Herrera',
+                    id_number: 'PMPC-11735',
+                    avatar_url: null,
+                    unit_name: 'Head Office',
+                    unit_code: 'HQ',
+                },
+                leave_type: 'Maternity leave',
+                reason: 'Approved long leave',
+            },
+            {
+                employee: {
+                    id: 766,
+                    display_name: 'Rex Manalo',
+                    id_number: 'PMPC-11766',
+                    avatar_url: null,
+                    unit_name: 'Tagum Branch',
+                    unit_code: 'TAG',
+                },
+                leave_type: 'Emergency leave',
+                reason: 'Family emergency',
+            },
+        ],
+    },
+    {
+        date: 'May 4',
+        late: [
+            {
+                employee: {
+                    id: 220,
+                    display_name: 'Sofia Delgado',
+                    id_number: 'PMPC-11220',
+                    avatar_url: null,
+                    unit_name: 'Tagum Branch',
+                    unit_code: 'TAG',
+                },
+                scheduled_in: '08:00',
+                actual_in: '08:11',
+                reason: 'School drop-off delay',
+            },
+        ],
+        absent: [],
+        on_leave: [
+            {
+                employee: {
+                    id: 732,
+                    display_name: 'Jen Cruz',
+                    id_number: 'PMPC-11732',
+                    avatar_url: null,
+                    unit_name: 'Head Office',
+                    unit_code: 'HQ',
+                },
+                leave_type: 'Vacation leave',
+                reason: 'Approved personal leave',
+            },
+        ],
+    },
+    {
+        date: 'May 5',
+        late: [],
+        absent: [
+            {
+                employee: {
+                    id: 612,
+                    display_name: 'Carlo Reyes',
+                    id_number: 'PMPC-11612',
+                    avatar_url: null,
+                    unit_name: 'Panabo Branch',
+                    unit_code: 'PNB',
+                },
+                reason: 'Emergency personal matter',
+            },
+            {
+                employee: {
+                    id: 644,
+                    display_name: 'Aira Santos',
+                    id_number: 'PMPC-11644',
+                    avatar_url: null,
+                    unit_name: 'Tagum Branch',
+                    unit_code: 'TAG',
+                },
+                reason: 'No attendance entry',
+            },
+        ],
+        on_leave: [
+            {
+                employee: {
+                    id: 722,
+                    display_name: 'Paolo Rivas',
+                    id_number: 'PMPC-11722',
+                    avatar_url: null,
+                    unit_name: 'Panabo Branch',
+                    unit_code: 'PNB',
+                },
+                leave_type: 'Sick leave',
+                reason: 'Fever and rest day',
+            },
+            {
+                employee: {
+                    id: 729,
+                    display_name: 'April Nunez',
+                    id_number: 'PMPC-11729',
+                    avatar_url: null,
+                    unit_name: 'Tagum Branch',
+                    unit_code: 'TAG',
+                },
+                leave_type: 'Vacation leave',
+                reason: 'Planned leave',
+            },
+        ],
+    },
+    { date: 'May 6', late: [], absent: [], on_leave: [] },
+    {
+        date: 'May 7',
+        late: [],
+        absent: [
+            {
+                employee: {
+                    id: 660,
+                    display_name: 'Ben Cruz',
+                    id_number: 'PMPC-11660',
+                    avatar_url: null,
+                    unit_name: 'Tagum Branch',
+                    unit_code: 'TAG',
+                },
+                reason: 'No show',
+            },
+            {
+                employee: {
+                    id: 677,
+                    display_name: 'Jessa Ong',
+                    id_number: 'PMPC-11677',
+                    avatar_url: null,
+                    unit_name: 'Head Office',
+                    unit_code: 'HQ',
+                },
+                reason: 'No attendance entry',
+            },
+            {
+                employee: {
+                    id: 683,
+                    display_name: 'Ralph Diaz',
+                    id_number: 'PMPC-11683',
+                    avatar_url: null,
+                    unit_name: 'Panabo Branch',
+                    unit_code: 'PNB',
+                },
+                reason: 'Pending leave approval',
+            },
+            {
+                employee: {
+                    id: 699,
+                    display_name: 'Mark Javier',
+                    id_number: 'PMPC-11699',
+                    avatar_url: null,
+                    unit_name: 'Head Office',
+                    unit_code: 'HQ',
+                },
+                reason: 'Unexcused absence',
+            },
+        ],
+        on_leave: [
+            {
+                employee: {
+                    id: 744,
+                    display_name: 'Toni Ramos',
+                    id_number: 'PMPC-11744',
+                    avatar_url: null,
+                    unit_name: 'Head Office',
+                    unit_code: 'HQ',
+                },
+                leave_type: 'Emergency leave',
+                reason: 'Urgent family matter',
+            },
+        ],
+    },
+];
+
+const chartData = computed(() => {
+    const rows = useDummyChartData
+        ? dummyChartRows
+        : props.attendanceTeamChart.rows;
+
+    return rows.map((row, index) => ({
+        ...row,
+        x_index: index,
+    }));
+});
+const chartMaxTotal = computed(() =>
+    Math.max(
+        1,
+        ...chartData.value.map(
+            (row) => row.on_time + row.late + row.absent + row.on_leave,
+        ),
+    ),
+);
+function chartSegmentHeight(value: number): string {
+    return `${(value / chartMaxTotal.value) * 100}%`;
+}
+
+function hmToMinutes(hm: string): number | null {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(hm.trim());
+    if (!match) {
+        return null;
+    }
+
+    const hours = Number.parseInt(match[1] ?? '', 10);
+    const minutes = Number.parseInt(match[2] ?? '', 10);
+    if (
+        Number.isNaN(hours) ||
+        Number.isNaN(minutes) ||
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59
+    ) {
+        return null;
+    }
+
+    return hours * 60 + minutes;
+}
+
+function lateMinutesWithGrace(
+    actualIn: string,
+    scheduledIn: string,
+    graceMinutes = 10,
+): number {
+    const actual = hmToMinutes(actualIn);
+    const scheduled = hmToMinutes(scheduledIn);
+    if (actual === null || scheduled === null) {
+        return 0;
+    }
+
+    return Math.max(0, actual - (scheduled + graceMinutes));
+}
 const chartMonthLabel = computed(() => {
     const date = new Date(`${props.attendanceTeamFilters.date_from}T12:00:00`);
 
@@ -376,17 +755,11 @@ const chartMonthLabel = computed(() => {
         year: 'numeric',
     });
 });
-const chartX = (d: AttendanceTeamChartRow): string => d.date;
-const chartY = [
-    (d: AttendanceTeamChartRow): number => d.on_time,
-    (d: AttendanceTeamChartRow): number => d.late,
-    (d: AttendanceTeamChartRow): number => d.absent,
-];
-const chartColors = ['#22c55e', '#f59e0b', '#ef4444'];
 const chartSeriesLegend = [
     { label: 'On time', colorClass: 'bg-emerald-500' },
     { label: 'Late', colorClass: 'bg-amber-500' },
     { label: 'Absent', colorClass: 'bg-red-500' },
+    { label: 'On leave', colorClass: 'bg-sky-500' },
 ];
 
 const chartTotals = computed(() =>
@@ -395,27 +768,18 @@ const chartTotals = computed(() =>
             acc.on_time += row.on_time;
             acc.late += row.late;
             acc.absent += row.absent;
+            acc.on_leave += row.on_leave;
 
             return acc;
         },
-        { on_time: 0, late: 0, absent: 0 },
+        { on_time: 0, late: 0, absent: 0, on_leave: 0 },
     ),
 );
-const chartTooltipTriggers = {
-    [StackedBar.selectors.bar]: (d: AttendanceTeamChartRow): string => {
-        return `
-        <div style="display:grid;gap:4px;">
-            <div style="font-weight:600;">${d.date}</div>
-            <div>On time: ${d.on_time}</div>
-            <div>Late: ${d.late}</div>
-            <div>Absent: ${d.absent}</div>
-        </div>
-        `;
-    },
-};
 
 const kpiDialogOpen = ref(false);
 const kpiDialogKey = ref<KpiKey | null>(null);
+const chartDetailDialogOpen = ref(false);
+const selectedChartDate = ref<string | null>(null);
 
 const kpiMeta: Record<
     KpiKey,
@@ -482,9 +846,25 @@ const activeKpiEmployees = computed(() => {
     return props.attendanceTeamKpiEmployees[kpiDialogKey.value] ?? [];
 });
 
+const selectedChartDetail = computed(() => {
+    if (selectedChartDate.value === null) {
+        return null;
+    }
+
+    return (
+        dummyChartDayDetails.find((row) => row.date === selectedChartDate.value) ??
+        null
+    );
+});
+
 function openKpiDialog(key: KpiKey): void {
     kpiDialogKey.value = key;
     kpiDialogOpen.value = true;
+}
+
+function openChartDetail(date: string): void {
+    selectedChartDate.value = date;
+    chartDetailDialogOpen.value = true;
 }
 
 function toggleSort(column: AttendanceTeamFiltersProp['sort']): void {
@@ -1685,6 +2065,9 @@ const table = useVueTable({
                         <Badge variant="outline" class="font-normal">
                             Absent {{ chartTotals.absent }}
                         </Badge>
+                        <Badge variant="outline" class="font-normal">
+                            On leave {{ chartTotals.on_leave }}
+                        </Badge>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-3">
@@ -1704,16 +2087,61 @@ const table = useVueTable({
                     <div
                         class="relative h-[320px] min-w-0 overflow-hidden rounded-lg border border-border/60 bg-background/40 px-2 py-2"
                     >
-                        <VisXYContainer :data="chartData">
-                            <VisAxis type="x" :x="chartX" />
-                            <VisAxis type="y" />
-                            <VisStackedBar
-                                :x="chartX"
-                                :y="chartY"
-                                :color="chartColors"
-                            />
-                            <VisTooltip :triggers="chartTooltipTriggers" />
-                        </VisXYContainer>
+                        <div class="flex h-full items-end gap-3 px-2 pb-3">
+                            <div
+                                v-for="row in chartData"
+                                :key="row.date"
+                                role="button"
+                                tabindex="0"
+                                class="flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-2 rounded-md px-1 transition hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+                                @click="openChartDetail(row.date)"
+                                @keydown.enter.prevent="
+                                    openChartDetail(row.date)
+                                "
+                                @keydown.space.prevent="
+                                    openChartDetail(row.date)
+                                "
+                            >
+                                <div
+                                    class="flex h-60 w-full max-w-16 flex-col justify-end overflow-hidden rounded-md border border-border/70 bg-muted/15"
+                                    :title="`On time: ${row.on_time}, Late: ${row.late}, Absent: ${row.absent}, On leave: ${row.on_leave}`"
+                                >
+                                    <div
+                                        class="bg-red-500"
+                                        :style="{
+                                            height: chartSegmentHeight(
+                                                row.absent,
+                                            ),
+                                        }"
+                                    />
+                                    <div
+                                        class="bg-sky-500"
+                                        :style="{
+                                            height: chartSegmentHeight(
+                                                row.on_leave,
+                                            ),
+                                        }"
+                                    />
+                                    <div
+                                        class="bg-amber-500"
+                                        :style="{
+                                            height: chartSegmentHeight(row.late),
+                                        }"
+                                    />
+                                    <div
+                                        class="bg-emerald-500"
+                                        :style="{
+                                            height: chartSegmentHeight(
+                                                row.on_time,
+                                            ),
+                                        }"
+                                    />
+                                </div>
+                                <span class="text-[11px] text-muted-foreground">
+                                    {{ row.date }}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1969,6 +2397,245 @@ const table = useVueTable({
                     type="button"
                     variant="outline"
                     @click="kpiDialogOpen = false"
+                >
+                    Close
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="chartDetailDialogOpen">
+        <DialogContent class="sm:max-w-xl">
+            <DialogHeader>
+                <DialogTitle>
+                    Attendance breakdown —
+                    {{ selectedChartDetail?.date ?? 'Day' }}
+                </DialogTitle>
+                <DialogDescription>
+                    Dummy drilldown for late time-ins, absences, and on-leave
+                    employees.
+                </DialogDescription>
+            </DialogHeader>
+
+            <ScrollArea :class="dialogViewScrollAreaClass">
+                <div
+                    v-if="!selectedChartDetail"
+                    class="text-sm text-muted-foreground"
+                >
+                    No detail found.
+                </div>
+
+                <div v-else class="grid gap-4">
+                    <div
+                        class="rounded-lg border border-amber-500/35 bg-amber-500/10 p-3"
+                    >
+                        <p
+                            class="text-sm font-semibold text-amber-700 dark:text-amber-300"
+                        >
+                            Late ({{ selectedChartDetail.late.length }})
+                        </p>
+
+                        <div
+                            v-if="selectedChartDetail.late.length === 0"
+                            class="mt-2 text-sm text-muted-foreground"
+                        >
+                            No late employees.
+                        </div>
+
+                        <div v-else class="mt-2 grid gap-2">
+                            <div
+                                v-for="entry in selectedChartDetail.late"
+                                :key="`${selectedChartDetail.date}-late-${entry.employee.id}`"
+                                class="flex items-center justify-between gap-3 rounded-md border border-amber-500/35 bg-background/60 px-3 py-2"
+                            >
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <Avatar
+                                        class="size-9 shrink-0 border border-border/70 bg-muted/30"
+                                    >
+                                        <AvatarImage
+                                            :src="entry.employee.avatar_url ?? ''"
+                                            :alt="entry.employee.display_name"
+                                        />
+                                        <AvatarFallback
+                                            class="text-[11px] font-medium text-muted-foreground"
+                                        >
+                                            {{
+                                                employeeInitials(
+                                                    entry.employee.display_name,
+                                                )
+                                            }}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div class="min-w-0">
+                                        <p
+                                            class="truncate text-sm font-medium text-foreground"
+                                        >
+                                            {{ entry.employee.display_name }}
+                                        </p>
+                                        <p
+                                            class="font-mono text-xs text-muted-foreground"
+                                        >
+                                            {{ entry.employee.id_number }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-mono text-xs text-foreground">
+                                        Sched {{ entry.scheduled_in }} · In
+                                        {{ entry.actual_in }}
+                                    </p>
+                                    <p class="text-xs text-muted-foreground">
+                                        Grace: 10m · Late:
+                                        {{
+                                            lateMinutesWithGrace(
+                                                entry.actual_in,
+                                                entry.scheduled_in,
+                                                10,
+                                            )
+                                        }}m
+                                    </p>
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ entry.reason }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="rounded-lg border border-red-500/35 bg-red-500/10 p-3"
+                    >
+                        <p
+                            class="text-sm font-semibold text-red-700 dark:text-red-300"
+                        >
+                            Absent ({{ selectedChartDetail.absent.length }})
+                        </p>
+
+                        <div
+                            v-if="selectedChartDetail.absent.length === 0"
+                            class="mt-2 text-sm text-muted-foreground"
+                        >
+                            No absent employees.
+                        </div>
+
+                        <div v-else class="mt-2 grid gap-2">
+                            <div
+                                v-for="entry in selectedChartDetail.absent"
+                                :key="`${selectedChartDetail.date}-absent-${entry.employee.id}`"
+                                class="flex items-center justify-between gap-3 rounded-md border border-red-500/35 bg-background/60 px-3 py-2"
+                            >
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <Avatar
+                                        class="size-9 shrink-0 border border-border/70 bg-muted/30"
+                                    >
+                                        <AvatarImage
+                                            :src="entry.employee.avatar_url ?? ''"
+                                            :alt="entry.employee.display_name"
+                                        />
+                                        <AvatarFallback
+                                            class="text-[11px] font-medium text-muted-foreground"
+                                        >
+                                            {{
+                                                employeeInitials(
+                                                    entry.employee.display_name,
+                                                )
+                                            }}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div class="min-w-0">
+                                        <p
+                                            class="truncate text-sm font-medium text-foreground"
+                                        >
+                                            {{ entry.employee.display_name }}
+                                        </p>
+                                        <p
+                                            class="font-mono text-xs text-muted-foreground"
+                                        >
+                                            {{ entry.employee.id_number }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ entry.reason }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="rounded-lg border border-sky-500/35 bg-sky-500/10 p-3"
+                    >
+                        <p
+                            class="text-sm font-semibold text-sky-700 dark:text-sky-300"
+                        >
+                            On leave ({{ selectedChartDetail.on_leave.length }})
+                        </p>
+
+                        <div
+                            v-if="selectedChartDetail.on_leave.length === 0"
+                            class="mt-2 text-sm text-muted-foreground"
+                        >
+                            No on-leave employees.
+                        </div>
+
+                        <div v-else class="mt-2 grid gap-2">
+                            <div
+                                v-for="entry in selectedChartDetail.on_leave"
+                                :key="`${selectedChartDetail.date}-leave-${entry.employee.id}`"
+                                class="flex items-center justify-between gap-3 rounded-md border border-sky-500/35 bg-background/60 px-3 py-2"
+                            >
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <Avatar
+                                        class="size-9 shrink-0 border border-border/70 bg-muted/30"
+                                    >
+                                        <AvatarImage
+                                            :src="entry.employee.avatar_url ?? ''"
+                                            :alt="entry.employee.display_name"
+                                        />
+                                        <AvatarFallback
+                                            class="text-[11px] font-medium text-muted-foreground"
+                                        >
+                                            {{
+                                                employeeInitials(
+                                                    entry.employee.display_name,
+                                                )
+                                            }}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div class="min-w-0">
+                                        <p
+                                            class="truncate text-sm font-medium text-foreground"
+                                        >
+                                            {{ entry.employee.display_name }}
+                                        </p>
+                                        <p
+                                            class="font-mono text-xs text-muted-foreground"
+                                        >
+                                            {{ entry.employee.id_number }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-foreground">
+                                        {{ entry.leave_type }}
+                                    </p>
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ entry.reason }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ScrollArea>
+
+            <DialogFooter>
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="chartDetailDialogOpen = false"
                 >
                     Close
                 </Button>
