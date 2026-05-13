@@ -164,6 +164,8 @@ function onSave(): void {
         ...(removeAvatar.value ? { remove_avatar: true as const } : {}),
     } satisfies RequestPayload;
 
+    const useMultipart = draftAvatarFile.value !== null;
+
     processing.value = true;
 
     router.patch(
@@ -171,7 +173,7 @@ function onSave(): void {
         payload,
         {
             preserveScroll: true,
-            forceFormData: true,
+            forceFormData: useMultipart,
             onFinish: () => {
                 processing.value = false;
             },
